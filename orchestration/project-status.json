@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "project": "智能座舱多屏协同 HMI 设计与交互原型",
+  "phase": "GP21 冻结基线后的 React 实现",
+  "summary": "GP21 视觉与交互基线已冻结（P0/P1 为 0）；React 已完成权威主题、四屏总览、控制台、共享数据健康、Center 路线状态以及 Cluster/HUD 驾驶路线变体，并通过三档浏览器尺寸与自动化验证。Agent 仪表盘已按稳定任务编号去重：正式合同优先于已晋升草稿，runtime 状态继续合并，4 项 dashboard 测试通过。",
+  "updatedAt": "2026-07-18T12:05:02+08:00",
+  "milestones": [
+    {
+      "id": "direction",
+      "name": "选题调研与方向收敛",
+      "status": "COMPLETED"
+    },
+    {
+      "id": "workflow",
+      "name": "Codex + OpenCode 协作工作流",
+      "status": "IN_PROGRESS"
+    },
+    {
+      "id": "design-system",
+      "name": "Figma 设计系统与多屏组件规范",
+      "status": "COMPLETED"
+    },
+    {
+      "id": "runtime",
+      "name": "多屏 HMI 运行时与状态同步",
+      "status": "IN_PROGRESS"
+    },
+    {
+      "id": "delivery",
+      "name": "最终展示、测试与答辩交付",
+      "status": "PLANNED"
+    }
+  ]
+}

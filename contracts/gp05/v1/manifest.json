@@ -1,0 +1,131 @@
+{
+  "contractVersion": "gp05.v1",
+  "designSource": {
+    "name": "GP21-VISUAL-INTERACTION-FROZEN",
+    "publishedUrl": "https://revise-body-79291535.figma.site",
+    "reviewedAt": "2026-07-18T00:00:00+08:00"
+  },
+  "canvases": {
+    "cluster": { "width": 1920, "height": 720 },
+    "hud": { "width": 1280, "height": 480 },
+    "center": { "width": 1920, "height": 1080 },
+    "passenger": { "width": 1920, "height": 1080 }
+  },
+  "enums": {
+    "endpoints": ["cluster", "hud", "center", "passenger", "overview", "control"],
+    "componentStates": [
+      "normal",
+      "active",
+      "disabled",
+      "warning",
+      "critical",
+      "loading",
+      "empty",
+      "stale",
+      "offline"
+    ],
+    "systemModes": ["normal", "warning", "takeover", "stale", "offline", "recovery"],
+    "flows": ["navigation_handoff", "risk_takeover", "passenger_collaboration"],
+    "riskLifecycles": ["candidate", "active", "acknowledged", "resolved"],
+    "riskSeverities": ["info", "warning", "critical"],
+    "riskSources": ["live_camera", "video_inference", "simulated_event"],
+    "riskTypes": [
+      "driver_fatigue",
+      "driver_distraction",
+      "parking_guard_motion",
+      "occupant_phone_use",
+      "occupant_out_of_zone"
+    ],
+    "dataFreshness": ["fresh", "stale", "offline"],
+    "commandNames": [
+      "set_theme",
+      "set_system_mode",
+      "select_destination",
+      "confirm_route",
+      "acknowledge_risk",
+      "resolve_risk",
+      "set_media_state",
+      "submit_trip_suggestion",
+      "set_cabin_control",
+      "reset_session"
+    ]
+  },
+  "endpointResponsibilities": {
+    "cluster": "驾驶状态、路线状态、风险等级与风险处置状态",
+    "hud": "最低认知负荷的下一步驾驶决策与最高优先级行动提示",
+    "center": "路线规划、车辆与环境控制、风险详情及确认操作",
+    "passenger": "娱乐、旅程协作输入、副驾安全反馈与许可的座舱控制",
+    "overview": "答辩四屏编排与只读总览",
+    "control": "答辩控制、诊断、数据源与会话管理"
+  },
+  "endpointCommandPermissions": {
+    "cluster": ["acknowledge_risk"],
+    "hud": [],
+    "center": [
+      "select_destination",
+      "confirm_route",
+      "acknowledge_risk",
+      "resolve_risk",
+      "set_media_state",
+      "set_cabin_control"
+    ],
+    "passenger": ["set_media_state", "submit_trip_suggestion", "set_cabin_control"],
+    "overview": [],
+    "control": [
+      "set_theme",
+      "set_system_mode",
+      "select_destination",
+      "confirm_route",
+      "acknowledge_risk",
+      "resolve_risk",
+      "set_media_state",
+      "submit_trip_suggestion",
+      "set_cabin_control",
+      "reset_session"
+    ]
+  },
+  "tokens": {
+    "font": {
+      "cjk": "Noto Sans SC, Barlow, Segoe UI, sans-serif",
+      "latin": "Bahnschrift, Barlow, Segoe UI, sans-serif",
+      "ui": "Barlow, Noto Sans SC, Segoe UI, sans-serif"
+    },
+    "radius": { "small": 8, "medium": 12, "large": 16 },
+    "day": {
+      "page": "#e8edf1",
+      "panel": "#ffffff",
+      "screen": "#e8edf1",
+      "surface": "#f8fafb",
+      "surface2": "#f2f5f7",
+      "text": "#14191f",
+      "textSecondary": "#3f4852",
+      "muted": "#64707d",
+      "muted2": "#69737e",
+      "border": "rgba(24, 31, 39, 0.13)",
+      "borderStrong": "rgba(24, 31, 39, 0.22)",
+      "raised": "rgba(17, 24, 33, 0.035)",
+      "overlay": "rgba(255, 255, 255, 0.74)"
+    },
+    "night": {
+      "page": "#080a0d",
+      "panel": "#12171d",
+      "screen": "#080b0f",
+      "surface": "#101419",
+      "surface2": "#0e1217",
+      "text": "#f5f7f9",
+      "textSecondary": "#cbd2d9",
+      "muted": "#97a1ad",
+      "muted2": "#78838e",
+      "border": "rgba(255, 255, 255, 0.1)",
+      "borderStrong": "rgba(255, 255, 255, 0.15)",
+      "raised": "rgba(255, 255, 255, 0.035)",
+      "overlay": "rgba(0, 0, 0, 0.32)"
+    },
+    "status": {
+      "focus": "#67e8f9",
+      "success": "#6ee7b7",
+      "warning": "#fcd34d",
+      "critical": "#fb7185"
+    }
+  }
+}

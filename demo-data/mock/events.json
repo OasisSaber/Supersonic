@@ -1,0 +1,77 @@
+[
+  {
+    "timestamp": 0.0,
+    "road": {
+      "pedestrian_detected": false,
+      "vehicle_count": 2,
+      "lane_departure": false,
+      "front_vehicle_risk": "low"
+    },
+    "driver": {
+      "fatigue_level": "low",
+      "distracted": false,
+      "eyes_closed_duration": 0.1,
+      "yawning": false
+    }
+  },
+  {
+    "timestamp": 40.0,
+    "road": {
+      "pedestrian_detected": false,
+      "vehicle_count": 4,
+      "lane_departure": false,
+      "front_vehicle_risk": "medium"
+    },
+    "driver": {
+      "fatigue_level": "low",
+      "distracted": false,
+      "eyes_closed_duration": 0.2,
+      "yawning": false
+    }
+  },
+  {
+    "timestamp": 82.0,
+    "road": {
+      "pedestrian_detected": false,
+      "vehicle_count": 3,
+      "lane_departure": true,
+      "front_vehicle_risk": "low"
+    },
+    "driver": {
+      "fatigue_level": "medium",
+      "distracted": false,
+      "eyes_closed_duration": 0.8,
+      "yawning": true
+    }
+  },
+  {
+    "timestamp": 125.6,
+    "road": {
+      "pedestrian_detected": true,
+      "vehicle_count": 3,
+      "lane_departure": false,
+      "front_vehicle_risk": "medium"
+    },
+    "driver": {
+      "fatigue_level": "medium",
+      "distracted": true,
+      "eyes_closed_duration": 0.4,
+      "yawning": false
+    }
+  },
+  {
+    "timestamp": 166.0,
+    "road": {
+      "pedestrian_detected": false,
+      "vehicle_count": 2,
+      "lane_departure": false,
+      "front_vehicle_risk": "low"
+    },
+    "driver": {
+      "fatigue_level": "low",
+      "distracted": false,
+      "eyes_closed_duration": 0.1,
+      "yawning": false
+    }
+  }
+]

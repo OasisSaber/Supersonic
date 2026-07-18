@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 2,
+  "contractVersion": 1,
+  "id": "GP05-IMPL-02",
+  "title": "建立 GP05 FastAPI 权威座舱状态与 WebSocket 快照通道",
+  "lifecycle": "ACTIVE",
+  "riskLevel": "L2",
+  "authority": "CODEX_ONLY",
+  "requestedBy": "Oasis",
+  "plannedBy": "Codex",
+  "executor": "codex",
+  "createdAt": "2026-07-17T17:00:00+08:00",
+  "base": {
+    "locked": true,
+    "changeId": "lkqvsuzurqlnopurzzpmqkkpprtswmyu",
+    "commitId": "39381db2af79f316a7abb939de081b78301cb0ed"
+  },
+  "dependencies": ["GP05-IMPL-01"],
+  "approval": {
+    "status": "APPROVED",
+    "approvedBy": "Oasis",
+    "approvedAt": "2026-07-17T17:00:00+08:00",
+    "authorizationText": "授权下一步",
+    "contractHash": "237062c4e2aea6f55ffdc4e1687544f4e3b1adecb67c24298fe07b30f8197efb"
+  },
+  "scope": {
+    "inputPaths": [
+      "AGENTS.md",
+      "apps/backend/AGENTS.md",
+      "apps/backend/app/main.py",
+      "apps/backend/app/contracts/v1.py",
+      "apps/backend/app/contracts/__init__.py",
+      "apps/backend/tests/test_api.py",
+      "apps/backend/pyproject.toml",
+      "contracts/gp05/v1/manifest.json",
+      "docs/ai-collaboration/CURRENT_HANDOFF.md"
+    ],
+    "allowedPaths": [
+      "orchestration/tasks/GP05-IMPL-02.json",
+      "orchestration/results/GP05-IMPL-02.md",
+      "apps/backend/app/cockpit_state.py",
+      "apps/backend/app/main.py",
+      "apps/backend/tests/test_cockpit_state.py",
+      "apps/backend/tests/test_api_v1.py",
+      "docs/ai-collaboration/CURRENT_HANDOFF.md"
+    ],
+    "forbiddenPaths": [
+      "materials/**",
+      "PreDesign/**",
+      "apps/frontend/**",
+      "apps/backend/app/models.py",
+      "apps/backend/app/risk_engine.py",
+      "apps/backend/app/contracts/**",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml"
+    ]
+  },
+  "requirements": [
+    "FastAPI 维护唯一权威 CockpitSnapshotV1，并为所有状态变更分配单调递增 revision。",
+    "新增 HTTP snapshot 查询和 command 提交接口，严格校验消息来源、端点身份、命令权限和参数。",
+    "新增 gp05.v1 WebSocket，连接及重连后立即发送完整 snapshot，状态变化后广播完整 snapshot。",
+    "跟踪六类逻辑端点连接状态；慢消费者只保留最新完整 snapshot，禁止无界消息堆积。",
+    "本任务仅实现 set_theme、set_system_mode、reset_session；其他合法命令返回稳定的未实现错误。",
+    "保留现有健康、事件、演示行程、报告和 /ws/simulation 行为，不迁移前端。",
+    "不实现地图、MySQL、Vision、Web3D、风险持久化或页面组件。"
+  ],
+  "acceptanceCriteria": [
+    "GET /api/v1/snapshot 返回符合 gp05.v1 的完整权威 snapshot。",
+    "POST /api/v1/commands 成功后返回带原 correlationId 的 snapshot envelope，并仅在状态改变时增加 revision。",
+    "来源伪造、越权命令、错误参数和未实现命令均以稳定结构拒绝且不改变状态。",
+    "WebSocket 连接和重连都首先收到最新完整 snapshot，连接状态变化会同步到订阅端。",
+    "reset_session 创建新 session、恢复默认状态并广播完整 snapshot。",
+    "慢订阅者队列保持有界且最终得到最新 revision。",
+    "后端 lint、测试和仓库 pnpm check 全部通过；无新增依赖或生成物。"
+  ],
+  "verificationCommands": [
+    {"executable": "pnpm", "args": ["lint:backend"], "timeoutSeconds": 120},
+    {"executable": "pnpm", "args": ["test:backend"], "timeoutSeconds": 180},
+    {"executable": "pnpm", "args": ["check"], "timeoutSeconds": 300}
+  ],
+  "resultPath": "orchestration/results/GP05-IMPL-02.md",
+  "handoff": {
+    "requiresUserConfirmation": false,
+    "requiresCodexReview": true,
+    "autoMerge": false,
+    "autoPush": false,
+    "onCompletion": "READY_FOR_NEXT_CONTRACT"
+  }
+}

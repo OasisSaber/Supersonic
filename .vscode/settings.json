@@ -1,0 +1,28 @@
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.uv-python\\cpython-3.11.15-windows-x86_64-none\\python.exe",
+  "python.analysis.extraPaths": ["${workspaceFolder}/apps/backend"],
+  "ruff.configuration": "${workspaceFolder}/apps/backend/pyproject.toml",
+  "files.exclude": {
+    "**/.pnpm-store": true,
+    "**/.uv-cache": true,
+    "**/.uv-python": true,
+    "**/.ruff_cache": true,
+    "**/__pycache__": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/tmp": true
+  },
+  "search.exclude": {
+    "**/.pnpm-store": true,
+    "**/.uv-cache": true,
+    "**/.uv-python": true,
+    "**/node_modules": true,
+    "**/dist": true
+  }
+}

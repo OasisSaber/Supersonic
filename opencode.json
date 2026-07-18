@@ -1,0 +1,79 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek/deepseek-v4-flash",
+  "small_model": "deepseek/deepseek-v4-flash",
+  "enabled_providers": ["deepseek"],
+  "share": "disabled",
+  "snapshot": false,
+  "autoupdate": "notify",
+  "subagent_depth": 0,
+  "instructions": [
+    "docs/ai-collaboration/DEVELOPMENT_STANDARDS.md",
+    "docs/ai-collaboration/HANDOFF_PROTOCOL.md"
+  ],
+  "permission": {
+    "read": "allow",
+    "edit": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "lsp": "allow",
+    "external_directory": "deny",
+    "task": "deny",
+    "webfetch": "deny",
+    "websearch": "deny",
+    "bash": {
+      "*": "ask",
+      "rg *": "allow",
+      "Get-Content *": "allow",
+      "pnpm lint*": "allow",
+      "pnpm test*": "allow",
+      "pnpm build*": "allow",
+      "pnpm check*": "allow",
+      "pnpm smoke*": "allow",
+      "pnpm --filter @cockpit/agent-dashboard check*": "allow",
+      "pnpm --filter @cockpit/agent-dashboard test*": "allow",
+      "node --check apps/agent-dashboard/*": "allow",
+      "node --test apps/agent-dashboard/*": "allow",
+      "uv *": "allow",
+      "jj status*": "allow",
+      "jj diff*": "allow",
+      "jj log*": "allow"
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 20000
+  },
+  "watcher": {
+    "ignore": [
+      ".git/**",
+      ".jj/**",
+      ".pnpm-store/**",
+      ".uv-cache/**",
+      ".uv-python/**",
+      "node_modules/**",
+      "**/.venv/**",
+      "**/__pycache__/**",
+      "**/dist/**",
+      "outputs/**",
+      "tmp/**",
+      "materials/**"
+    ]
+  },
+  "command": {
+    "start-project": {
+      "description": "读取项目状态并安全接手当前任务",
+      "template": "读取根目录 AGENTS.md、docs/ai-collaboration/CURRENT_HANDOFF.md 和与任务相关的局部 AGENTS.md。运行 jj status 与 jj log -n 5。总结当前事实、未提交修改、任务边界和验证计划；发现所有权冲突时停止，不要直接编码。"
+    },
+    "handoff": {
+      "description": "为另一个Agent生成可执行交接",
+      "template": "按照 docs/ai-collaboration/HANDOFF_PROTOCOL.md 更新 CURRENT_HANDOFF.md。记录当前 change、已修改文件、决策、实际运行的验证、失败项、风险和下一条可执行命令。不要隐藏未完成工作。"
+    },
+    "verify-project": {
+      "description": "运行项目完整确定性验证",
+      "template": "先运行 jj status，再运行 pnpm check。若失败，定位根因并只修复当前任务范围内的问题；最后报告准确命令、结果和仍未验证的部分。"
+    }
+  }
+}

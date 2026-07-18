@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "JJ: Status",
+      "type": "shell",
+      "command": "jj status",
+      "problemMatcher": []
+    },
+    {
+      "label": "JJ: Log",
+      "type": "shell",
+      "command": "jj log -n 12",
+      "problemMatcher": []
+    },
+    {
+      "label": "HMI: Dev",
+      "type": "shell",
+      "command": "pnpm dev",
+      "isBackground": true,
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "HMI: Check",
+      "type": "shell",
+      "command": "pnpm check",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "HMI: Build",
+      "type": "shell",
+      "command": "pnpm build",
+      "problemMatcher": [],
+      "group": "build"
+    }
+  ]
+}

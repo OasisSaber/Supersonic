@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent 工作流仪表板</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="header">
+  <h1>Agent 工作流仪表板</h1>
+  <div class="header-controls">
+    <span class="refresh-indicator" id="refreshCountdown" aria-live="polite"></span>
+    <button class="btn-refresh" id="btnRefresh" title="手动刷新">刷新</button>
+  </div>
+</header>
+
+<main class="main">
+  <div class="state-panel state-loading" id="stateLoading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>正在加载仪表板数据...</p>
+  </div>
+
+  <div class="state-panel state-error hidden" id="stateError" role="alert">
+    <div class="icon-error">!</div>
+    <p id="errorMessage">无法加载数据</p>
+    <button class="btn-refresh" id="btnErrorRetry">重试</button>
+  </div>
+
+  <div class="state-panel state-empty hidden" id="stateEmpty" role="status">
+    <div class="icon-empty">~</div>
+    <p>暂无数据</p>
+  </div>
+
+  <div class="dashboard hidden" id="dashboard">
+    <div class="dashboard-column">
+      <section class="card" id="sectionProject">
+        <h2 class="card-title">项目状态</h2>
+        <div class="card-body" id="projectBody"></div>
+      </section>
+      <section class="card" id="sectionAgents">
+        <h2 class="card-title">Agent</h2>
+        <div class="card-body" id="agentsBody"></div>
+      </section>
+    </div>
+
+    <div class="dashboard-column">
+      <section class="card" id="sectionTasks">
+        <h2 class="card-title">任务</h2>
+        <div class="card-body" id="tasksBody"></div>
+      </section>
+      <section class="card" id="sectionEnv">
+        <h2 class="card-title">环境门禁与预算</h2>
+        <div class="card-body" id="envBody"></div>
+      </section>
+      <section class="card" id="sectionErrors" style="display:none">
+        <h2 class="card-title">数据异常</h2>
+        <div class="card-body" id="errorsBody"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <span id="lastUpdated" aria-live="polite"></span>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

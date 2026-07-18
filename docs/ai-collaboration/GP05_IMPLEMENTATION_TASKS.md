@@ -1,0 +1,139 @@
+# GP05 实施任务拆分
+
+- 状态：`PLANNED_NOT_DISPATCHED`
+- 决策来源：[`PROJECT_DECISION_BASELINE.md`](./PROJECT_DECISION_BASELINE.md)
+- 设计基线：`GP05-MAKE-APPROVED`
+- 目的：把已冻结方案拆成可验证、可回退、依赖明确的工程任务；本文不是 OpenCode 不可变合同，也不代表任何任务已获派发批准。
+
+## 1. 执行原则
+
+- 顺序服从依赖；每项必须形成可运行闭环后才解锁下游。
+- `CODEX_ONLY` 覆盖总体架构、公共协议、数据库核心模型、安全、依赖、跨屏集成和性能裁决。
+- `DELEGATABLE` 只表示可在独立 Jujutsu workspace 中起草 OpenCode 合同；合同进入 `READY` 并经 Oasis 一次 `APPROVE` 后才能派发。
+- Make 生成代码只作视觉/交互参考，不整包并入生产前端。
+- 每项完成必须同时具备实现、测试或可重复步骤、以及可展示证据。
+- 未经新授权，不执行 push、PR 或发布。
+
+## 2. 依赖总览
+
+```text
+01 合同与 Token
+  ├─> 02 权威状态与协议 ─> 03 四端壳层 ─> 04 三条跨屏流程
+  │                           │                  ├─> 05 高德导航
+  │                           │                  └─> 06 MySQL 事件链
+  │                           └─────────────────────> 09 Web3D
+  └─> 07 Vision Worker ─> 08 三类识别 ─────────────> 10 集成与诊断
+05 + 06 + 08 + 09 ───────────────────────────────> 10
+10 ─> 11 性能、故障与证据 ─> 12 可选 AI 语音门槛
+```
+
+## 3. 任务清单
+
+### GP05-IMPL-01 — 设计到代码合同与领域模型
+
+- 等级：`CODEX_ONLY`
+- 依赖：无
+- 范围：从 GP05 提取 Day/Night Token、四屏逻辑画布、组件状态、端点权限、命令/事件/snapshot schema、风险生命周期与统一路线模型。
+- 产物：版本化 Pydantic/TypeScript 合同、Token 映射、状态转换表、设计偏差记录。
+- 验收：schema 往返测试；四屏权限与九类组件状态可枚举；无散落临时颜色或未版本化消息。
+- 解锁：02、03、07。
+
+### GP05-IMPL-02 — FastAPI 权威状态与 WebSocket
+
+- 等级：`CODEX_ONLY`
+- 依赖：01
+- 范围：唯一共享状态、`command/event/snapshot`、correlation ID、状态版本、重连 snapshot、stale/offline/recovery、会话重置。
+- 产物：确定性状态机、HTTP 命令入口、WebSocket 广播、固定种子场景。
+- 验收：协议/顺序/重连/旧事件丢弃测试；四客户端并发订阅；重置创建新会话且不删除历史数据。
+- 解锁：03、04、06、10。
+
+### GP05-IMPL-03 — React 四端壳层与设计系统
+
+- 等级：`DELEGATABLE / MEDIUM`
+- 依赖：01、02
+- 范围：`/cluster`、`/hud`、`/center`、`/passenger`、`/overview`、`/control`，固定逻辑画布与等比缩放，Day/Night 与 reduced motion。
+- 约束：客户端只保留瞬时 UI 状态；不得复制后端业务真相；Make 代码只作参考。
+- 验收：前端 lint、相关组件测试、frontend build；四端职责不同；中文长度、九类状态和离线最小画面成立。
+- 解锁：04、09。
+
+### GP05-IMPL-04 — 三条核心跨屏流程
+
+- 等级：`CODEX_ONLY` 集成；叶子组件可拆成 `DELEGATABLE`
+- 依赖：02、03
+- 范围：导航接力、风险接管、副驾协作；触控/鼠标输入与答辩快捷键必须提交相同 command。
+- 验收：三条流程可重复执行；Cluster/HUD/Center/Passenger 按职责呈现；Normal、Warning、Take over、Stale、Offline、Recovery 可统一切换与恢复。
+- 解锁：05、06、10。
+
+### GP05-IMPL-05 — 高德 MapProvider 与导航降级
+
+- 等级：`CODEX_ONLY` 适配层与密钥边界；UI 叶子可 `DELEGATABLE`
+- 依赖：01、02、04
+- 范围：FastAPI 调用高德 Web 服务，前端 JS SDK 图源，统一路线模型，超时/限额处理，最近成功快照与本地答辩路线。
+- 安全：服务端凭据只进环境变量；Web Key 使用来源限制；日志不得输出 Key。
+- 验收：真实地点检索和路线规划；供应商失败时明确降级；已有路线可继续、新搜索不可伪装成功；适配器使用 mock 可做确定性测试。
+- 解锁：10。
+
+### GP05-IMPL-06 — MySQL 会话、风险事件与交互审计
+
+- 等级：`CODEX_ONLY` 核心 schema；repository/query 可 `DELEGATABLE / MEDIUM`
+- 依赖：01、02、04
+- 范围：MySQL 8.x、Alembic、SQLAlchemy 2 async、`asyncmy`；`demo_session`、`risk_event`、`interaction_log`；风险核心列与 `metadata JSON`。
+- 一致性：实时先广播，持久化队列异步写入；失败标记 `persistence_pending`、有限重试和补写。
+- 验收：真实 MySQL 测试库迁移与 CRUD；风险生命周期不重复插入；数据库不可用时 HMI 继续运行并可观察降级。
+- 解锁：10。
+
+### GP05-IMPL-07 — VehicleVision Worker 基础框架
+
+- 等级：`CODEX_ONLY`
+- 依赖：01
+- 范围：独立 Python 进程、摄像头/视频统一输入、检测器插件、health、有界帧队列、统一候选事件、模型 manifest/哈希/离线安装。
+- 验收：FastAPI 不被推理阻塞；拥塞丢旧帧不堆延迟；Worker 崩溃时 HMI 不退出；LIVE/VIDEO/SIMULATED 来源可区分。
+- 解锁：08。
+
+### GP05-IMPL-08 — 三类 Vision 检测与事件状态机
+
+- 等级：框架和策略 `CODEX_ONLY`；冻结接口后的检测插件可 `DELEGATABLE / HIGH`
+- 依赖：02、07
+- 范围：现场疲劳/分心、现场停车守卫运动检测、视频乘员手机使用与离座/越界；独立阈值、持续时间、解除、冷却；`candidate → active → acknowledged → resolved`。
+- 媒体：默认不保存连续视频；可配置保存单张事件截图并记录相对路径。
+- 验收：正例、负例、边界集分离；摄像头与视频都走真实推理；重复帧不重复创建事件；缺模型/摄像头时可见降级。
+- 解锁：10。
+
+### GP05-IMPL-09 — 中控 Web3D 状态可视化
+
+- 等级：`DELEGATABLE / MEDIUM`
+- 依赖：03、04
+- 范围：车辆/座舱模型响应车门、座椅、空调区域和停车守卫状态；异步加载与 SVG/Canvas fallback。
+- 约束：不参与导航、风险判定或权威状态；失败不得阻断主流程。
+- 验收：目标 60 FPS、低于 55 FPS 必须调查；资源失败自动降级；frontend build 与目标机实测。
+- 解锁：10。
+
+### GP05-IMPL-10 — 全链路集成、控制台与可观测性
+
+- 等级：`CODEX_ONLY`
+- 依赖：04、05、06、08、09
+- 范围：四屏连接、共享版本、WebSocket 延迟、UI FPS/1% Low、Web3D FPS、Vision FPS/模型、事件状态机、MySQL 写入和地图状态；开发测试注入器默认关闭。
+- 验收：现场摄像头/视频 → 风险状态机 → 四屏 → MySQL 全链路；诊断数据来自真实指标；一键重置可完整重演。
+- 解锁：11。
+
+### GP05-IMPL-11 — 性能、故障恢复与答辩证据
+
+- 等级：`CODEX_ONLY` 裁决；测试/文档叶子可 `DELEGATABLE`
+- 依赖：10
+- 范围：基准机清单、144 FPS/1% Low、Web3D 60 FPS、Vision 20—30 FPS、同步延迟、断网/无 MySQL/无摄像头/Web3D 失败、部署复现、录屏与报告。
+- 验收：`pnpm check`，需要运行态证据时运行 `pnpm smoke`；目标机手工性能与降级验证；所有未运行检查明确列出。
+- 退出：核心冻结；前三周完成闭环、前两周只修缺陷/性能、最后一周只做演练与证据。
+- 解锁：12。
+
+### GP05-IMPL-12 — 可选受约束 AI 语音助手
+
+- 等级：`GATED / NOT_READY`
+- 依赖：11 全部通过且 Oasis 单独批准
+- 范围：语音意图只复用已有 FastAPI command；低风险媒体/座舱操作可执行，中风险操作需确认，安全关键操作永不直接执行。
+- 排除：数字人、情感模型、复杂自主决策、XR。
+- 验收：离线固定意图可用；云端能力可完全跳过且不阻塞答辩。
+
+## 4. 首批合同建议
+
+首批只准备 `GP05-IMPL-01`；它完成并冻结公共合同后，再起草 02、03 和 07。不得提前并行派发会共同修改协议、Token 或状态模型的任务。任何 OpenCode 合同必须重新列明 `inputPaths`、`allowedPaths`、验证命令、模型和预算，并由 Oasis 对该不可变合同执行一次 `APPROVE`。
+

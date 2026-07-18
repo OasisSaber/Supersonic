@@ -1,0 +1,90 @@
+{
+  "sessionId": "demo-session-001",
+  "revision": 42,
+  "timestamp": "2026-07-17T08:36:23Z",
+  "theme": "night",
+  "systemMode": "warning",
+  "activeFlow": "risk_takeover",
+  "dataHealth": {
+    "vehicle": {
+      "status": "fresh",
+      "updatedAt": "2026-07-17T08:36:23Z"
+    },
+    "navigation": {
+      "status": "fresh",
+      "updatedAt": "2026-07-17T08:36:22Z"
+    },
+    "vision": {
+      "status": "fresh",
+      "updatedAt": "2026-07-17T08:36:23Z"
+    }
+  },
+  "vehicle": {
+    "speedKph": 68,
+    "gear": "D",
+    "batteryPercent": 72,
+    "rangeKm": 412,
+    "driveMode": "comfort",
+    "seatbeltFastened": true
+  },
+  "navigation": {
+    "provider": "amap",
+    "serviceStatus": "live",
+    "status": "active",
+    "destinationName": "城市艺术中心",
+    "remainingDistanceMeters": 8400,
+    "etaSeconds": 960,
+    "currentStep": {
+      "index": 0,
+      "instruction": "前方 300 米右转",
+      "roadName": "滨河大道",
+      "distanceMeters": 300,
+      "maneuver": "turn_right"
+    },
+    "steps": [
+      {
+        "index": 0,
+        "instruction": "前方 300 米右转",
+        "roadName": "滨河大道",
+        "distanceMeters": 300,
+        "maneuver": "turn_right"
+      }
+    ],
+    "polyline": [
+      { "longitude": 120.1551, "latitude": 30.2741 },
+      { "longitude": 120.1582, "latitude": 30.2728 }
+    ],
+    "updatedAt": "2026-07-17T08:36:22Z"
+  },
+  "risks": [
+    {
+      "eventId": "risk-0001",
+      "sessionId": "demo-session-001",
+      "riskType": "driver_distraction",
+      "lifecycle": "active",
+      "severity": "warning",
+      "source": "live_camera",
+      "confidence": 0.96,
+      "occurredAt": "2026-07-17T08:36:21Z",
+      "updatedAt": "2026-07-17T08:36:23Z",
+      "message": "检测到驾驶员持续分心",
+      "evidence": ["head_pose_off_road:2.1s"],
+      "metadata": {
+        "durationSeconds": 2.1,
+        "modelVersion": "driver-monitor-v1"
+      }
+    }
+  ],
+  "passenger": {
+    "mediaState": "suppressed",
+    "privacyEnabled": true,
+    "tripSuggestions": ["建议在城市艺术中心短暂停留"]
+  },
+  "endpointConnectivity": {
+    "cluster": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" },
+    "hud": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" },
+    "center": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" },
+    "passenger": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" }
+  },
+  "capabilities": ["navigation", "vehicle_vision", "web3d"]
+}

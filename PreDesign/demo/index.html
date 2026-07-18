@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="城市通勤风险感知智能座舱HMI前期设计规范交互Demo"
+    />
+    <title>PreDesign · 智能座舱HMI规范Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <noscript>此Demo需要启用JavaScript才能切换风险状态。</noscript>
+
+    <header class="workspace-header">
+      <div>
+        <p class="eyebrow">PreDesign / HMI specification demo</p>
+        <h1>城市通勤风险感知智能座舱</h1>
+        <p class="subtitle">教学验证原型 · 不连接真实车辆 · 不构成真实驾驶建议</p>
+      </div>
+
+      <div class="toolbar" aria-label="Demo显示设置">
+        <div class="segmented" aria-label="主题切换">
+          <button class="theme-button is-active" type="button" data-theme="night" aria-pressed="true">
+            夜间
+          </button>
+          <button class="theme-button" type="button" data-theme="day" aria-pressed="false">
+            日间
+          </button>
+        </div>
+        <button id="specToggle" class="outline-button" type="button" aria-pressed="false">
+          规范标注
+        </button>
+      </div>
+    </header>
+
+    <nav class="state-switcher" aria-label="风险状态切换">
+      <button class="state-button stable" type="button" data-state="stable" aria-pressed="false">
+        <span class="state-index">01</span>
+        <span><strong>稳定</strong><small>低干扰 / 完整信息</small></span>
+      </button>
+      <button class="state-button attention" type="button" data-state="attention" aria-pressed="false">
+        <span class="state-index">02</span>
+        <span><strong>注意</strong><small>单一风险 / 抬升提示</small></span>
+      </button>
+      <button class="state-button critical" type="button" data-state="critical" aria-pressed="false">
+        <span class="state-index">03</span>
+        <span><strong>高风险</strong><small>复合风险 / 压缩次要信息</small></span>
+      </button>
+    </nav>
+
+    <main id="hmiShell" class="hmi-shell" data-state="stable" data-theme="night">
+      <div class="spec-grid" aria-hidden="true"></div>
+
+      <section class="top-status" data-spec="L0 · 任何时刻可见">
+        <div class="system-state">
+          <span class="live-dot"></span>
+          <span>Mock链路已连接</span>
+        </div>
+        <span>工作日通勤 · 18:36</span>
+        <span class="mock-pill">MOCK MODE</span>
+      </section>
+
+      <section class="risk-banner" data-spec="Risk Banner · 结论前置">
+        <div class="risk-icon" aria-hidden="true">!</div>
+        <div class="risk-copy">
+          <p id="riskLabel" class="risk-label">STABLE / 稳定</p>
+          <h2 id="riskMessage">当前通勤状态稳定</h2>
+          <p id="riskAction">道路与驾驶状态无显著风险</p>
+        </div>
+        <div class="risk-time">
+          <span>事件时间</span>
+          <strong id="eventTime">00:24.8</strong>
+        </div>
+      </section>
+
+      <div class="cockpit-grid">
+        <section class="panel cluster-panel" data-spec="Digital Cluster · 速度为锚点">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Digital cluster</p>
+              <h3>数字仪表</h3>
+            </div>
+            <span class="gear">D</span>
+          </div>
+
+          <div class="speed-gauge" aria-label="当前车速">
+            <div class="gauge-ring"></div>
+            <div class="speed-value">
+              <strong id="speedValue">48</strong>
+              <span>km/h</span>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <article><span>电量</span><strong>81%</strong></article>
+            <article><span>续航</span><strong>432 km</strong></article>
+            <article><span>模式</span><strong>舒适</strong></article>
+            <article><span>电池温度</span><strong>29.0°C</strong></article>
+          </div>
+        </section>
+
+        <section class="panel road-panel" data-spec="Road View · 只标注当前风险对象">
+          <div class="road-header">
+            <span class="road-source">
+              <span id="roadSourceStatus">CC0 城市行车素材 · Mock 感知叠加</span>
+              <a
+                href="https://commons.wikimedia.org/wiki/File:Dashcam_Recording_(urban).ogv"
+                target="_blank"
+                rel="noreferrer"
+              >素材来源</a>
+            </span>
+            <span id="roadTimestamp">24.8 s</span>
+          </div>
+          <div class="road-scene" aria-label="CC0城市行车视频与Mock道路感知叠加画面">
+            <video
+              id="roadVideo"
+              class="road-video"
+              autoplay
+              muted
+              loop
+              playsinline
+              preload="auto"
+              aria-label="城市道路行车记录视频"
+            >
+              <source src="./assets/urban-dashcam-480p.webm" type="video/webm" />
+            </video>
+            <div class="road-fallback" aria-hidden="true">
+              <div class="horizon"></div>
+              <div class="road-shape"></div>
+              <div class="lane-mark lane-left"></div>
+              <div class="lane-mark lane-right"></div>
+            </div>
+            <div class="video-scrim" aria-hidden="true"></div>
+            <div id="vehicleTarget" class="target-box vehicle-target">
+              <span>VEHICLE · 2</span>
+            </div>
+            <div id="pedestrianTarget" class="target-box pedestrian-target" hidden>
+              <span>PEDESTRIAN</span>
+            </div>
+          </div>
+          <div class="road-footer">
+            <div><span>车道</span><strong id="laneState">保持稳定</strong></div>
+            <div><span>前车风险</span><strong id="frontRisk">低</strong></div>
+          </div>
+        </section>
+
+        <aside class="side-stack">
+          <section class="panel driver-panel" data-spec="Driver Monitor · 状态而非身份">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Cabin camera</p>
+                <h3>驾驶员状态</h3>
+              </div>
+              <div class="driver-avatar" aria-hidden="true"><span></span></div>
+            </div>
+            <dl class="driver-stats">
+              <div><dt>视线</dt><dd id="gazeState">正常</dd></div>
+              <div><dt>疲劳</dt><dd id="fatigueState">低</dd></div>
+              <div><dt>闭眼持续</dt><dd id="eyesState">0.1s</dd></div>
+            </dl>
+          </section>
+
+          <section class="panel evidence-panel" data-spec="Evidence · 最多两条主证据">
+            <p class="eyebrow">Risk evidence</p>
+            <h3>统一事件证据</h3>
+            <ul id="evidenceList">
+              <li>车道状态稳定</li>
+              <li>驾驶员视线正常</li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+
+      <div class="lower-grid">
+        <section class="panel timeline-panel" data-spec="L2 · 最近3—6条非低风险事件">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Event stream</p>
+              <h3>风险事件时间线</h3>
+            </div>
+            <span>最近事件</span>
+          </div>
+          <ol id="timelineList" class="timeline-list">
+            <li class="empty-event"><span class="event-dot"></span><div><strong>等待风险事件</strong><small>稳定状态不写入风险时间线</small></div></li>
+          </ol>
+        </section>
+
+        <section class="panel assistant-panel" data-spec="停车态展开 · 驾驶态保持简短">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Structured explanation</p>
+              <h3>通勤助手</h3>
+            </div>
+            <span class="offline-pill">离线可用</span>
+          </div>
+          <p id="assistantText" class="assistant-text">当前没有需要解释的显著风险事件。</p>
+          <div class="assistant-actions">
+            <button id="explainButton" class="primary-button" type="button">解释当前事件</button>
+            <button id="reportButton" class="secondary-button" type="button">查看行程报告</button>
+          </div>
+          <p class="boundary-note">助手仅解释结构化事件，不控制车辆，不替代真实驾驶判断。</p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="page-footer">
+      <span>PreDesign v0.1</span>
+      <span>8px布局网格 · 4px文字基线 · 关键触控区≥76px · 关键对比度目标≥4.5:1</span>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

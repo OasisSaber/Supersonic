@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "figma.figma-vscode-extension",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-python.python",
+    "charliermarsh.ruff"
+  ]
+}

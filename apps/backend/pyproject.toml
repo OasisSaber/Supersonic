@@ -1,0 +1,39 @@
+[project]
+name = "commute-cockpit-backend"
+version = "0.1.0"
+description = "城市通勤智能座舱HMI教学验证原型后端"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "fastapi>=0.116.0,<1.0",
+  "pydantic>=2.11.0,<3.0",
+  "python-dotenv>=1.1.0,<2.0",
+  "uvicorn[standard]>=0.35.0,<1.0"
+]
+
+[project.optional-dependencies]
+vision = [
+  "opencv-python>=4.11.0,<5.0",
+  "mediapipe>=0.10.21,<1.0",
+  "ultralytics>=8.3.0,<9.0"
+]
+llm = ["openai>=1.93.0,<2.0"]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.28.0,<1.0",
+  "pytest>=8.4.0,<9.0",
+  "pytest-asyncio>=1.0.0,<2.0",
+  "ruff>=0.12.0,<1.0"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+

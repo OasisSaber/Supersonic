@@ -1,0 +1,55 @@
+# Environment and secrets
+.env
+.env.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+apps/backend/.venv/
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+*.tsbuildinfo
+apps/frontend/vite.config.js
+apps/frontend/vite.config.d.ts
+
+# Models and datasets
+models/*
+!models/.gitkeep
+demo-data/videos/*
+!demo-data/videos/.gitkeep
+demo-data/annotations/*
+!demo-data/annotations/.gitkeep
+PreDesign/demo/assets/urban-dashcam-480p.webm
+*.pt
+*.onnx
+*.engine
+
+# Private academic source materials
+materials/
+docs/school/
+PreDesign/idea-archive/assets/
+
+# Generated artifacts
+outputs/*
+!outputs/.gitkeep
+tmp/
+.tmp/
+*.log
+
+# Project-local developer tools and agent runtime state
+.tools/
+.agent-contract/
+orchestration/runtime/
+
+# Editors and OS
+.vscode/settings.local.json
+.DS_Store
+Thumbs.db

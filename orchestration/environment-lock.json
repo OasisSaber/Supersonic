@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "platform": "win32",
+  "arch": "x64",
+  "node": "v24.17.0",
+  "opencodeCli": "1.18.2",
+  "jujutsu": "0.43.0",
+  "provider": "deepseek",
+  "models": ["deepseek/deepseek-v4-pro", "deepseek/deepseek-v4-flash"],
+  "opencodeConfigSha256": "c961df44ea352293ce4b6d9eda678a356165247296e39431a369b6135793afb2",
+  "taskSchemaVersion": 2,
+  "supervisorSchemaVersion": 1
+}

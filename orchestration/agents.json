@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "agents": [
+    {
+      "id": "codex-leader",
+      "name": "Codex + GPT Leader",
+      "role": "规划、架构、任务编排与风险复核",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "opencode-executor",
+      "name": "OpenCode + DeepSeek",
+      "role": "执行已批准的 DELEGATABLE / READY 任务",
+      "status": "STANDBY"
+    },
+    {
+      "id": "oasis-approver",
+      "name": "Oasis",
+      "role": "最终确认、退回或人工接管",
+      "status": "AVAILABLE"
+    }
+  ]
+}

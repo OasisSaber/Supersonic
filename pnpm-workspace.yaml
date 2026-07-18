@@ -1,0 +1,9 @@
+packages:
+  - apps/frontend
+  - apps/agent-dashboard
+  - packages/*
+
+onlyBuiltDependencies:
+  - esbuild
+allowBuilds:
+  esbuild: true
