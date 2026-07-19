@@ -4,7 +4,8 @@
 - 决策日期：2026-07-18
 - 视觉与交互基线：`GP21-VISUAL-INTERACTION-FROZEN`；Figma Make `IIunappOuZk1JYMVT7uCuL` 与公共原型 `revise-body-79291535.figma.site`
 - 当前设计主版本：`GP21`；不得继续修改 Make/Figma，也不得自行创建 GP22
-- 适用范围：Make 主导的 Figma、Codex 审核与代码实现、React 四屏、FastAPI 共享状态、MySQL 持久化、VehicleVision、测试与答辩证据
+- 适用范围：Figma、React 四屏、FastAPI 共享状态、MySQL 持久化、VehicleVision、测试与答辩证据
+- > **2026-07-19 注**：第 16 节（OpenCode 协作边界）和第 17 节（答辩证据包 AIGC 贡献说明）中关于 Codex/OpenCode/Subagent 的角色划分已随工作流清理而废弃。相关自动化子代理方案已剥离为独立项目。其余内容仍为当前决策基线。
 
 本文是当前项目范围和实施顺序的唯一决策基线。它覆盖 `PreDesign/idea-archive/06-未决事项.md` 中已经在 2026-07-17 审查中解决的条目；历史文档继续保留背景价值，但不得覆盖本文。任何实质变更必须记录原因、影响、回退方案和批准人。
 
