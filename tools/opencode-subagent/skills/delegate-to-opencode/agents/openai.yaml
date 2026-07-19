@@ -1,4 +1,0 @@
-interface:
-  display_name: "Delegate to OpenCode"
-  short_description: "Run approved tasks through a controlled local OpenCode worker"
-  default_prompt: "Use $delegate-to-opencode to initialize this project and delegate an approved task safely."
