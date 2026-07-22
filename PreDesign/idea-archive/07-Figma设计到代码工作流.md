@@ -12,7 +12,7 @@
 06 Passenger Display
 07 Vehicle Profiles
 08 Prototype Flows
-09 Handoff & Changelog
+09 Change Log
 ```
 
 ## 设计系统先行

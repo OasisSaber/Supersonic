@@ -10,5 +10,4 @@
 | `docs/00-10-*.md` | 编写对应毕业设计章节或核对历史证据时 |
 | `deliverables/` | 修改或核对阶段性交付时 |
 
-当前实现与范围始终以 `docs/ai-collaboration/PROJECT_DECISION_BASELINE.md` 为准。
-
+当前实现与范围始终以 [`docs/project/DECISION_BASELINE.md`](../project/DECISION_BASELINE.md) 为准。

@@ -21,9 +21,10 @@ pnpm check
 
 ## 工作方式
 
-- 开始前读 `AGENTS.md`、当前 handoff 和相关任务合同；完成前更新 handoff。
-- 只改任务范围内的文件；发现已有其他所有者的改动时停止。
+- 开始前读取根目录 `AGENTS.md`，并按任务读取 `docs/project/` 下相关的决策、进度或路线文档。
+- 进入目标目录前读取适用的局部 `AGENTS.md`；只改任务范围内的文件，不覆盖来源未确认的已有改动。
 - 文档改动校验链接、路径、事实与术语；代码改动按影响层运行对应命令。
-- push 与 PR 每次需单独明确授权。
+- 完成后如实记录实际验证结果；未执行的验证不得标记为通过。
+- push、PR、merge 和 release 每次均需明确授权。
 
-详细规范见 `ai-collaboration/DEVELOPMENT_STANDARDS.md`。
+详细规范见 [`DEVELOPMENT_STANDARDS.md`](./DEVELOPMENT_STANDARDS.md)。

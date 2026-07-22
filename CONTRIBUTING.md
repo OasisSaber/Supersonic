@@ -1,41 +1,17 @@
-# 协作开发入口
+# 贡献说明
 
-本项目由人类作者、Codex和OpenCode共同开发。所有参与者使用同一套项目事实、开发标准和Jujutsu历史。
+> 当前仓库仅保留最低限度的开发、验证与发布安全规则，不包含正式的 Agent 协作工作流；新工作流将在后续独立任务中接入。
 
-## 开始之前
-
-1. 阅读根目录 `AGENTS.md`；
-2. 阅读 `docs/ai-collaboration/CURRENT_HANDOFF.md`；
-3. Agent任务还需读取不可变合同和本地runtime状态；
-4. 运行 `jj status`、`jj workspace list` 与 `jj log -n 5`；
-5. 确认当前workspace lease没有被另一所有者占用；
-6. 用 `jj describe` 描述当前change。
-
-OpenCode自动任务只能通过本地Supervisor启动：
-
-```powershell
-pnpm agent:status TASK-0001
-pnpm agent:start TASK-0001
-```
-
-不要在OpenCode Desktop中直接打开Codex主工作区并要求其自主选择任务。
+开始前阅读根目录 `AGENTS.md`、相关的 `docs/project/` 文档与局部目录规则。提交应保持单一、可验证的目的，并且不得覆盖其他协作者的改动。
 
 ## 验证
 
 ```powershell
 pnpm check
-node --test tests/orchestration/supervisor.test.mjs
 ```
 
-详细规范：
+根据改动范围补充前端、后端或运行态验证；所有未执行的验证必须如实注明。
 
-- `docs/ai-collaboration/DEVELOPMENT_STANDARDS.md`
-- `docs/ai-collaboration/HANDOFF_PROTOCOL.md`
-- `docs/11-jujutsu-workflow.md`
+## 推送与发布
 
-## 提交与推送
-
-- 使用Jujutsu，不使用会改变状态的Git命令；
-- 一个change对应一个任务；
-- change描述采用 `design:`、`feat:`、`fix:`、`docs:`、`data:`、`chore:` 前缀；
-- 推送、PR和Release必须得到用户明确授权。
+推送、创建 PR 和发布都需要用户明确授权。

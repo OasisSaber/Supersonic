@@ -4,7 +4,7 @@
 
 本目录保留课题探索、参考案例、早期组件化框架、工作流和未决事项，作为毕业设计设计过程证据。它们不覆盖当前项目范围或实现决策。
 
-当前权威来源为 `../../docs/ai-collaboration/PROJECT_DECISION_BASELINE.md`；日常开发从 `../../docs/README.md`、根目录 `AGENTS.md` 和当前 handoff 开始。
+当前权威来源为 [`../../docs/project/DECISION_BASELINE.md`](../../docs/project/DECISION_BASELINE.md)；日常开发从 [`../../docs/README.md`](../../docs/README.md)、根目录 `AGENTS.md` 和相关项目文档开始。
 
 按需阅读：
 
@@ -15,4 +15,3 @@
 | `04-多车型组件化HMI框架.md`、`05-关键工作流.md` | 讨论历史方案或尚未冻结的思路 |
 | `06-未决事项.md` | 检查当前基线未覆盖的问题 |
 | `07-Figma设计到代码工作流.md` | 追溯早期设计协作方式 |
-

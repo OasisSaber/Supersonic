@@ -11,7 +11,7 @@
 | 设计与合同 | 视觉 Token、端点、状态与消息合同 | `docs/design/`、`contracts/gp05/` |
 | 前端 | 四屏呈现、只读状态消费、降级表现 | `apps/frontend/` |
 | 后端 | 权威状态、命令处理、HTTP/WebSocket | `apps/backend/` |
-| 编排与证据 | 任务合同、验证回执和本地运行记录 | `orchestration/` |
+| 项目决策与进度 | 冻结范围、实施路线、验证证据与已知风险 | `docs/project/` |
 
 ## 不变量
 
@@ -20,5 +20,4 @@
 - 设计 Token 必须可映射到实现；不能在页面散落无来源的临时样式。
 - 早期道路风险、驾驶员监测和 LLM 模块仅作技术基线。
 
-详细且可追溯的决策以 `ai-collaboration/PROJECT_DECISION_BASELINE.md` 为准；历史方案仅在任务明确涉及时阅读 `archive/` 或 `PreDesign/idea-archive/`。
-
+详细且可追溯的决策以 `project/DECISION_BASELINE.md` 为准；当前实现范围、验证证据和已知风险见 `project/PROJECT_PROGRESS.md`。历史方案仅在任务明确涉及时阅读 `archive/` 或 `PreDesign/idea-archive/`。

@@ -22,23 +22,24 @@ pnpm smoke
 
 | 需要了解的内容 | 入口 |
 | --- | --- |
-| 当前课题范围、架构与验收决策 | `docs/ai-collaboration/PROJECT_DECISION_BASELINE.md` |
+| 当前课题范围、架构与验收决策 | `docs/project/DECISION_BASELINE.md` |
+| 当前产品进度与已知风险 | `docs/project/PROJECT_PROGRESS.md` |
+| 实施路线与验收依赖 | `docs/project/IMPLEMENTATION_ROADMAP.md` |
 | 系统概览 | `docs/architecture.md` |
 | 开发、验证与版本协作 | `docs/development.md` |
-| Agent 最小工作说明 | `AGENTS.md` |
-| 当前工作交接 | `docs/ai-collaboration/CURRENT_HANDOFF.md` |
+| 最低限度开发规则 | `AGENTS.md` |
 | 毕设设计依据与历史资料 | `docs/README.md` |
 
 ## 目录
 
-- `apps/`：运行时前端、后端与 Agent dashboard。
+- `apps/`：运行时前端与后端。
 - `contracts/`：跨端协议合同。
 - `docs/`：当前说明、决策、设计与毕业设计证据。
 - `PreDesign/`：设计规范和早期演示；`idea-archive/` 是低频历史资料。
 - `deliverables/`：阶段交付文档。学校原始材料与内部方向截图不进入公开仓库。
 - `scripts/`、`tests/`：开发和验证工具。
 
-默认不要读取 `node_modules/`、`.pnpm-store/`、`.uv-*`、`.venv/`、`orchestration/runtime/`、`tmp/` 或 `outputs/`；它们是依赖、缓存、运行记录或生成物。道路风险、驾驶员监测和 LLM 内容属于早期技术基线，不自动代表最终课题范围。
+默认不要读取 `node_modules/`、`.pnpm-store/`、`.uv-*`、`.venv/`、`tmp/` 或 `outputs/`；它们是依赖、缓存或生成物。道路风险、驾驶员监测和 LLM 内容属于早期技术基线，不自动代表最终课题范围。
 
 ## 使用许可
 
