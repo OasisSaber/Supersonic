@@ -27,7 +27,7 @@ pnpm smoke
 | 实施路线与验收依赖 | `docs/project/IMPLEMENTATION_ROADMAP.md` |
 | 系统概览 | `docs/architecture.md` |
 | 开发、验证与版本协作 | `docs/development.md` |
-| Agent 最小工作说明 | `AGENTS.md` |
+| 最低限度开发规则 | `AGENTS.md` |
 | 毕设设计依据与历史资料 | `docs/README.md` |
 
 ## 目录
