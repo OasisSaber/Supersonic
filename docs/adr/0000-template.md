@@ -3,7 +3,7 @@
 - Status: Proposed | Accepted | Superseded | Rejected
 - Date: YYYY-MM-DD
 - Owners: Oasis
-- Related issues/changes: link or Jujutsu change ID
+- Related issues/changes: link or commit SHA
 
 ## Context
 

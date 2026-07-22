@@ -28,20 +28,21 @@
 ## 历史验证证据
 
 - 2026-07-19 的历史验证记录曾运行 `pnpm check`，报告后端 22 项、前端 8 项测试及前端构建通过。
-- 该结果来自已删除的旧状态记录；本次未将其当作当前通过结论。
+- 该结果来自已删除的旧状态记录，仅保留为历史证据；以下“本次实际验证结果”才是当前结论。
 
 ## 本次实际验证结果
 
-- 已完成：静态审查产品源码、合同、测试和工作区配置；确认工作流清理不修改产品源代码、协议或产品测试。
-- 已完成：Markdown 链接检查、旧工作流关键词与路径残留检查、Git diff 范围检查。
-- 未通过：`pnpm check` 在后端 lint 的 `ruff` 可执行文件缺失时退出，未运行后续测试与构建；这是当前验证环境缺少 Python 工具，不能据此判断产品测试通过或失败。
+- 2026-07-22 23:01:10 +08:00：执行 `pnpm check` 并通过。后端 Ruff 与前端 ESLint 通过；后端 pytest 为 22 通过（1 条第三方弃用警告）；前端 Vitest 为 5 个文件、8 个测试通过；前端生产构建通过。
+- 2026-07-22 23:02 +08:00：在本地启动 FastAPI 后执行 `pnpm smoke` 并通过，覆盖 mock `/api/health`、`/api/events`、`/api/trips/demo`、mock report 与 `/ws/simulation` 的两条消息序列。该命令仅验证旧 mock HTTP/WebSocket 链，不证明 GP05 核心四屏链路通过。
+- 2026-07-22 23:03 +08:00：完成 Git 跟踪 Markdown 本地链接与路径检查、旧工作流关键词和路径残留搜索，以及 Git diff 范围检查。工作流残留检查已在本轮清理后完成；未发现旧开发工作流、Agent 编排或失效路径残留。
+- 已确认：本轮修正仅修改文档与工作流残留，未修改产品源码、协议或产品测试。
 
 ## 已知产品缺陷与风险
 
 - Store 仅按 revision 拒绝旧 snapshot；新 session 若 revision 较低，可能被前端拒绝。
 - `reset_session` 后客户端对端点连通性的旧状态可能错误保留为 offline。
 - `/control` 当前经通用端点回退为 Center 页面，未形成独立控制台。
-- `/overview` 使用端点画布复用，需复核其是否能间接触发本应只读端点不可拥有的操作。
+- 已确认缺陷：`/overview` 直接复用可交互的 Center 和 Passenger 组件；Center 以 `center` 身份发送命令，Passenger 以 `passenger` 身份发送命令，而 overview 合同权限为空，因此可绕过 overview 的只读设计。
 - `pnpm smoke` 现有范围未证明 GP05 核心 WebSocket/四屏链路。
 - navigation data health 与本地降级路线状态可能不一致。
 - 前端运行时合同校验覆盖不完整，WebSocket JSON 解析缺少异常保护。
