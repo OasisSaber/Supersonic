@@ -27,9 +27,3 @@ Commands and results:
 - Out of scope:
 - Known risks:
 - Follow-up:
-
-## Agent trace
-
-- Jujutsu change:
-- Implemented by: Human / Codex / OpenCode
-- Handoff updated: Yes / No

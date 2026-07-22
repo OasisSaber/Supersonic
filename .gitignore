@@ -44,10 +44,8 @@ tmp/
 .tmp/
 *.log
 
-# Project-local developer tools and agent runtime state
+# Project-local developer tools
 .tools/
-.agent-contract/
-orchestration/runtime/
 
 # Editors and OS
 .vscode/settings.local.json

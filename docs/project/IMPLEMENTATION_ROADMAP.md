@@ -1,9 +1,9 @@
-# GP05 实施任务拆分
+# 实施路线与验收依赖
 
-- 状态：`IN_PROGRESS`（部分已超前完成，需同步）
-- 决策来源：[`PROJECT_DECISION_BASELINE.md`](./PROJECT_DECISION_BASELINE.md)
-- 设计基线：`GP05-MAKE-APPROVED`
-- 目的：把已冻结方案拆成可验证、可回退、依赖明确的工程任务。
+- 状态：规划基线；当前实际进度、历史验证和已知风险见 [`PROJECT_PROGRESS.md`](./PROJECT_PROGRESS.md)。
+- 决策来源：[`DECISION_BASELINE.md`](./DECISION_BASELINE.md)
+- 设计基线：`GP21-VISUAL-INTERACTION-FROZEN`（`gp05.v1` 保持为协议与实施编号）。
+- 目的：保留已冻结方案的工程依赖和验收目标，不把本文件中的计划状态视为当前完成状态。
 
 ## 1. 执行原则
 
@@ -123,5 +123,4 @@
 
 ## 4. 执行顺序
 
-首批只完成 `GP05-IMPL-01`；它完成并冻结公共合同后再推进 02、03 和 07。不得提前并行修改协议、Token 或状态模型。
-
+本路线描述依赖与验收目标。每项实际状态、验证时间和证据以 `PROJECT_PROGRESS.md` 为准；不得将本文件的计划表述当作已完成证据。

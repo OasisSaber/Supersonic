@@ -4,12 +4,12 @@
 
 - 目标：智能座舱四屏协同 HMI（主仪表、HUD、中控、副驾）。
 - 技术：Figma、React + TypeScript + Vite、FastAPI + Python、WebSocket、pnpm、uv、Git。
-- 唯一当前决策基线：`docs/ai-collaboration/PROJECT_DECISION_BASELINE.md`。
+- 唯一当前决策基线：`docs/project/DECISION_BASELINE.md`。
 - `apps/` 内的道路风险、驾驶员监测与 LLM 是早期技术基线；除非任务明确涉及，不要把它们当作最终课题范围。
 
 ## 开始工作
 
-1. 读取 `docs/ai-collaboration/CURRENT_HANDOFF.md`，运行 `git status` 和 `git log --oneline -5`。
+1. 阅读与当前任务相关的 `docs/project/` 文档，运行 `git status` 和 `git log --oneline -5`。
 2. 进入 `apps/frontend` 或 `apps/backend` 前，读取该目录的 `AGENTS.md`。
 3. 不覆盖其他协作者的改动；发现冲突时停止并请求用户决定。
 4. 每个 commit 只做一个可验证任务。未经明确授权，不 push、不创建 PR、不发布。

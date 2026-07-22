@@ -33,5 +33,4 @@
 - Web3D 及 2D fallback；
 - 四端页面迁移与 144/100/60 FPS 实测。
 
-这些项目已经在 [`../ai-collaboration/GP05_IMPLEMENTATION_TASKS.md`](../ai-collaboration/GP05_IMPLEMENTATION_TASKS.md) 排序，不得在本合同任务中提前实现。
-
+这些项目已经在 [`../project/IMPLEMENTATION_ROADMAP.md`](../project/IMPLEMENTATION_ROADMAP.md) 排序，不得在本合同任务中提前实现。
