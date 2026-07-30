@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -9,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .cockpit_state import CockpitStateAuthority, CommandRejected
+from .config import RuntimeSettings, load_settings
 from .contracts.v1 import (
     CockpitSnapshotV1,
     CommandEnvelopeV1,
@@ -31,10 +31,6 @@ from .risk_engine import evaluate_risk
 async def lifespan(_: FastAPI):
     load_mock_frames()
     yield
-
-
-def health() -> dict[str, str]:
-    return {"status": "ok", "mode": os.getenv("APP_MODE", "mock")}
 
 
 def events() -> list[dict]:
@@ -89,13 +85,18 @@ async def simulation(websocket: WebSocket) -> None:
         return
 
 
-def create_app(authority: CockpitStateAuthority | None = None) -> FastAPI:
+def create_app(
+    authority: CockpitStateAuthority | None = None,
+    settings: RuntimeSettings | None = None,
+) -> FastAPI:
+    runtime_settings = settings or load_settings()
     api = FastAPI(
         title="城市通勤风险感知智能座舱 HMI Demo API",
         version="0.2.0",
         lifespan=lifespan,
     )
     api.state.cockpit_authority = authority or CockpitStateAuthority()
+    api.state.settings = runtime_settings
     api.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -111,7 +112,10 @@ def create_app(authority: CockpitStateAuthority | None = None) -> FastAPI:
             content={"error": {"code": exc.code, "message": exc.message}},
         )
 
-    api.add_api_route("/api/health", health, methods=["GET"])
+    @api.get("/api/health")
+    def health() -> dict[str, str]:
+        return {"status": "ok", "mode": runtime_settings.app_mode.value}
+
     api.add_api_route("/api/events", events, methods=["GET"])
     api.add_api_route("/api/trips/demo", demo_trip, methods=["GET"], response_model=TripRecord)
     api.add_api_route(

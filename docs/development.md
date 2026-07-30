@@ -2,6 +2,22 @@
 
 ## 环境与命令
 
+先从示例创建仓库根目录配置：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+`.env` 是前后端唯一约定的项目配置文件位置，并已被 Git 忽略。FastAPI 先读取该文件，再以启动进程中的同名环境变量覆盖文件值；Vite 通过 `envDir` 从同一位置加载 `VITE_*`。测试使用临时环境文件或临时进程值，不依赖开发者本机 `.env`。
+
+| 变量 | 当前行为 | 缺失时默认值 |
+| --- | --- | --- |
+| `APP_MODE` | FastAPI 运行模式；当前只实现并接受 `mock` | `mock` |
+| `VITE_API_URL` | GP05 HTTP 命令、snapshot 与 `/ws/v1/cockpit` 的 FastAPI 基地址 | `http://127.0.0.1:8000` |
+| `VITE_WS_URL` | 仅供旧 `/ws/simulation` Hook 使用，不控制 GP05 主链路 | `ws://127.0.0.1:8000/ws/simulation` |
+
+`local`、`api` 是保留的 `APP_MODE` 名称，当前没有真实运行路径，因此会与其他非法值一样明确拒绝启动。`LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`、`YOLO_MODEL_PATH`、`DEMO_VIDEO_PATH` 也仅为后续能力保留，当前运行时不读取。后端健康接口只返回经过验证的模式，不返回 `.env` 内容或秘密。
+
 ```powershell
 .\scripts\setup.ps1
 pnpm dev
