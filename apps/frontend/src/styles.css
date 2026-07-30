@@ -3,20 +3,20 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  background: #05070b;
+  background: var(--gp-page);
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: #05070b; }
+body { margin: 0; min-width: 320px; min-height: 100vh; color: var(--gp-text); background: var(--gp-page); }
 button { font: inherit; }
 
 main {
+  color: var(--gp-text);
   background:
-    radial-gradient(circle at 40% -10%, rgba(40, 113, 164, 0.16), transparent 36%),
-    linear-gradient(145deg, #05070b 0%, #080d16 50%, #05070b 100%);
+    radial-gradient(circle at 40% -10%, color-mix(in srgb, var(--gp-focus) 12%, transparent), transparent 36%),
+    var(--gp-page);
 }
 
 .risk-high { background-color: rgba(71, 10, 19, 0.16); }
@@ -27,7 +27,8 @@ main {
     @apply rounded-2xl border border-white/[0.07] bg-cockpit-900/80 shadow-2xl shadow-black/20 backdrop-blur-xl;
   }
   .eyebrow {
-    @apply mb-1 text-[10px] font-medium uppercase tracking-[0.22em] text-slate-500;
+    @apply mb-1 text-[10px] font-medium uppercase tracking-[0.22em];
+    color: var(--gp-muted);
   }
   .status-dot {
     @apply h-2.5 w-2.5 rounded-full shadow-[0_0_12px_currentColor];
@@ -36,8 +37,12 @@ main {
     @apply flex items-center justify-center gap-2 rounded-xl bg-cyan-300 px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .secondary-button {
-    @apply flex items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm transition disabled:cursor-not-allowed disabled:opacity-40;
+    color: var(--gp-text-secondary);
+    background: var(--gp-raised);
+    border: 1px solid var(--gp-border);
   }
+  .secondary-button:hover { background: var(--gp-surface-2); }
 }
 
 .road-gradient {
