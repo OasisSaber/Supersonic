@@ -12,5 +12,5 @@ export default function App() {
   const endpoint = endpointFromPath()
   useCockpitSnapshot(endpoint)
   const { snapshot, connection } = useCockpitStore()
-  return <main><CockpitScreen endpoint={endpoint} snapshot={snapshot} connection={connection} /></main>
+  return <main data-theme={snapshot?.theme ?? 'night'}><CockpitScreen endpoint={endpoint} snapshot={snapshot} connection={connection} /></main>
 }
