@@ -1,54 +1,116 @@
 # 项目进度
 
-- 最后更新：2026-07-22
-- 证据原则：本文件以当前源码、合同和测试为主。旧工作流中的命令结果只作为历史验证证据，不等同于当前验证。
+- 最后更新：2026-07-31
+- 当前分支基线：`main` 已包含 PR #15 与 PR #16
+- 项目形态：本地、单用户、可信环境的毕业设计 HMI 原型
+- 证据原则：可运行代码、测试、CI 与实际工具输出优先于规划文档；接口占位、模拟数据和历史方案不得写成已完成功能。
 
 ## 当前阶段
 
-- `FROZEN` — GP21 视觉与交互基线。依据：[`DECISION_BASELINE.md`](./DECISION_BASELINE.md) 的冻结约束；本次未重新进行视觉人工验收。
-- `IMPLEMENTED_WITH_KNOWN_DEFECTS` — `GP05-IMPL-01` 合同、Token 与领域模型。依据：`contracts/gp05/v1/`、前后端 `gp05.v1` 合同和合同测试；运行态合同容错仍有风险。
-- `IMPLEMENTED_WITH_KNOWN_DEFECTS` — `GP05-IMPL-02` FastAPI 单一状态权威、HTTP 命令和 WebSocket 快照。依据：`apps/backend/app/cockpit_state.py`、`apps/backend/app/main.py` 与对应测试；存在新会话 revision 和端点连通性风险。
-- `PARTIAL` — `GP05-IMPL-03` 四端 React 壳层与设计系统。依据：`/cluster`、`/hud`、`/center`、`/passenger`、`/overview`、`/control` 路由及 `CockpitScreen`；`/control` 当前回退至 Center 画面，未形成独立控制台。
-- `PARTIAL` — `GP05-IMPL-04` 导航接力、风险接管和副驾协作。依据：后端命令状态转换及 Center/Passenger UI；仅覆盖确定性本地演示流程。
-- `NOT_IMPLEMENTED` — `GP05-IMPL-05` 高德 MapProvider。当前仅有 `local_fallback` 路线与 degraded 状态。
-- `NOT_IMPLEMENTED` — `GP05-IMPL-06` MySQL 持久化与审计。
-- `NOT_IMPLEMENTED` — `GP05-IMPL-07` 与 `GP05-IMPL-08` VehicleVision Worker 和真实视觉推理。当前风险事件明确标记为 `simulated_event`，不得视为真实视觉能力。
-- `PENDING_VERIFICATION` — `GP05-IMPL-09` Web3D。未在当前前端源码和本次运行证据中确认可用实现或性能结果。
-- `PARTIAL` — `GP05-IMPL-10` 控制台和全链路集成。权威快照与命令链路存在，但独立控制台、真实外部服务和完整诊断指标未完成。
-- `NOT_IMPLEMENTED` — `GP05-IMPL-11` 性能、故障恢复与答辩证据包。
-- `GATED` — `GP05-IMPL-12` 受约束 AI 语音，等待核心门槛完成后再评估。
+| 模块 | 状态 | 当前证据与边界 |
+| --- | --- | --- |
+| GP21 视觉与交互基线 | `FROZEN_DESIGN_REFERENCE` | Figma/Make 视觉意图已冻结；这不代表 React 运行时没有缺陷或所有功能均已完成。 |
+| `gp05.v1` 合同与 Token | `IMPLEMENTED_WITH_KNOWN_DEFECTS` | TypeScript/Pydantic 合同、端点、命令、风险生命周期、数据健康与 Day/Night Token 已进入源码。运行时校验完整性由 Issue #19 跟踪。 |
+| FastAPI 权威状态与广播 | `IMPLEMENTED_WITH_KNOWN_DEFECTS` | 内存权威状态、HTTP snapshot/command 与 WebSocket 全量广播已实现。Session/reset 一致性由 Issue #11 跟踪。 |
+| React 产品端点 | `PARTIAL` | Cluster、HUD、Center、Passenger 与 Overview 已存在；Overview 只读边界由 Issue #7 跟踪，独立 Control 由 Issue #17 跟踪。 |
+| 三条本地演示流程 | `PARTIAL` | 本地路线接力、模拟风险接管、副驾媒体/隐私协作可运行；风险选择一致性由 Issue #12 跟踪，导航健康一致性由 Issue #18 跟踪。 |
+| 主题运行时 | `VERIFIED` | Issue #9 / PR #15 已加载设计 Token，并将 React 根主题绑定到服务端权威 snapshot。 |
+| 根目录环境配置 | `VERIFIED` | Issue #10 / PR #16 已统一前后端根 `.env` 配置，并拒绝未实现的运行模式。 |
+| 核心 `gp05.v1` 集成 Smoke | `NOT_IMPLEMENTED` | 当前 `pnpm smoke` 仍只验证旧 Mock 链；四端连接、命令收敛、重置与重连由 Issue #14 跟踪。 |
+| 高德 MapProvider | `CONDITIONAL_NOT_IMPLEMENTED` | 当前仅有确定性 `local_fallback`。只有答辩或论文明确需要真实地点检索时才提升为核心工作。 |
+| 持久化与审计 | `CONDITIONAL_NOT_IMPLEMENTED` | 当前没有 MySQL。只有论文、指导教师或行程报告需要历史查询时才实施。 |
+| VehicleVision | `PLANNED_DIFFERENTIATOR` | 当前风险事件明确标记为 `simulated_event`。核心 HMI 稳定后优先评估一个真实疲劳/分心场景；其他场景为增强项。 |
+| Web3D | `CONDITIONAL_NOT_VERIFIED` | 依赖存在，但当前前端源码和验证证据未证明可用实现；不得阻塞核心 HMI。 |
+| AI 语音 | `GATED` | 仅在核心 HMI、恢复和主要创新证据稳定后单独评估。 |
 
 ## 已实现产品能力
 
-- 版本化 `gp05.v1` TypeScript/Pydantic 合同，包含端点、命令、快照、风险生命周期、数据健康和乘客状态。
-- FastAPI 内存权威状态、命令权限校验、HTTP snapshot/command API，以及端点 WebSocket 全量 snapshot 广播。
-- Cluster、HUD、Center、Passenger 和 Overview 页面消费同一快照；Center 可进行本地路线预览/确认与风险处置，Passenger 可控制媒体、隐私和旅程建议。
-- `takeover` 仅生成带 `simulated_event` 来源标签的演示风险，并驱动 `active → acknowledged → resolved → recovery` 和媒体抑制。
+- 版本化 `gp05.v1` TypeScript/Pydantic 合同；
+- FastAPI 内存权威状态、命令权限矩阵、HTTP snapshot/command API 与端点 WebSocket 全量 snapshot 广播；
+- Cluster、HUD、Center、Passenger 和 Overview 消费同一权威快照；
+- Center 可执行本地路线预览/确认与风险处置；
+- Passenger 可控制媒体、隐私和旅程建议；
+- `takeover` 只生成明确标记为 `simulated_event` 的演示风险，并驱动 `active → acknowledged → resolved → recovery`；
+- GP21 Day/Night Token 已加载，主题由权威 snapshot 控制；
+- 前后端统一读取仓库根目录 `.env`，当前只接受 `APP_MODE=mock`；
+- GitHub Actions 执行 PR 结构验证、Markdown/YAML/Shell 检查、Lint、测试和前端构建。
 
-## 历史验证证据
+## 开放工作队列
 
-- 2026-07-19 的历史验证记录曾运行 `pnpm check`，报告后端 22 项、前端 8 项测试及前端构建通过。
-- 该结果来自已删除的旧状态记录，仅保留为历史证据；以下“本次实际验证结果”才是当前结论。
+### P0 — 状态完整性与恢复
 
-## 本次实际验证结果
+- Issue #11：Session-aware revision 排序与 reset 后连接状态重建。
 
-- 2026-07-22 23:01:10 +08:00：执行 `pnpm check` 并通过。后端 Ruff 与前端 ESLint 通过；后端 pytest 为 22 通过（1 条第三方弃用警告）；前端 Vitest 为 5 个文件、8 个测试通过；前端生产构建通过。
-- 2026-07-22 23:02 +08:00：在本地启动 FastAPI 后执行 `pnpm smoke` 并通过，覆盖 mock `/api/health`、`/api/events`、`/api/trips/demo`、mock report 与 `/ws/simulation` 的两条消息序列。该命令仅验证旧 mock HTTP/WebSocket 链，不证明 GP05 核心四屏链路通过。
-- 2026-07-22 23:03 +08:00：完成 Git 跟踪 Markdown 本地链接与路径检查、旧工作流关键词和路径残留搜索，以及 Git diff 范围检查。工作流残留检查已在本轮清理后完成；未发现旧开发工作流、Agent 编排或失效路径残留。
-- 已确认：本轮修正仅修改文档与工作流残留，未修改产品源码、协议或产品测试。
+### P1 — 核心产品正确性与答辩功能
 
-## 已知产品缺陷与风险
+- Issue #7：Overview 严格只读，不再被视觉重设计阻塞；
+- Issue #12：统一主要风险选择和 Passenger 媒体安全抑制；
+- Issue #17：实现独立 Control 端点，不再回退为 Center；
+- Issue #19：拒绝损坏 WebSocket/合同数据并安全重连。
 
-- Store 仅按 revision 拒绝旧 snapshot；新 session 若 revision 较低，可能被前端拒绝。
-- `reset_session` 后客户端对端点连通性的旧状态可能错误保留为 offline。
-- `/control` 当前经通用端点回退为 Center 页面，未形成独立控制台。
-- 已确认缺陷：`/overview` 直接复用可交互的 Center 和 Passenger 组件；Center 以 `center` 身份发送命令，Passenger 以 `passenger` 身份发送命令，而 overview 合同权限为空，因此可绕过 overview 的只读设计。
-- `pnpm smoke` 现有范围未证明 GP05 核心 WebSocket/四屏链路。
-- navigation data health 与本地降级路线状态可能不一致。
-- 前端运行时合同校验覆盖不完整，WebSocket JSON 解析缺少异常保护。
+### P2 — 近期可靠性、内部权限与证据
 
-## 待确认事项
+- Issue #18：导航 route/provider/data-health 状态一致性；
+- Issue #13：基于服务端拥有的本地请求上下文确定端点权限，不建设通用认证平台；
+- Issue #14：真实 FastAPI 进程和四客户端 `gp05.v1` Smoke，并接入 CI。
 
-- 三档分辨率的运行态视觉回归、截图和人工可读性结论。
-- 真实高德凭据、MySQL、VehicleVision、Web3D、性能和故障恢复的实施范围与验收证据。
-- 指导教师对创新点、AIGC 声明和最终答辩提交格式的正式要求。
+### 条件性或核心稳定后评估
+
+- 一个真实驾驶员疲劳/分心 VehicleVision 场景；
+- 持久化和历史查询；
+- 高德真实地点检索；
+- Web3D 状态可视化；
+- 额外 Vision 场景；
+- AI 语音、桌面封装和公开发行基础设施。
+
+这些工作当前不得阻塞 P0/P1 队列，除非指导教师、学校交付或明确部署方式提出新的硬要求。
+
+## 验证证据
+
+### 已合并产品修复
+
+- PR #15：前端主题/Token 修复记录显示前端 lint、11 项测试、构建和 `scripts/validate.sh` 通过；
+- PR #16：根配置修复记录显示后端 30 项、前端 12 项测试、构建和 `scripts/validate.sh` 通过；
+- 两个 PR 均已 Squash Merge 至 `main`。
+
+### 当前 Smoke 边界
+
+当前 `pnpm smoke` 验证：
+
+- `/api/health`；
+- `/api/events`；
+- `/api/trips/demo`；
+- Mock report；
+- `/ws/simulation` 消息序列。
+
+它不验证：
+
+- `/api/v1/snapshot`；
+- `/api/v1/commands`；
+- `/ws/v1/cockpit`；
+- 四端并发收敛；
+- reset/reconnect；
+- 完整端点权限边界。
+
+在 Issue #14 完成前，不得把 `pnpm smoke` 写成完整多屏集成测试。
+
+## 当前验收标准
+
+核心 HMI 可进入答辩冻结前，至少需要：
+
+1. Issue #11、#7、#12、#17 和 #19 完成；
+2. 四个产品端点与 Control 使用同一权威 session 和 revision；
+3. 三条本地确定性流程可重复执行和重置；
+4. Issue #14 的真实进程多客户端 Smoke 通过 CI；
+5. 所有 Mock、真实来源、降级状态和未实现能力有明确标签；
+6. 关键操作具备错误、离线和恢复表现；
+7. 文档、代码和展示口径一致。
+
+真实地图、MySQL、Web3D、多场景 Vision 和 AI 语音不是上述核心验收的默认硬依赖。
+
+## 待外部确认
+
+- 指导教师对创新点、数据库必要性、AIGC 声明和最终提交格式的要求；
+- 最终答辩设备数量和物理安装方式；
+- 核心 HMI 稳定后，选择哪一个 VehicleVision 场景作为主要工程创新；
+- 是否存在必须使用真实地图、数据库或安装包的学校要求。
