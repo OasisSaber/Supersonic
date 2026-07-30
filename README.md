@@ -5,9 +5,12 @@
 ## 快速开始
 
 ```powershell
+Copy-Item .env.example .env
 .\scripts\setup.ps1
 pnpm dev
 ```
+
+运行时配置统一放在仓库根目录 `.env`。该文件已被 Git 忽略；不要提交密钥、模型路径或私人素材路径。当前后端只实现 `APP_MODE=mock`，`local`、`api` 和其他值会明确拒绝启动。`VITE_API_URL` 控制 GP05 前端访问 FastAPI 的 HTTP 与 WebSocket 基地址；`VITE_WS_URL` 仅保留给旧 simulation Hook。LLM、模型和视频变量仍是保留名称，不代表对应能力已经实现。完整配置合同见 [`docs/development.md`](docs/development.md)。
 
 常用验证：
 
