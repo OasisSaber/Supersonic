@@ -3,14 +3,22 @@ from uuid import uuid4
 
 import pytest
 
-from app.cockpit_state import CockpitStateAuthority, CommandRejected
+from app.cockpit_state import (
+    CockpitStateAuthority,
+    CommandRejected,
+    navigation_data_freshness,
+)
 from app.contracts.v1 import (
     CommandEnvelopeV1,
     CommandName,
     CommandPayloadV1,
     DataFreshness,
     EndpointId,
+    MapServiceStatus,
     MessageSource,
+    NavigationStateV1,
+    RouteProvider,
+    RouteStatus,
     SystemMode,
     ThemeMode,
 )
@@ -74,8 +82,78 @@ async def test_navigation_handoff_is_authoritative_and_requires_a_preview() -> N
     active = await authority.apply_command(command(CommandName.CONFIRM_ROUTE, {}))
 
     assert preview.payload.navigation.status.value == "preview"
+    assert preview.payload.data_health["navigation"].status is DataFreshness.STALE
+    assert (
+        preview.payload.data_health["navigation"].updated_at
+        == preview.payload.navigation.updated_at
+    )
     assert active.payload.navigation.status.value == "active"
+    assert active.payload.data_health["navigation"].status is DataFreshness.STALE
+    assert (
+        active.payload.data_health["navigation"].updated_at
+        == active.payload.navigation.updated_at
+    )
     assert active.payload.navigation.destination_name == "城市艺术中心"
+
+
+@pytest.mark.parametrize(
+    ("provider", "service", "status", "expected"),
+    [
+        (RouteProvider.NONE, MapServiceStatus.UNAVAILABLE, RouteStatus.IDLE, DataFreshness.OFFLINE),
+        (
+            RouteProvider.LOCAL_FALLBACK,
+            MapServiceStatus.DEGRADED,
+            RouteStatus.PREVIEW,
+            DataFreshness.STALE,
+        ),
+        (
+            RouteProvider.LOCAL_FALLBACK,
+            MapServiceStatus.DEGRADED,
+            RouteStatus.ACTIVE,
+            DataFreshness.STALE,
+        ),
+        (RouteProvider.AMAP, MapServiceStatus.LIVE, RouteStatus.ACTIVE, DataFreshness.FRESH),
+        (
+            RouteProvider.AMAP,
+            MapServiceStatus.UNAVAILABLE,
+            RouteStatus.UNAVAILABLE,
+            DataFreshness.OFFLINE,
+        ),
+    ],
+)
+def test_navigation_health_policy_is_deterministic(
+    provider: RouteProvider,
+    service: MapServiceStatus,
+    status: RouteStatus,
+    expected: DataFreshness,
+) -> None:
+    navigation = NavigationStateV1(
+        provider=provider,
+        service_status=service,
+        status=status,
+        updated_at=datetime.now(UTC),
+    )
+
+    assert navigation_data_freshness(navigation) is expected
+
+
+async def test_navigation_health_is_identical_for_every_subscriber() -> None:
+    authority = CockpitStateAuthority()
+    cluster = await authority.connect_endpoint(EndpointId.CLUSTER)
+    passenger = await authority.connect_endpoint(EndpointId.PASSENGER)
+
+    changed = await authority.apply_command(
+        command(CommandName.SELECT_DESTINATION, {"destinationName": "城市艺术中心"})
+    )
+    cluster_snapshot = cluster.get_nowait()
+    passenger_snapshot = passenger.get_nowait()
+
+    assert changed.payload.data_health["navigation"].status is DataFreshness.STALE
+    assert cluster_snapshot.payload == changed.payload
+    assert passenger_snapshot.payload == changed.payload
+
+    await authority.disconnect_endpoint(EndpointId.CLUSTER, cluster)
+    await authority.disconnect_endpoint(EndpointId.PASSENGER, passenger)
 
 
 async def test_passenger_commands_are_server_authoritative() -> None:
@@ -145,7 +223,7 @@ async def test_endpoint_permission_is_enforced_before_execution() -> None:
 async def test_reset_changes_session_and_keeps_revision_monotonic() -> None:
     authority = CockpitStateAuthority()
     changed = await authority.apply_command(
-        command(CommandName.SET_SYSTEM_MODE, {"mode": "takeover"})
+        command(CommandName.SELECT_DESTINATION, {"destinationName": "城市艺术中心"})
     )
 
     reset = await authority.apply_command(command(CommandName.RESET_SESSION, {}))
@@ -154,6 +232,12 @@ async def test_reset_changes_session_and_keeps_revision_monotonic() -> None:
     assert reset.payload.revision == changed.payload.revision + 1
     assert reset.payload.system_mode is SystemMode.NORMAL
     assert reset.payload.theme is ThemeMode.NIGHT
+    assert reset.payload.navigation.status is RouteStatus.IDLE
+    assert reset.payload.data_health["navigation"].status is DataFreshness.OFFLINE
+    assert (
+        reset.payload.data_health["navigation"].updated_at
+        == reset.payload.navigation.updated_at
+    )
 
 
 async def test_slow_subscriber_only_retains_latest_snapshot() -> None:
