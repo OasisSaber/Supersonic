@@ -129,6 +129,10 @@ def create_app(
     async def cockpit_snapshot() -> CockpitSnapshotV1:
         return await api.state.cockpit_authority.get_snapshot()
 
+    @api.get("/api/v1/control/status")
+    async def control_status() -> dict[str, bool]:
+        return {"controlEnabled": runtime_settings.control_enabled}
+
     @api.post("/api/v1/commands/{endpoint}", response_model=SnapshotEnvelopeV1)
     async def cockpit_command(
         endpoint: EndpointId, command: CommandEnvelopeV1

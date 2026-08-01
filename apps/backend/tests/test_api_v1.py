@@ -95,6 +95,18 @@ async def test_control_commands_are_disabled_by_default() -> None:
     assert snapshot.json()["revision"] == 0
 
 
+async def test_control_status_reports_only_the_local_enable_boundary() -> None:
+    disabled = create_app(CockpitStateAuthority())
+    enabled = control_enabled_app()
+    async with AsyncClient(transport=ASGITransport(app=disabled), base_url="http://test") as client:
+        disabled_response = await client.get("/api/v1/control/status")
+    async with AsyncClient(transport=ASGITransport(app=enabled), base_url="http://test") as client:
+        enabled_response = await client.get("/api/v1/control/status")
+
+    assert disabled_response.json() == {"controlEnabled": False}
+    assert enabled_response.json() == {"controlEnabled": True}
+
+
 async def test_unknown_endpoint_path_is_rejected() -> None:
     app = create_app(CockpitStateAuthority())
     payload = command_payload("set_theme", {"theme": "day"})
