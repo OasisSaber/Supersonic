@@ -1,8 +1,9 @@
 # GP05 设计到代码合同 v1
 
 - 协议版本：`gp05.v1`
-- 视觉来源：`GP21-VISUAL-INTERACTION-FROZEN`（协议版本仍为 `gp05.v1`）
+- 视觉来源：`GP22-DESIGN-APPROVED`（协议版本仍为 `gp05.v1`）
 - 发布证据：[Visual Design Specification Plan](https://revise-body-79291535.figma.site)
+- 来源清单：[`GP22_SOURCE_MANIFEST.md`](./GP22_SOURCE_MANIFEST.md)
 - 运行时无关 manifest：[`../../contracts/gp05/v1/manifest.json`](../../contracts/gp05/v1/manifest.json)
 - Python 合同：[`../../apps/backend/app/contracts/v1.py`](../../apps/backend/app/contracts/v1.py)
 - TypeScript 合同：[`../../apps/frontend/src/contracts/gp05-v1.ts`](../../apps/frontend/src/contracts/gp05-v1.ts)
@@ -10,7 +11,7 @@
 
 ## 1. 真相分层
 
-1. Make/Figma 冻结快照定义视觉意图；
+1. 获批准的 GP22 Make/Figma 来源定义视觉意图；
 2. 本合同与 manifest 定义跨层字段、枚举、权限和逻辑画布；
 3. FastAPI 在后续任务中成为唯一实时业务状态源；
 4. React 只呈现 snapshot 并提交 command，不复制权威状态；
@@ -72,7 +73,7 @@
 
 ## 6. Token 合同
 
-Day/Night 的 `--gp-*` 颜色与字体来自 2026-07-17 对已发布 GP05 CSS 的只读提取。实现文件为 [`../../apps/frontend/src/design/gp05-tokens.css`](../../apps/frontend/src/design/gp05-tokens.css)。
+现有 Day/Night 的 `--gp-*` 颜色与字体来自 2026-07-17 对已发布 GP05 CSS 的只读提取。实现文件为 [`../../apps/frontend/src/design/gp05-tokens.css`](../../apps/frontend/src/design/gp05-tokens.css)。它们是当前运行代码的历史 Token 基线，不代表 GP22 Token 已完成迁移；GP22 映射必须通过独立 Issue 实施和验证。
 
 - 圆角：8 / 12 / 16 px；
 - 中文字体：Noto Sans SC → Barlow → Segoe UI → sans-serif；

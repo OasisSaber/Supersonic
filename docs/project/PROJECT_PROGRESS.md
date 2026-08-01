@@ -1,8 +1,9 @@
 # 项目进度
 
 - 最后更新：2026-08-01
-- 已合并基线：`main` / `main@origin` 均指向 `49b33339`，已包含 PR #15、#16 与 #22
-- 当前本地任务：Issue #28 / `codex/issue-28-agenticwonderwall-hardening` 基于上述 `main`，不包含任何开放产品 PR
+- 已合并代码基线：`main` / `main@origin` 均指向 `c02a74a4`，已包含 PR #15、#16、#22 与 #29
+- 当前设计决策：`GP22-DESIGN-APPROVED`；设计来源已核验，React 迁移尚未完成
+- 当前本地任务：PR #24 / `codex/gp22-design-baseline` 基于上述 `main`，只更新设计治理文档
 - 项目形态：本地、单用户、可信环境的毕业设计 HMI 原型
 - 证据原则：可运行代码、测试、CI 与实际工具输出优先于规划文档；接口占位、模拟数据和历史方案不得写成已完成功能。
 
@@ -14,23 +15,21 @@
 
 | Pull Request | 对应目标 | 当前状态与合并前要求 |
 | --- | --- | --- |
-| [#23](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/23) | Issue #11，session/reset 一致性 | Open；P0；需修复 PR 正文结构、CI 通过并由人类决定 Squash Merge |
-| [#24](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/24) | GP22 设计基线记录 | Open；合并前当前权威视觉基线仍是 GP21 |
+| [#23](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/23) | Issue #11，session/reset 一致性 | Open；P0；已 restack，最新 `check` 成功，等待人类决定 Squash Merge |
 | [#25](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/25) | Issue #12，风险仲裁 | Open；与 #27 同改 `CockpitScreen.tsx`，后合并者必须 restack 并重验 |
 | [#26](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/26) | Issue #13，端点权限上下文 | Open；与 #23 重叠后端状态与测试文件，必须按人类合并顺序 restack 并重验 |
 | [#27](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/27) | Issue #7，Overview 严格只读 | Open；本地 `pnpm check` 与 Git Bash `scripts/validate.sh` 已通过，仍缺成功 CI 与人类合并 |
 
-五个 PR 当前的 GitHub `check` 都在 PR 正文结构校验处失败，后续 lint、测试和构建被跳过。
-失败原因是远端正文标题与内容被压成单行，并非代码测试已经运行后失败。修复正文并获得新的成功
-`check` 之前，不得把 PR 中记录的本地结果表述为 CI 通过。
+PR #23 最新 GitHub `check` 已成功。PR #25–#27 的正文仍是被压成单行的旧格式，最新 `check`
+仍失败；这不能表述为代码测试已经运行并失败。PR #24 在本设计基线 change 中单独 restack、验证和更新。
 
-Issue #28 是独立的工作流加固任务：选择性同步 AgenticWonderwall `794b083…` 的 Issue Form、PR 校验、CI 与 jj 生命周期改进。它不修改产品代码，也不改变上述开放产品 PR 的合并顺序或产品完成状态。
+Issue #28 / PR #29 已将选择性的 AgenticWonderwall Issue Form、PR 校验、CI 与 jj 生命周期加固合并到 `main`。它不修改产品代码，也不改变开放产品 PR 的合并顺序或产品完成状态。
 
 ## 当前阶段
 
 | 模块 | 状态 | 当前证据与边界 |
 | --- | --- | --- |
-| GP21 视觉与交互基线 | `FROZEN_DESIGN_REFERENCE` | Figma/Make 视觉意图已冻结；这不代表 React 运行时没有缺陷或所有功能均已完成。 |
+| GP22 视觉与交互基线 | `APPROVED_DESIGN_REFERENCE` | Figma/Make 与本地交付包已核验；这不代表 GP22 React 迁移或规划功能已经完成。 |
 | `gp05.v1` 合同与 Token | `IMPLEMENTED_WITH_KNOWN_DEFECTS` | TypeScript/Pydantic 合同、端点、命令、风险生命周期、数据健康与 Day/Night Token 已进入源码。运行时校验完整性由 Issue #19 跟踪。 |
 | FastAPI 权威状态与广播 | `IMPLEMENTED_WITH_KNOWN_DEFECTS` | 内存权威状态、HTTP snapshot/command 与 WebSocket 全量广播已实现。Session/reset 一致性由 Issue #11 跟踪。 |
 | React 产品端点 | `PARTIAL` | Cluster、HUD、Center、Passenger 与 Overview 已存在；Overview 只读边界由 Issue #7 跟踪，独立 Control 由 Issue #17 跟踪。 |
