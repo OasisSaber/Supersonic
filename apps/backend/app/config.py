@@ -23,6 +23,7 @@ class ConfigurationError(ValueError):
 @dataclass(frozen=True, slots=True)
 class RuntimeSettings:
     app_mode: AppMode = AppMode.MOCK
+    control_enabled: bool = False
 
 
 def parse_app_mode(raw_mode: str | None) -> AppMode:
@@ -38,6 +39,17 @@ def parse_app_mode(raw_mode: str | None) -> AppMode:
     return AppMode.MOCK
 
 
+def parse_bool_flag(raw_value: str | None, *, name: str) -> bool:
+    if raw_value is None:
+        return False
+    normalized = raw_value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off", ""}:
+        return False
+    raise ConfigurationError(f"{name}={raw_value!r} is not a valid boolean flag")
+
+
 def load_settings(
     *,
     env_file: Path = ROOT_ENV_FILE,
@@ -48,4 +60,10 @@ def load_settings(
     raw_mode = source.get("APP_MODE")
     if raw_mode is None:
         raw_mode = file_values.get("APP_MODE")
-    return RuntimeSettings(app_mode=parse_app_mode(raw_mode))
+    raw_control = source.get("CONTROL_ENABLED")
+    if raw_control is None:
+        raw_control = file_values.get("CONTROL_ENABLED")
+    return RuntimeSettings(
+        app_mode=parse_app_mode(raw_mode),
+        control_enabled=parse_bool_flag(raw_control, name="CONTROL_ENABLED"),
+    )
