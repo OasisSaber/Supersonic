@@ -191,3 +191,66 @@ async def test_endpoint_connection_counts_do_not_report_early_offline() -> None:
 
     await authority.disconnect_endpoint(EndpointId.CENTER, second)
     assert (await authority.get_snapshot()).revision == revision + 1
+
+async def test_reset_rebuilds_connectivity_with_zero_active_connections() -> None:
+    authority = CockpitStateAuthority()
+
+    reset = await authority.apply_command(command(CommandName.RESET_SESSION, {}))
+
+    assert all(
+        conn.status is DataFreshness.OFFLINE
+        for conn in reset.payload.endpoint_connectivity.values()
+    )
+
+
+async def test_reset_preserves_fresh_for_single_active_connection() -> None:
+    authority = CockpitStateAuthority()
+    queue = await authority.connect_endpoint(EndpointId.CLUSTER)
+
+    reset = await authority.apply_command(command(CommandName.RESET_SESSION, {}))
+
+    assert reset.payload.endpoint_connectivity[EndpointId.CLUSTER].status is DataFreshness.FRESH
+    assert reset.payload.endpoint_connectivity[EndpointId.HUD].status is DataFreshness.OFFLINE
+
+    await authority.disconnect_endpoint(EndpointId.CLUSTER, queue)
+    after = await authority.get_snapshot()
+    assert after.endpoint_connectivity[EndpointId.CLUSTER].status is DataFreshness.OFFLINE
+
+
+async def test_reset_preserves_fresh_for_multiple_active_connections() -> None:
+    authority = CockpitStateAuthority()
+    center_first = await authority.connect_endpoint(EndpointId.CENTER)
+    center_second = await authority.connect_endpoint(EndpointId.CENTER)
+    passenger = await authority.connect_endpoint(EndpointId.PASSENGER)
+
+    reset = await authority.apply_command(command(CommandName.RESET_SESSION, {}))
+
+    assert reset.payload.endpoint_connectivity[EndpointId.CENTER].status is DataFreshness.FRESH
+    assert reset.payload.endpoint_connectivity[EndpointId.PASSENGER].status is DataFreshness.FRESH
+    assert reset.payload.endpoint_connectivity[EndpointId.HUD].status is DataFreshness.OFFLINE
+
+    await authority.disconnect_endpoint(EndpointId.CENTER, center_first)
+    still_connected = await authority.get_snapshot()
+    assert still_connected.endpoint_connectivity[EndpointId.CENTER].status is DataFreshness.FRESH
+    await authority.disconnect_endpoint(EndpointId.CENTER, center_second)
+    after_center = await authority.get_snapshot()
+    assert after_center.endpoint_connectivity[EndpointId.CENTER].status is DataFreshness.OFFLINE
+    assert after_center.endpoint_connectivity[EndpointId.PASSENGER].status is DataFreshness.FRESH
+
+    await authority.disconnect_endpoint(EndpointId.PASSENGER, passenger)
+    last = await authority.get_snapshot()
+    assert last.endpoint_connectivity[EndpointId.PASSENGER].status is DataFreshness.OFFLINE
+
+
+async def test_reset_publishes_one_coherent_post_reset_snapshot() -> None:
+    authority = CockpitStateAuthority()
+    queue = await authority.connect_endpoint(EndpointId.CLUSTER)
+    previous_session = (await authority.get_snapshot()).session_id
+
+    reset = await authority.apply_command(command(CommandName.RESET_SESSION, {}))
+
+    assert queue.qsize() == 1
+    queued = queue.get_nowait()
+    assert queued.payload.session_id == reset.payload.session_id
+    assert queued.payload.session_id != previous_session
+    assert queued.payload.endpoint_connectivity[EndpointId.CLUSTER].status is DataFreshness.FRESH

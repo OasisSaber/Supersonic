@@ -159,7 +159,7 @@ def create_app(
                 if send_task in done:
                     envelope = send_task.result()
                     await websocket.send_json(envelope.model_dump(mode="json", by_alias=True))
-        except WebSocketDisconnect:
+        except (WebSocketDisconnect, asyncio.CancelledError):
             pass
         finally:
             await api.state.cockpit_authority.disconnect_endpoint(endpoint, queue)

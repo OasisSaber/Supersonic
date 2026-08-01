@@ -90,3 +90,24 @@ def test_websocket_reconnect_gets_latest_full_snapshot() -> None:
     assert second["payload"]["sessionId"] == first["payload"]["sessionId"]
     assert second["payload"]["revision"] > first["payload"]["revision"]
     assert second["payload"]["endpointConnectivity"]["hud"]["status"] == "fresh"
+
+def test_websocket_receives_one_coherent_post_reset_snapshot() -> None:
+    app = create_app(CockpitStateAuthority())
+    payload = command_payload("reset_session", {})
+    with TestClient(app) as client:
+        with client.websocket_connect("/ws/v1/cockpit?endpoint=cluster") as websocket:
+            first = websocket.receive_json()
+            response = client.post("/api/v1/commands", json=payload)
+            second = websocket.receive_json()
+            websocket.close()
+            for _ in range(20):
+                disconnected = client.get("/api/v1/snapshot")
+                if disconnected.json()["endpointConnectivity"]["cluster"]["status"] == "offline":
+                    break
+            else:
+                raise AssertionError("WebSocket disconnect cleanup did not complete")
+
+    assert response.status_code == 200
+    assert second["payload"]["sessionId"] != first["payload"]["sessionId"]
+    assert second["payload"]["revision"] > first["payload"]["revision"]
+    assert second["payload"]["endpointConnectivity"]["cluster"]["status"] == "fresh"
