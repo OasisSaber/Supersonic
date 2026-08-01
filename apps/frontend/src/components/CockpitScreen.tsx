@@ -16,6 +16,7 @@ import type { CockpitSnapshotV1, EndpointId, RiskEventV1 } from '../contracts/gp
 import { useCockpitCommand } from '../lib/useCockpitCommand'
 import { isMediaSafetySuppressed, selectPrimaryRisk } from '../lib/riskSelection'
 import type { ConnectionState } from '../stores/cockpit'
+import { ControlScreen } from './ControlScreen'
 
 interface Props {
   endpoint: EndpointId
@@ -57,6 +58,7 @@ function EndpointCanvas({ endpoint, snapshot, activeRisk }: Pick<Props, 'endpoin
   if (endpoint === 'cluster') return <Cluster snapshot={snapshot} activeRisk={activeRisk} />
   if (endpoint === 'hud') return <Hud snapshot={snapshot} activeRisk={activeRisk} />
   if (endpoint === 'passenger') return <Passenger snapshot={snapshot} activeRisk={activeRisk} />
+  if (endpoint === 'control') return <ControlScreen snapshot={snapshot} />
   return <Center snapshot={snapshot} activeRisk={activeRisk} />
 }
 
