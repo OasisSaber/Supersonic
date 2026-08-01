@@ -22,7 +22,7 @@ Figma/Make 是冻结的视觉意图参考；运行时实现以 React + TypeScrip
 
 | 层 | 职责 | 入口 |
 | --- | --- | --- |
-| 设计与合同 | GP21 视觉参考、Token、端点、状态和消息合同 | `docs/design/`、`contracts/gp05/` |
+| 设计与合同 | GP22 获批准视觉参考、现有 GP21 Token 实现、端点、状态和消息合同 | `docs/design/`、`contracts/gp05/` |
 | 前端 | 四屏呈现、交互、只读 Overview、Control、降级和错误恢复 | `apps/frontend/` |
 | 后端 | 权威状态、命令处理、HTTP/WebSocket、确定性 Mock 场景 | `apps/backend/` |
 | 项目治理 | 当前范围、进度、优先级、验证证据和开放 Issue | `docs/project/` |
