@@ -51,3 +51,6 @@ tmp/
 .vscode/settings.local.json
 .DS_Store
 Thumbs.db
+
+# Reasonix desktop session metadata (runtime artifacts, never commit)
+.reasonix/desktop-topic-*.json

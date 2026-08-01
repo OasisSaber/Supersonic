@@ -1,136 +1,93 @@
 # 项目进度
 
-- 最后更新：2026-08-01
-- 已合并代码基线：`main` / `main@origin` 均指向 `c02a74a4`，已包含 PR #15、#16、#22 与 #29
-- 当前设计决策：`GP22-DESIGN-APPROVED`；设计来源已核验，React 迁移尚未完成
-- 当前本地任务：PR #24 / `codex/gp22-design-baseline` 基于上述 `main`，只更新设计治理文档
-- 项目形态：本地、单用户、可信环境的毕业设计 HMI 原型
-- 证据原则：可运行代码、测试、CI 与实际工具输出优先于规划文档；接口占位、模拟数据和历史方案不得写成已完成功能。
+- 最后更新：2026-08-02
+- 远端主线：`main@origin = 07be2fa391cd1fee49ab30c291dfc7505c7d044b`
+- 当前阶段：核心基线已建立，进入 GP22 资产迁移与平台化积极迭代期
+- 方向共识：见 [`PROJECT_DIRECTION.md`](./PROJECT_DIRECTION.md)
+- 权威范围：见 [`DECISION_BASELINE.md`](./DECISION_BASELINE.md)
+- 执行路线：见 [`IMPLEMENTATION_ROADMAP.md`](./IMPLEMENTATION_ROADMAP.md)
 
-## 本地与远端对齐快照
+## 1. 远端与合并状态
 
-2026-08-01 执行 `jj git fetch` 后远端引用无变化，本地 `main` 与
-`main@origin` 一致。以下工作已经 push 并创建 Pull Request，但均未合并，因而不能写入
-“已实现产品能力”：
+截至本次项目审计，PR #31、#32、#33 已合并，最新主线 `07be2fa3` 的 GitHub `Check` 已通过；当前没有待处理的产品 PR。此前的核心正确性、端点上下文、导航健康和 `gp05.v1` 真实进程 Smoke 工作已进入主线。
 
-| Pull Request | 对应目标 | 当前状态与合并前要求 |
+合并事实：
+
+| PR | 对应能力 | 状态 |
 | --- | --- | --- |
-| [#23](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/23) | Issue #11，session/reset 一致性 | Open；P0；已 restack，最新 `check` 成功，等待人类决定 Squash Merge |
-| [#25](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/25) | Issue #12，风险仲裁 | Open；与 #27 同改 `CockpitScreen.tsx`，后合并者必须 restack 并重验 |
-| [#26](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/26) | Issue #13，端点权限上下文 | Open；与 #23 重叠后端状态与测试文件，必须按人类合并顺序 restack 并重验 |
-| [#27](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/27) | Issue #7，Overview 严格只读 | Open；本地 `pnpm check` 与 Git Bash `scripts/validate.sh` 已通过，仍缺成功 CI 与人类合并 |
+| #31 | Issue #18，导航健康一致性 | 已合并 |
+| #32 | Issue #17，独立 Control 端点 | 已合并 |
+| #33 | Issue #14，`gp05.v1` 真实进程 Smoke | 已合并 |
 
-PR #23 最新 GitHub `check` 已成功。PR #25–#27 的正文仍是被压成单行的旧格式，最新 `check`
-仍失败；这不能表述为代码测试已经运行并失败。PR #24 在本设计基线 change 中单独 restack、验证和更新。
+产品主线不再停留在 PR 门禁恢复阶段；后续工作重点转为 GP22 实现、平台基础设施和最终验收能力。
 
-Issue #28 / PR #29 已将选择性的 AgenticWonderwall Issue Form、PR 校验、CI 与 jj 生命周期加固合并到 `main`。它不修改产品代码，也不改变开放产品 PR 的合并顺序或产品完成状态。
-
-## 当前阶段
+## 2. 当前模块状态
 
 | 模块 | 状态 | 当前证据与边界 |
 | --- | --- | --- |
-| GP22 视觉与交互基线 | `APPROVED_DESIGN_REFERENCE` | Figma/Make 与本地交付包已核验；这不代表 GP22 React 迁移或规划功能已经完成。 |
-| `gp05.v1` 合同与 Token | `IMPLEMENTED_WITH_KNOWN_DEFECTS` | TypeScript/Pydantic 合同、端点、命令、风险生命周期、数据健康与 Day/Night Token 已进入源码。运行时校验完整性由 Issue #19 跟踪。 |
-| FastAPI 权威状态与广播 | `IMPLEMENTED_WITH_KNOWN_DEFECTS` | 内存权威状态、HTTP snapshot/command 与 WebSocket 全量广播已实现。Session/reset 一致性由 Issue #11 跟踪。 |
-| React 产品端点 | `PARTIAL` | Cluster、HUD、Center、Passenger 与 Overview 已存在；Overview 只读边界由 Issue #7 跟踪，独立 Control 由 Issue #17 跟踪。 |
-| 三条本地演示流程 | `PARTIAL` | 本地路线接力、模拟风险接管、副驾媒体/隐私协作可运行；风险选择一致性由 Issue #12 跟踪，导航健康一致性由 Issue #18 跟踪。 |
-| 主题运行时 | `VERIFIED` | Issue #9 / PR #15 已加载设计 Token，并将 React 根主题绑定到服务端权威 snapshot。 |
-| 根目录环境配置 | `VERIFIED` | Issue #10 / PR #16 已统一前后端根 `.env` 配置，并拒绝未实现的运行模式。 |
-| 核心 `gp05.v1` 集成 Smoke | `NOT_IMPLEMENTED` | 当前 `pnpm smoke` 仍只验证旧 Mock 链；四端连接、命令收敛、重置与重连由 Issue #14 跟踪。 |
-| 高德 MapProvider | `CONDITIONAL_NOT_IMPLEMENTED` | 当前仅有确定性 `local_fallback`。只有答辩或论文明确需要真实地点检索时才提升为核心工作。 |
-| 持久化与审计 | `CONDITIONAL_NOT_IMPLEMENTED` | 当前没有 MySQL。只有论文、指导教师或行程报告需要历史查询时才实施。 |
-| VehicleVision | `PLANNED_DIFFERENTIATOR` | 当前风险事件明确标记为 `simulated_event`。核心 HMI 稳定后优先评估一个真实疲劳/分心场景；其他场景为增强项。 |
-| Web3D | `CONDITIONAL_NOT_VERIFIED` | 依赖存在，但当前前端源码和验证证据未证明可用实现；不得阻塞核心 HMI。 |
-| AI 语音 | `GATED` | 仅在核心 HMI、恢复和主要创新证据稳定后单独评估。 |
+| GP22 视觉与交互基线 | `APPROVED_DESIGN_REFERENCE` | Figma/Make 与本地交付包已核验；React 迁移尚未完成。 |
+| Figma 持续资产 intake | `P0_READY_TO_START` | 已确认版本、节点、变更、映射和回归流程；尚待建立资产清单与首轮迁移证据。 |
+| `gp05.v1` 合同与运行时 | `IMPLEMENTED_BASELINE` | 合同、权限矩阵、FastAPI 权威状态、HTTP/WebSocket 和 Smoke 已进入主线。 |
+| React 四屏与 Control | `IMPLEMENTED_BASELINE_WITH_GP22_MIGRATION_PENDING` | Cluster、HUD、Center、Passenger、Overview 和 Control 可运行；GP22 视觉迁移仍是当前 P0。 |
+| 三条本地核心流程 | `VERIFIED_BASELINE` | 导航接力、风险处置和副驾协作已有可重复实现；最终平台还需真实地图、持久化和 VehicleVision。 |
+| PostgreSQL 平台数据层 | `P1_PLANNED` | 已确认正式数据库、schema、迁移、RBAC、审计、备份和恢复范围；尚未实现。 |
+| 多用户与 RBAC | `P1_PLANNED` | `admin/operator/viewer`、登录、会话撤销、最小权限和角色界面已纳入最终验收；尚未实现。 |
+| 真实地图/地点搜索 | `FINAL_ACCEPTANCE_PLANNED` | 需要 Provider 适配层、凭据隔离、服务失败和本地 fallback；当前仍以确定性本地路线为降级。 |
+| 持久化与审计历史 | `FINAL_ACCEPTANCE_PLANNED` | PostgreSQL 负责持久化和查询，FastAPI/WebSocket 仍是实时状态权威；尚未实现。 |
+| VehicleVision | `FINAL_ACCEPTANCE_PLANNED` | 首个真实疲劳/分心场景为主要创新；当前模拟事件必须继续标记为 `simulated_event`。 |
+| 受限 AI 语音 | `FINAL_ACCEPTANCE_PLANNED_LATE` | 仅允许白名单 command、确认和失败反馈；不做自主驾驶决策。 |
+| 多显示启动与部署 | `FINAL_ACCEPTANCE_PLANNED` | 必须可重复启动四屏；是否采用 Electron/Tauri 仍取决于现场部署需求。 |
+| Web3D | `FINAL_ACCEPTANCE_PLANNED_LATE` | 后置时间盒实现，必须懒加载、绑定权威状态并有静态 fallback。 |
 
-## 已实现产品能力
+## 3. 当前执行队列
 
-- 版本化 `gp05.v1` TypeScript/Pydantic 合同；
-- FastAPI 内存权威状态、命令权限矩阵、HTTP snapshot/command API 与端点 WebSocket 全量 snapshot 广播；
-- Cluster、HUD、Center、Passenger 和 Overview 消费同一权威快照；
-- Center 可执行本地路线预览/确认与风险处置；
-- Passenger 可控制媒体、隐私和旅程建议；
-- `takeover` 只生成明确标记为 `simulated_event` 的演示风险，并驱动 `active → acknowledged → resolved → recovery`；
-- GP21 Day/Night Token 已加载，主题由权威 snapshot 控制；
-- 前后端统一读取仓库根目录 `.env`，当前只接受 `APP_MODE=mock`；
-- GitHub Actions 执行 PR 结构验证、Markdown/YAML/Shell 检查、Lint、测试和前端构建。
+### P0：未来 4–6 周 GP22 与 Figma 资产闭环
 
-## 开放工作队列
+- 迁移四屏基础框架、共享 Token、核心组件和正常/禁用/告警/空数据/降级状态；
+- 建立 Figma 版本、节点范围、变更说明、影响屏幕和代码映射清单；
+- 每次 Figma 产出执行“导入—校验—实现—回归—更新基线”；
+- 产出四屏运行演示、视觉回归证据和资产清单。
 
-### P0 — 状态完整性与恢复
+### P1：并行平台基础设施
 
-- Issue #11：Session-aware revision 排序与 reset 后连接状态重建。
+- PostgreSQL schema、迁移、索引和备份恢复演练；
+- 登录、RBAC、会话撤销和服务端最小权限；
+- 命令、风险、恢复结果和操作者审计；
+- 数据库集成测试与恢复证据。
 
-### P1 — 核心产品正确性与答辩功能
+### 后续最终验收队列
 
-- Issue #7：Overview 严格只读，不再被视觉重设计阻塞；
-- Issue #12：统一主要风险选择和 Passenger 媒体安全抑制；
-- Issue #17：实现独立 Control 端点，不再回退为 Center；
-- Issue #19：拒绝损坏 WebSocket/合同数据并安全重连。
+1. 真实地图/地点搜索；
+2. 持久化审计和恢复记录完善；
+3. 一个真实 VehicleVision 疲劳/分心场景；
+4. 受限 AI 语音；
+5. 四屏多显示启动与部署编排；
+6. 后置 Web3D。
 
-### P2 — 近期可靠性、内部权限与证据
+## 4. 完成定义与运行质量
 
-- Issue #18：导航 route/provider/data-health 状态一致性；
-- Issue #13：基于服务端拥有的本地请求上下文确定端点权限，不建设通用认证平台；
-- Issue #14：真实 FastAPI 进程和四客户端 `gp05.v1` Smoke，并接入 CI。
+每项能力只有同时具备运行实现、自动化测试或可重复步骤、展示证据、准确的 Mock/真实/降级标记和同步文档，才能标记完成。
 
-### 条件性或核心稳定后评估
+最终平台质量基线：
 
-- 一个真实驾驶员疲劳/分心 VehicleVision 场景；
-- 持久化和历史查询；
-- 高德真实地点检索；
-- Web3D 状态可视化；
-- 额外 Vision 场景；
-- AI 语音、桌面封装和公开发行基础设施。
+- 四屏启动和部署可重复；
+- 本地命令确认延迟目标 P95 ≤ 500 ms；
+- WebSocket 断线后自动恢复目标 ≤ 5 秒；
+- 共享车辆状态不出现屏间分叉；
+- 命令、风险和恢复事件审计完整率 100%；
+- 关键错误具有日志、告警或可见安全降级；
+- `bash scripts/validate.sh`、CI、数据库迁移/恢复测试和必要的目标机验证通过。
 
-这些工作当前不得阻塞 P0/P1 队列，除非指导教师、学校交付或明确部署方式提出新的硬要求。
+## 5. 最终验收与旗舰演示
 
-## 验证证据
+2027 年 4 月最终验收必须同时覆盖 GP22、PostgreSQL/RBAC/审计、真实地图、持久化恢复、VehicleVision、受限 AI 语音、多显示部署和后置 Web3D。Web3D 可以后期完成，但不能豁免。
 
-### 已合并产品修复
+旗舰演示流程为：`operator` 登录 → 启动四屏 → 查看真实地图 → VehicleVision 触发受控风险 → 四屏联动降级 → 操作者确认恢复 → 写入审计 → `viewer` 查看历史 → `admin` 查看会话/审计 → Web3D 展示并静态回退。
 
-- PR #15：前端主题/Token 修复记录显示前端 lint、11 项测试、构建和 `scripts/validate.sh` 通过；
-- PR #16：根配置修复记录显示后端 30 项、前端 12 项测试、构建和 `scripts/validate.sh` 通过；
-- 两个 PR 均已 Squash Merge 至 `main`。
+## 6. 已知限制
 
-### 当前 Smoke 边界
-
-当前 `pnpm smoke` 验证：
-
-- `/api/health`；
-- `/api/events`；
-- `/api/trips/demo`；
-- Mock report；
-- `/ws/simulation` 消息序列。
-
-它不验证：
-
-- `/api/v1/snapshot`；
-- `/api/v1/commands`；
-- `/ws/v1/cockpit`；
-- 四端并发收敛；
-- reset/reconnect；
-- 完整端点权限边界。
-
-在 Issue #14 完成前，不得把 `pnpm smoke` 写成完整多屏集成测试。
-
-## 当前验收标准
-
-核心 HMI 可进入答辩冻结前，至少需要：
-
-1. Issue #11、#7、#12、#17 和 #19 完成；
-2. 四个产品端点与 Control 使用同一权威 session 和 revision；
-3. 三条本地确定性流程可重复执行和重置；
-4. Issue #14 的真实进程多客户端 Smoke 通过 CI；
-5. 所有 Mock、真实来源、降级状态和未实现能力有明确标签；
-6. 关键操作具备错误、离线和恢复表现；
-7. 文档、代码和展示口径一致。
-
-真实地图、MySQL、Web3D、多场景 Vision 和 AI 语音不是上述核心验收的默认硬依赖。
-
-## 待外部确认
-
-- 指导教师对创新点、数据库必要性、AIGC 声明和最终提交格式的要求；
-- 最终答辩设备数量和物理安装方式；
-- 核心 HMI 稳定后，选择哪一个 VehicleVision 场景作为主要工程创新；
-- 是否存在必须使用真实地图、数据库或安装包的学校要求。
+- 当前 GP22 仍是设计批准和待迁移基线，不得表述为全部 React 功能已完成；
+- 当前阶段不建设公共 SSO、复杂多租户、公共互联网网关、量产车辆安全认证或高可用集群；
+- VehicleVision 不保存连续原始视频/音频，不做身份识别或情绪推断；
+- 地图、语音、模型和 Web3D 外部服务必须提供安全降级；
+- 第二个及更多 Vision 场景、桌面封装、正式发行和签名属于剩余时间或外部要求触发的增强项。
