@@ -300,6 +300,7 @@ class CockpitStateAuthority:
         self._require_keys(parameters, set())
         previous_revision = self._snapshot.revision
         self._snapshot = self._make_default_snapshot(revision=previous_revision)
+        self._rebuild_connectivity_locked()
         return True
 
     def _activate_simulated_takeover_locked(self) -> None:
@@ -348,6 +349,11 @@ class CockpitStateAuthority:
                 "invalid_parameters",
                 f"Command requires exactly: {expected_text}.",
             )
+
+    def _rebuild_connectivity_locked(self) -> None:
+        for endpoint, count in self._connection_counts.items():
+            if count > 0:
+                self._set_connection_locked(endpoint, DataFreshness.FRESH)
 
     def _set_connection_locked(self, endpoint: EndpointId, status: DataFreshness) -> None:
         self._snapshot.endpoint_connectivity[endpoint] = EndpointConnection(
