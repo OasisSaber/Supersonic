@@ -20,7 +20,7 @@ export function useCockpitCommand(endpoint: EndpointId) {
     setError(null)
     try {
       const now = new Date().toISOString()
-      const response = await fetch(`${apiBase}/api/v1/commands`, {
+      const response = await fetch(`${apiBase}/api/v1/commands/${endpoint}`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           protocolVersion: CONTRACT_VERSION, messageId: crypto.randomUUID(), correlationId: crypto.randomUUID(), timestamp: now,

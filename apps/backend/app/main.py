@@ -129,9 +129,19 @@ def create_app(
     async def cockpit_snapshot() -> CockpitSnapshotV1:
         return await api.state.cockpit_authority.get_snapshot()
 
-    @api.post("/api/v1/commands", response_model=SnapshotEnvelopeV1)
-    async def cockpit_command(command: CommandEnvelopeV1) -> SnapshotEnvelopeV1:
-        return await api.state.cockpit_authority.apply_command(command)
+    @api.post("/api/v1/commands/{endpoint}", response_model=SnapshotEnvelopeV1)
+    async def cockpit_command(
+        endpoint: EndpointId, command: CommandEnvelopeV1
+    ) -> SnapshotEnvelopeV1:
+        if endpoint == EndpointId.CONTROL and not runtime_settings.control_enabled:
+            raise CommandRejected(
+                "control_disabled",
+                "Control endpoint commands are disabled by default.",
+                status_code=403,
+            )
+        return await api.state.cockpit_authority.apply_command(
+            command, server_endpoint=endpoint
+        )
 
     @api.websocket("/ws/simulation")
     async def legacy_simulation(websocket: WebSocket) -> None:

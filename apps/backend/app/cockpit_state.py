@@ -103,9 +103,14 @@ class CockpitStateAuthority:
         async with self._lock:
             return self._snapshot.model_copy(deep=True)
 
-    async def apply_command(self, command: CommandEnvelopeV1) -> SnapshotEnvelopeV1:
+    async def apply_command(
+        self,
+        command: CommandEnvelopeV1,
+        *,
+        server_endpoint: EndpointId | None = None,
+    ) -> SnapshotEnvelopeV1:
         async with self._lock:
-            self._validate_command(command)
+            self._validate_command(command, server_endpoint)
             changed = self._apply_supported_command(command)
             if changed:
                 self._touch_locked()
@@ -140,12 +145,22 @@ class CockpitStateAuthority:
                 self._touch_locked()
                 self._publish_locked(self._id_factory())
 
-    def _validate_command(self, command: CommandEnvelopeV1) -> None:
-        endpoint = command.payload.endpoint
+    def _validate_command(
+        self,
+        command: CommandEnvelopeV1,
+        server_endpoint: EndpointId | None = None,
+    ) -> None:
+        endpoint = server_endpoint or command.payload.endpoint
+        if command.payload.endpoint != endpoint:
+            raise CommandRejected(
+                "endpoint_mismatch",
+                "Declared endpoint must match the server-owned endpoint context.",
+                status_code=403,
+            )
         if command.source.kind != "endpoint" or command.source.id != endpoint.value:
             raise CommandRejected(
                 "source_mismatch",
-                "Command source must match the declared endpoint.",
+                "Command source must match the server-owned endpoint.",
                 status_code=403,
             )
         if command.payload.name not in ENDPOINT_COMMAND_PERMISSIONS[endpoint]:

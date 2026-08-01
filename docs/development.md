@@ -15,8 +15,11 @@ Copy-Item .env.example .env
 | `APP_MODE` | FastAPI 运行模式；当前只实现并接受 `mock` | `mock` |
 | `VITE_API_URL` | `gp05.v1` HTTP 命令、snapshot 与 `/ws/v1/cockpit` 的 FastAPI 基地址 | `http://127.0.0.1:8000` |
 | `VITE_WS_URL` | 仅供旧 `/ws/simulation` Hook 使用，不控制 `gp05.v1` 主链路 | `ws://127.0.0.1:8000/ws/simulation` |
+| `CONTROL_ENABLED` | 本地 Control 端点命令开关；默认关闭，显式 `true` 才启用 | `false` |
 
 `local`、`api` 是保留的 `APP_MODE` 名称，当前没有真实运行路径，因此会与其他非法值一样明确拒绝启动。`LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`、`YOLO_MODEL_PATH`、`DEMO_VIDEO_PATH` 也仅为后续能力保留，当前运行时不读取。后端健康接口只返回经过验证的模式，不返回 `.env` 内容或秘密。
+
+HTTP 命令路由 `/api/v1/commands/{endpoint}` 由服务端从路径解析端点上下文；请求体中的 `endpoint`/`source` 仅作为一致性声明，不一致返回 403 `endpoint_mismatch`。这能避免仅修改请求体就切换权限，但不是身份认证：可信本地客户端仍可选择其他端点路径。当前单用户演示环境不引入账户、令牌或多租户隔离；Control 命令默认禁用，只有显式设置 `CONTROL_ENABLED=true` 才开放。
 
 ```powershell
 .\scripts\setup.ps1

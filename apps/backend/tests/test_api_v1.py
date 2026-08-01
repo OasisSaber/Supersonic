@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
 from app.cockpit_state import CockpitStateAuthority
+from app.config import RuntimeSettings
 from app.main import create_app
 
 
@@ -26,12 +27,18 @@ def command_payload(
     }
 
 
+def control_enabled_app():
+    return create_app(
+        CockpitStateAuthority(), settings=RuntimeSettings(control_enabled=True)
+    )
+
+
 async def test_snapshot_and_command_http_api() -> None:
-    app = create_app(CockpitStateAuthority())
+    app = control_enabled_app()
     payload = command_payload("set_theme", {"theme": "day"})
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         initial = await client.get("/api/v1/snapshot")
-        changed = await client.post("/api/v1/commands", json=payload)
+        changed = await client.post("/api/v1/commands/control", json=payload)
 
     assert initial.status_code == 200
     assert initial.json()["revision"] == 0
@@ -41,10 +48,10 @@ async def test_snapshot_and_command_http_api() -> None:
 
 
 async def test_command_rejection_has_stable_error_shape() -> None:
-    app = create_app(CockpitStateAuthority())
+    app = control_enabled_app()
     payload = command_payload("set_theme", {"theme": "day"}, source_id="passenger")
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post("/api/v1/commands", json=payload)
+        response = await client.post("/api/v1/commands/control", json=payload)
         snapshot = await client.get("/api/v1/snapshot")
 
     assert response.status_code == 403
@@ -53,15 +60,48 @@ async def test_command_rejection_has_stable_error_shape() -> None:
 
 
 async def test_invalid_parameters_do_not_mutate_state() -> None:
-    app = create_app(CockpitStateAuthority())
+    app = control_enabled_app()
     payload = command_payload("set_theme", {"theme": "purple"})
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post("/api/v1/commands", json=payload)
+        response = await client.post("/api/v1/commands/control", json=payload)
         snapshot = await client.get("/api/v1/snapshot")
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "invalid_parameters"
     assert snapshot.json()["revision"] == 0
+
+
+async def test_cross_endpoint_spoofing_is_rejected_by_server_context() -> None:
+    app = control_enabled_app()
+    payload = command_payload("set_theme", {"theme": "day"}, endpoint="control")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/commands/cluster", json=payload)
+        snapshot = await client.get("/api/v1/snapshot")
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "endpoint_mismatch"
+    assert snapshot.json()["revision"] == 0
+
+
+async def test_control_commands_are_disabled_by_default() -> None:
+    app = create_app(CockpitStateAuthority())
+    payload = command_payload("set_theme", {"theme": "day"})
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/commands/control", json=payload)
+        snapshot = await client.get("/api/v1/snapshot")
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "control_disabled"
+    assert snapshot.json()["revision"] == 0
+
+
+async def test_unknown_endpoint_path_is_rejected() -> None:
+    app = create_app(CockpitStateAuthority())
+    payload = command_payload("set_theme", {"theme": "day"})
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/commands/not-an-endpoint", json=payload)
+
+    assert response.status_code == 422
 
 
 def test_websocket_starts_with_full_connected_snapshot() -> None:
@@ -91,13 +131,14 @@ def test_websocket_reconnect_gets_latest_full_snapshot() -> None:
     assert second["payload"]["revision"] > first["payload"]["revision"]
     assert second["payload"]["endpointConnectivity"]["hud"]["status"] == "fresh"
 
+
 def test_websocket_receives_one_coherent_post_reset_snapshot() -> None:
-    app = create_app(CockpitStateAuthority())
+    app = control_enabled_app()
     payload = command_payload("reset_session", {})
     with TestClient(app) as client:
         with client.websocket_connect("/ws/v1/cockpit?endpoint=cluster") as websocket:
             first = websocket.receive_json()
-            response = client.post("/api/v1/commands", json=payload)
+            response = client.post("/api/v1/commands/control", json=payload)
             second = websocket.receive_json()
             websocket.close()
             for _ in range(20):

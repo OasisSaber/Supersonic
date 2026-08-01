@@ -51,3 +51,32 @@ async def test_health_uses_validated_mode_without_exposing_secrets(tmp_path: Pat
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "mode": "mock"}
+
+def test_control_flag_defaults_to_disabled(tmp_path: Path) -> None:
+    settings = load_settings(env_file=tmp_path / ".env", environ={})
+
+    assert settings.control_enabled is False
+
+
+def test_control_flag_reads_true_from_root_env(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("CONTROL_ENABLED=true\n", encoding="utf-8")
+
+    settings = load_settings(env_file=env_file, environ={})
+
+    assert settings.control_enabled is True
+
+
+def test_control_flag_process_value_overrides_root_env(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("CONTROL_ENABLED=true\n", encoding="utf-8")
+
+    settings = load_settings(env_file=env_file, environ={"CONTROL_ENABLED": "false"})
+
+    assert settings.control_enabled is False
+
+
+@pytest.mark.parametrize("raw", ["maybe", "2", "TRUE-ish"])
+def test_control_flag_rejects_invalid_values(tmp_path: Path, raw: str) -> None:
+    with pytest.raises(ConfigurationError, match=r"CONTROL_ENABLED"):
+        load_settings(env_file=tmp_path / ".env", environ={"CONTROL_ENABLED": raw})
