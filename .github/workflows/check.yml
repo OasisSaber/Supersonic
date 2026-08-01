@@ -59,3 +59,6 @@ jobs:
 
       - name: Validate
         run: bash scripts/validate.sh
+
+      - name: Run GP05 runtime smoke
+        run: pnpm smoke:gp05
