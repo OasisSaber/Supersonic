@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Validate the repository pull request template without third-party parsers.
 
-Adapted from OasisSaber/AgenticWonderwall (MIT), commit
-689d4edb8aacc1fc7a277da89efed05199b75edb. See THIRD_PARTY_NOTICES.md.
+Adapted from OasisSaber/AgenticWonderwall (MIT), commits
+689d4edb8aacc1fc7a277da89efed05199b75edb and
+794b083e816e84f271e991aed84a5a5f4e9c74fc. See THIRD_PARTY_NOTICES.md.
 """
 
 import os
@@ -10,8 +11,12 @@ import re
 import sys
 from pathlib import Path
 
-PLACEHOLDERS = ("<number>",)
-ISSUE = re.compile(r"#\d+\b")
+PLACEHOLDERS = ("<number>", "<source>", "<goal>", "<scope>")
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+ISSUE = re.compile(
+    r"(?:close(?:s|d)?|fix(?:es|ed)?|resolve(?:s|d)?)\s+#\d+",
+    re.IGNORECASE,
+)
 HEADERS = (
     "What changed / Result",
     "Why",
@@ -37,7 +42,8 @@ def section(body, heading):
 
 def validate(body):
     errors = []
-    related = section(body, "Related task")
+    visible_body = HTML_COMMENT.sub("", body)
+    related = section(visible_body, "Related task")
     if related is None:
         errors.append("Related task must not be empty.")
         related = ""
@@ -50,9 +56,6 @@ def validate(body):
     issue_path_present = bool(issue_lines)
     authorization_path_present = bool(authorization_parents) or any(fields.values())
 
-    for placeholder in PLACEHOLDERS:
-        if placeholder in body:
-            errors.append(f"Remove template placeholder text: {placeholder}.")
     if issue_path_present == authorization_path_present:
         errors.append("Fill exactly one of Issue or explicit human authorization.")
     if len(issue_lines) > 1:
@@ -61,8 +64,10 @@ def validate(body):
         issue_value = issue_lines[0].strip()
         if not issue_value:
             errors.append("Issue path must not be empty.")
-        elif not ISSUE.search(issue_value):
-            errors.append("Issue must contain a valid reference such as #123.")
+        elif any(placeholder in issue_value for placeholder in PLACEHOLDERS):
+            errors.append("Remove template placeholder text from the Issue field.")
+        elif not ISSUE.fullmatch(issue_value):
+            errors.append("Issue must be exactly one closing reference such as Closes #123.")
     if len(authorization_parents) > 1:
         errors.append("Explicit human authorization path must appear exactly once.")
     if authorization_path_present:
@@ -73,8 +78,10 @@ def validate(body):
                 errors.append(f"Explicit human authorization requires exactly one {label}.")
             elif not matches[0].strip():
                 errors.append(f"Explicit human authorization requires {label}.")
+            elif any(placeholder in matches[0] for placeholder in PLACEHOLDERS):
+                errors.append(f"Remove template placeholder text from {label}.")
     global_task_lines = re.findall(
-        r"(?m)^\s*- (?:Issue:|Explicit human authorization:|Authorization source:|Goal:|Scope:)", body
+        r"(?m)^\s*- (?:Issue:|Explicit human authorization:|Authorization source:|Goal:|Scope:)", visible_body
     )
     related_task_lines = re.findall(
         r"(?m)^\s*- (?:Issue:|Explicit human authorization:|Authorization source:|Goal:|Scope:)", related
@@ -83,9 +90,9 @@ def validate(body):
         errors.append("Task-source structure must appear only under Related task at the required level.")
 
     for heading in HEADERS[:-1]:
-        if not section(body, heading):
+        if not section(visible_body, heading):
             errors.append(f"{heading} must not be empty.")
-    review = section(body, "Agent self-review") or ""
+    review = section(visible_body, "Agent self-review") or ""
     for item in REQUIRED_REVIEW_ITEMS:
         checked = re.search(rf"(?m)^- \[[xX]\] {re.escape(item)}$", review)
         present = re.search(rf"(?m)^- \[[ xX]\] {re.escape(item)}$", review)

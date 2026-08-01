@@ -1,9 +1,30 @@
 # 项目进度
 
-- 最后更新：2026-07-31
-- 当前分支基线：`main` 已包含 PR #15 与 PR #16
+- 最后更新：2026-08-01
+- 已合并基线：`main` / `main@origin` 均指向 `49b33339`，已包含 PR #15、#16 与 #22
+- 当前本地任务：Issue #28 / `codex/issue-28-agenticwonderwall-hardening` 基于上述 `main`，不包含任何开放产品 PR
 - 项目形态：本地、单用户、可信环境的毕业设计 HMI 原型
 - 证据原则：可运行代码、测试、CI 与实际工具输出优先于规划文档；接口占位、模拟数据和历史方案不得写成已完成功能。
+
+## 本地与远端对齐快照
+
+2026-08-01 执行 `jj git fetch` 后远端引用无变化，本地 `main` 与
+`main@origin` 一致。以下工作已经 push 并创建 Pull Request，但均未合并，因而不能写入
+“已实现产品能力”：
+
+| Pull Request | 对应目标 | 当前状态与合并前要求 |
+| --- | --- | --- |
+| [#23](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/23) | Issue #11，session/reset 一致性 | Open；P0；需修复 PR 正文结构、CI 通过并由人类决定 Squash Merge |
+| [#24](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/24) | GP22 设计基线记录 | Open；合并前当前权威视觉基线仍是 GP21 |
+| [#25](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/25) | Issue #12，风险仲裁 | Open；与 #27 同改 `CockpitScreen.tsx`，后合并者必须 restack 并重验 |
+| [#26](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/26) | Issue #13，端点权限上下文 | Open；与 #23 重叠后端状态与测试文件，必须按人类合并顺序 restack 并重验 |
+| [#27](https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/27) | Issue #7，Overview 严格只读 | Open；本地 `pnpm check` 与 Git Bash `scripts/validate.sh` 已通过，仍缺成功 CI 与人类合并 |
+
+五个 PR 当前的 GitHub `check` 都在 PR 正文结构校验处失败，后续 lint、测试和构建被跳过。
+失败原因是远端正文标题与内容被压成单行，并非代码测试已经运行后失败。修复正文并获得新的成功
+`check` 之前，不得把 PR 中记录的本地结果表述为 CI 通过。
+
+Issue #28 是独立的工作流加固任务：选择性同步 AgenticWonderwall `794b083…` 的 Issue Form、PR 校验、CI 与 jj 生命周期改进。它不修改产品代码，也不改变上述开放产品 PR 的合并顺序或产品完成状态。
 
 ## 当前阶段
 
