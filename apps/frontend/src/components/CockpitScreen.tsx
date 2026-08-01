@@ -14,6 +14,7 @@ import {
 import { useState } from 'react'
 import type { CockpitSnapshotV1, EndpointId, RiskEventV1 } from '../contracts/gp05-v1'
 import { useCockpitCommand } from '../lib/useCockpitCommand'
+import { isMediaSafetySuppressed, selectPrimaryRisk } from '../lib/riskSelection'
 import type { ConnectionState } from '../stores/cockpit'
 
 interface Props {
@@ -27,7 +28,7 @@ const endpointNames: Record<EndpointId, string> = {
 }
 
 export function CockpitScreen({ endpoint, snapshot, connection }: Props) {
-  const activeRisk = snapshot?.risks.find((risk) => risk.lifecycle !== 'resolved')
+  const activeRisk = selectPrimaryRisk(snapshot?.risks ?? [])
   const offline = connection === 'offline' || snapshot?.systemMode === 'offline'
   const degraded = snapshot?.systemMode === 'stale' || snapshot?.systemMode === 'recovery'
 
@@ -84,7 +85,7 @@ function Center({ snapshot, activeRisk }: { snapshot: CockpitSnapshotV1 | null; 
 function Passenger({ snapshot, activeRisk }: { snapshot: CockpitSnapshotV1 | null; activeRisk?: RiskEventV1 }) {
   const { send, pending, error } = useCockpitCommand('passenger')
   const [suggestion, setSuggestion] = useState('建议在城市艺术中心短暂停留')
-  const suppressed = Boolean(activeRisk && activeRisk.severity === 'critical')
+  const suppressed = isMediaSafetySuppressed(snapshot?.risks ?? [])
   const playing = snapshot?.passenger.mediaState === 'playing'
   return <div className="passenger-layout"><div className={`media-card ${suppressed ? 'is-suppressed' : ''}`}><PauseCircle size={36} /><p>{suppressed ? '媒体已因驾驶风险抑制' : '媒体与旅程协作'}</p><b>{suppressed ? '请协助驾驶员处置告警' : playing ? '当前播放 · 可由副驾控制' : '媒体已暂停'}</b><div className="command-stack"><button className="secondary-button" disabled={pending || suppressed} onClick={() => void send('set_media_state', { state: playing ? 'paused' : 'playing' })}>{playing ? '暂停媒体' : '播放媒体'}</button><input value={suggestion} onChange={(event) => setSuggestion(event.target.value)} aria-label="旅程建议" /><button className="secondary-button" disabled={pending || !suggestion.trim()} onClick={() => void send('submit_trip_suggestion', { suggestion })}>发送旅程建议</button></div></div><div className="privacy-card"><ShieldAlert /><div><p>隐私模式</p><b>{snapshot?.passenger.privacyEnabled ? '副驾内容不投射至驾驶端' : '副驾内容可共享至中控'}</b></div><button className="secondary-button" disabled={pending} onClick={() => void send('set_cabin_control', { privacyEnabled: !snapshot?.passenger.privacyEnabled })}>{snapshot?.passenger.privacyEnabled ? '关闭隐私' : '开启隐私'}</button></div><VisionCard risk={activeRisk} />{error && <p className="command-error" role="alert">{error}</p>}</div>
 }
