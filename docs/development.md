@@ -39,20 +39,21 @@ pnpm smoke
 | 后端 lint / 测试 | `pnpm lint:backend`；`pnpm test:backend` | Ruff 与 pytest |
 | 全量检查 | `pnpm check` | Lint、单元测试与前端构建 |
 | 仓库验证 | `bash scripts/validate.sh` | Markdown、YAML、Shell/mode 与 `pnpm check` |
-| 运行态冒烟 | `pnpm smoke` | 当前只覆盖旧 Mock HTTP 和 `/ws/simulation` |
+| GP05 运行态冒烟 | `pnpm smoke` 或 `pnpm smoke:gp05` | 启动真实 FastAPI 进程并验证四客户端、命令收敛、reset 与 reconnect |
+| 旧 Mock 冒烟 | `pnpm smoke:legacy` | 要求端口 8000 已有服务，仅覆盖旧 Mock HTTP 和 `/ws/simulation` |
 
-### Smoke 的当前边界
+### GP05 Smoke 的边界
 
-现有 `pnpm smoke` 不证明：
+`pnpm smoke` 会自行选择动态本地端口，显式启用测试进程的 Control 命令，并在硬超时内完成以下验证：
 
 - 四个 `gp05.v1` WebSocket 客户端同时在线；
-- `/api/v1/commands` 后所有客户端收敛；
+- Center 与 Passenger 命令后所有客户端收敛，且 Passenger 命令不改变驾驶关键状态；
 - reset 创建新 session 后连接状态正确；
-- reconnect 获取最新完整 snapshot；
-- 服务端端点上下文阻止身份伪造；
-- 前端能拒绝损坏 WebSocket 数据。
+- reconnect 获取最新完整 snapshot，不回放旧 session；
+- Passenger 的越权命令返回 `command_forbidden` 且不改变 revision；
+- 无论成功或失败，Uvicorn 子进程和 WebSocket 都会被有界清理。
 
-Issue #14 负责真实 FastAPI 进程和四客户端 Smoke；Issue #11 定义 reset/reconnect 的正确行为；Issue #13 和 #19 分别负责权限上下文与前端消息容错。在 #14 完成前，PR 不得把 `pnpm smoke` 表述为完整四屏集成验证。
+该 Smoke 不替代前端损坏 WebSocket 数据容错的组件测试，也不覆盖视觉回归、性能、外部地图或部署环境。GitHub Actions 在仓库验证后单独运行 `pnpm smoke:gp05`；旧 Mock 链路仍可通过 `pnpm smoke:legacy` 手动验证。
 
 ## 项目工程标准
 
