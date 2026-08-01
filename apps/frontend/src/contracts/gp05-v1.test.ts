@@ -46,7 +46,15 @@ describe('GP05 v1 cross-layer contract', () => {
   it('accepts the canonical snapshot and rejects obvious invalid data', () => {
     expect(isCockpitSnapshotV1(snapshotFixture)).toBe(true)
     expect(isCockpitSnapshotV1({ ...snapshotFixture, revision: -1.5 })).toBe(false)
+    expect(isCockpitSnapshotV1({ ...snapshotFixture, revision: -1 })).toBe(false)
     expect(isCockpitSnapshotV1({ ...snapshotFixture, systemMode: 'unknown' })).toBe(false)
+    expect(isCockpitSnapshotV1({ ...snapshotFixture, vehicle: undefined })).toBe(false)
+    expect(
+      isCockpitSnapshotV1({
+        ...snapshotFixture,
+        navigation: { ...snapshotFixture.navigation, currentStep: { index: -1 } },
+      }),
+    ).toBe(false)
     expect(
       isCockpitSnapshotV1({
         ...snapshotFixture,
@@ -70,5 +78,7 @@ describe('GP05 v1 cross-layer contract', () => {
     expect(isMessageEnvelopeV1(envelope)).toBe(true)
     const missingCorrelation = { ...envelope, correlationId: undefined }
     expect(isMessageEnvelopeV1(missingCorrelation)).toBe(false)
+    expect(isMessageEnvelopeV1({ ...envelope, protocolVersion: 'gp04.v1' })).toBe(false)
+    expect(isMessageEnvelopeV1({ ...envelope, payload: { ...snapshotFixture, risks: [{}] } })).toBe(false)
   })
 })

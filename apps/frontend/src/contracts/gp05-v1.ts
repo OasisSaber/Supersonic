@@ -142,6 +142,10 @@ export type RouteProvider = 'amap' | 'local_fallback' | 'none'
 export type MapServiceStatus = 'live' | 'degraded' | 'unavailable'
 export type RouteStatus = 'idle' | 'planning' | 'preview' | 'active' | 'arrived' | 'unavailable'
 
+const ROUTE_PROVIDERS = ['amap', 'local_fallback', 'none'] as const
+const MAP_SERVICE_STATUSES = ['live', 'degraded', 'unavailable'] as const
+const ROUTE_STATUSES = ['idle', 'planning', 'preview', 'active', 'arrived', 'unavailable'] as const
+
 export interface NavigationStateV1 {
   provider: RouteProvider
   serviceStatus: MapServiceStatus
@@ -242,36 +246,128 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const includes = <T extends string>(values: readonly T[], value: unknown): value is T =>
   typeof value === 'string' && values.includes(value as T)
 
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.length > 0
+
+const isTimestamp = (value: unknown): value is string =>
+  isNonEmptyString(value) && Number.isFinite(Date.parse(value))
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
+const isNumberInRange = (value: unknown, minimum: number, maximum = Infinity) =>
+  isFiniteNumber(value) && value >= minimum && value <= maximum
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string')
+
+function isDataHealth(value: unknown): value is DataHealth {
+  return isRecord(value) && includes(DATA_FRESHNESS, value.status) && isTimestamp(value.updatedAt)
+}
+
+function isVehicleStateV1(value: unknown): value is VehicleStateV1 {
+  return (
+    isRecord(value) &&
+    isNumberInRange(value.speedKph, 0, 320) &&
+    isNonEmptyString(value.gear) &&
+    isNumberInRange(value.batteryPercent, 0, 100) &&
+    isNumberInRange(value.rangeKm, 0) &&
+    isNonEmptyString(value.driveMode) &&
+    typeof value.seatbeltFastened === 'boolean'
+  )
+}
+
+function isCoordinate(value: unknown): value is Coordinate {
+  return (
+    isRecord(value) &&
+    isNumberInRange(value.longitude, -180, 180) &&
+    isNumberInRange(value.latitude, -90, 90)
+  )
+}
+
+function isNavigationStep(value: unknown): value is NavigationStep {
+  return (
+    isRecord(value) &&
+    Number.isInteger(value.index) &&
+    isNumberInRange(value.index, 0) &&
+    isNonEmptyString(value.instruction) &&
+    typeof value.roadName === 'string' &&
+    isNumberInRange(value.distanceMeters, 0) &&
+    isNonEmptyString(value.maneuver)
+  )
+}
+
+function isNavigationStateV1(value: unknown): value is NavigationStateV1 {
+  return (
+    isRecord(value) &&
+    includes(ROUTE_PROVIDERS, value.provider) &&
+    includes(MAP_SERVICE_STATUSES, value.serviceStatus) &&
+    includes(ROUTE_STATUSES, value.status) &&
+    (value.destinationName === null || typeof value.destinationName === 'string') &&
+    isNumberInRange(value.remainingDistanceMeters, 0) &&
+    Number.isInteger(value.etaSeconds) &&
+    isNumberInRange(value.etaSeconds, 0) &&
+    (value.currentStep === null || isNavigationStep(value.currentStep)) &&
+    Array.isArray(value.steps) &&
+    value.steps.every(isNavigationStep) &&
+    Array.isArray(value.polyline) &&
+    value.polyline.every(isCoordinate) &&
+    isTimestamp(value.updatedAt)
+  )
+}
+
+function isRiskEventV1(value: unknown): value is RiskEventV1 {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.eventId) &&
+    isNonEmptyString(value.sessionId) &&
+    includes(RISK_TYPES, value.riskType) &&
+    includes(RISK_LIFECYCLES, value.lifecycle) &&
+    includes(RISK_SEVERITIES, value.severity) &&
+    includes(RISK_SOURCES, value.source) &&
+    isNumberInRange(value.confidence, 0, 1) &&
+    isTimestamp(value.occurredAt) &&
+    isTimestamp(value.updatedAt) &&
+    isNonEmptyString(value.message) &&
+    isStringArray(value.evidence) &&
+    isRecord(value.metadata)
+  )
+}
+
+function isEndpointConnection(value: unknown): value is EndpointConnection {
+  return isRecord(value) && includes(DATA_FRESHNESS, value.status) && isTimestamp(value.lastSeenAt)
+}
+
+function isPassengerStateV1(value: unknown): value is PassengerStateV1 {
+  return (
+    isRecord(value) &&
+    includes(['playing', 'paused', 'suppressed'] as const, value.mediaState) &&
+    typeof value.privacyEnabled === 'boolean' &&
+    isStringArray(value.tripSuggestions)
+  )
+}
+
 export function isCockpitSnapshotV1(value: unknown): value is CockpitSnapshotV1 {
-  if (!isRecord(value) || !isRecord(value.vehicle) || !isRecord(value.navigation)) return false
-  if (!isRecord(value.dataHealth) || !isRecord(value.endpointConnectivity) || !isRecord(value.passenger)) return false
+  if (!isRecord(value) || !isRecord(value.dataHealth) || !isRecord(value.endpointConnectivity)) return false
   if (!Array.isArray(value.risks) || !Array.isArray(value.capabilities)) return false
 
   return (
-    typeof value.sessionId === 'string' &&
+    isNonEmptyString(value.sessionId) &&
     Number.isInteger(value.revision) &&
-    typeof value.timestamp === 'string' &&
+    isNumberInRange(value.revision, 0) &&
+    isTimestamp(value.timestamp) &&
     includes(THEMES, value.theme) &&
     includes(SYSTEM_MODES, value.systemMode) &&
     includes(FLOWS, value.activeFlow) &&
-    typeof value.vehicle.speedKph === 'number' &&
-    (value.passenger.mediaState === 'playing' || value.passenger.mediaState === 'paused' || value.passenger.mediaState === 'suppressed') &&
-    typeof value.passenger.privacyEnabled === 'boolean' &&
-    Array.isArray(value.passenger.tripSuggestions) &&
-    typeof value.vehicle.batteryPercent === 'number' &&
-    typeof value.navigation.provider === 'string' &&
-    typeof value.navigation.serviceStatus === 'string' &&
-    value.risks.every(
-      (risk) =>
-        isRecord(risk) &&
-        includes(RISK_TYPES, risk.riskType) &&
-        includes(RISK_LIFECYCLES, risk.lifecycle) &&
-        includes(RISK_SEVERITIES, risk.severity) &&
-        includes(RISK_SOURCES, risk.source) &&
-        typeof risk.confidence === 'number' &&
-        risk.confidence >= 0 &&
-        risk.confidence <= 1,
-    )
+    Object.values(value.dataHealth).every(isDataHealth) &&
+    isVehicleStateV1(value.vehicle) &&
+    isNavigationStateV1(value.navigation) &&
+    value.risks.every(isRiskEventV1) &&
+    isPassengerStateV1(value.passenger) &&
+    Object.entries(value.endpointConnectivity).every(
+      ([endpoint, connection]) => includes(ENDPOINTS, endpoint) && isEndpointConnection(connection),
+    ) &&
+    isStringArray(value.capabilities)
   )
 }
 
@@ -280,14 +376,25 @@ export function isMessageEnvelopeV1(value: unknown): value is MessageEnvelopeV1 
 
   const hasMetadata =
     value.protocolVersion === CONTRACT_VERSION &&
-    typeof value.messageId === 'string' &&
-    typeof value.correlationId === 'string' &&
-    typeof value.timestamp === 'string' &&
-    typeof value.source.id === 'string' &&
-    (value.source.kind === 'endpoint' || value.source.kind === 'service')
+    isNonEmptyString(value.messageId) &&
+    isNonEmptyString(value.correlationId) &&
+    isTimestamp(value.timestamp) &&
+    isNonEmptyString(value.source.id) &&
+    (value.source.kind === 'endpoint' || value.source.kind === 'service') &&
+    (value.target === null || includes(ENDPOINTS, value.target))
 
   if (!hasMetadata) return false
   if (value.kind === 'snapshot') return isCockpitSnapshotV1(value.payload)
-  if (value.kind === 'command') return includes(COMMAND_NAMES, value.payload.name)
-  return value.kind === 'event' && typeof value.payload.name === 'string'
+  if (value.kind === 'command') {
+    return (
+      includes(COMMAND_NAMES, value.payload.name) &&
+      includes(ENDPOINTS, value.payload.endpoint) &&
+      isRecord(value.payload.parameters)
+    )
+  }
+  return (
+    value.kind === 'event' &&
+    isNonEmptyString(value.payload.name) &&
+    isRecord(value.payload.data)
+  )
 }
