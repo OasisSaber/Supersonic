@@ -1,7 +1,8 @@
 """Tests for the pull-request-body validator.
 
-Adapted from OasisSaber/AgenticWonderwall (MIT), commit
-689d4edb8aacc1fc7a277da89efed05199b75edb. See THIRD_PARTY_NOTICES.md.
+Adapted from OasisSaber/AgenticWonderwall (MIT), commits
+689d4edb8aacc1fc7a277da89efed05199b75edb and
+794b083e816e84f271e991aed84a5a5f4e9c74fc. See THIRD_PARTY_NOTICES.md.
 """
 
 import unittest
@@ -46,6 +47,11 @@ class ValidatePrBodyTests(unittest.TestCase):
     def test_valid_issue_only(self):
         self.assertEqual([], validate(ISSUE_BASE))
 
+    def test_all_supported_closing_keywords_are_valid(self):
+        for reference in ("Close #4", "Closed #4", "Fix #4", "Fixes #4", "Fixed #4", "Resolve #4", "Resolves #4", "Resolved #4"):
+            with self.subTest(reference=reference):
+                self.assertEqual([], validate(ISSUE_BASE.replace("Closes #4", reference)))
+
     def test_valid_authorization_only(self):
         self.assertEqual([], validate(AUTHORIZATION_BASE))
 
@@ -64,6 +70,9 @@ class ValidatePrBodyTests(unittest.TestCase):
     def test_issue_placeholder_fails(self):
         self.assertTrue(validate(ISSUE_BASE.replace("#4", "#<number>")))
 
+    def test_placeholder_outside_task_source_is_allowed(self):
+        self.assertEqual([], validate(ISSUE_BASE.replace("Done.", "Rendered label: <number>.")))
+
     def test_empty_issue_fails(self):
         self.assertTrue(validate(ISSUE_BASE.replace("Closes #4", "")))
 
@@ -75,6 +84,37 @@ class ValidatePrBodyTests(unittest.TestCase):
 
     def test_duplicate_issue_path_fails(self):
         self.assertTrue(validate(ISSUE_BASE.replace("- Issue: Closes #4", "- Issue: Closes #4\n- Issue: Closes #5")))
+
+    def test_bare_issue_reference_fails(self):
+        self.assertTrue(validate(ISSUE_BASE.replace("Closes #4", "#4")))
+
+    def test_non_closing_issue_text_fails(self):
+        self.assertTrue(validate(ISSUE_BASE.replace("Closes #4", "Reviewed in #4")))
+
+    def test_multiple_issue_references_fail(self):
+        self.assertTrue(validate(ISSUE_BASE.replace("Closes #4", "Closes #4 and fixes #5")))
+
+    def test_cross_repository_issue_reference_fails(self):
+        self.assertTrue(validate(ISSUE_BASE.replace("Closes #4", "Closes OasisSaber/AgenticWonderwall#4")))
+
+    def test_dormant_authorization_path_in_html_comment_is_ignored(self):
+        dormant = """<!--
+- Explicit human authorization:
+  - Authorization source: <source>
+  - Goal: <goal>
+  - Scope: <scope>
+-->"""
+        self.assertEqual([], validate(ISSUE_BASE.replace("\n\n## What changed", f"\n{dormant}\n\n## What changed")))
+
+    def test_comment_only_issue_path_fails(self):
+        self.assertTrue(validate(ISSUE_BASE.replace("- Issue: Closes #4", "<!-- - Issue: Closes #4 -->")))
+
+    def test_comment_only_required_section_fails(self):
+        self.assertTrue(validate(ISSUE_BASE.replace("Done.", "<!-- Done. -->")))
+
+    def test_comment_only_checked_review_item_fails(self):
+        item = REQUIRED_REVIEW_ITEMS[0]
+        self.assertTrue(validate(ISSUE_BASE.replace(f"- [x] {item}", f"<!-- - [x] {item} -->")))
 
     def test_empty_required_section_fails(self):
         self.assertTrue(validate(ISSUE_BASE.replace("Done.", "")))

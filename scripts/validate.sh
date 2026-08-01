@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Repository validation for intelligent-cockpit-hmi.
-# Validates tracked Markdown links, YAML, shell syntax/modes, then pnpm check.
+# Runs validator tests, then checks tracked Markdown links, YAML, shell syntax/modes, and pnpm check.
 
 set -euo pipefail
 
@@ -20,8 +20,11 @@ if [[ -z "$python_bin" ]]; then
   exit 1
 fi
 
-echo '--- Markdown local links ---'
+echo '--- Validator tests ---'
+"$python_bin" scripts/test_validate_pr_body.py
 "$python_bin" scripts/test_validate_markdown_links.py
+
+echo '--- Markdown local links ---'
 "$python_bin" scripts/validate_markdown_links.py
 
 echo '--- YAML syntax ---'

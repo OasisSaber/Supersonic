@@ -4,4 +4,6 @@
 
 The pull-request-body validator, Markdown-link validator, and their tests in `scripts/validate_pr_body.py`, `scripts/test_validate_pr_body.py`, `scripts/validate_markdown_links.py`, and `scripts/test_validate_markdown_links.py` are adapted from [OasisSaber/AgenticWonderwall](https://github.com/OasisSaber/AgenticWonderwall), commit `689d4edb8aacc1fc7a277da89efed05199b75edb`.
 
+The complex-task Issue Form, selected Jujutsu lifecycle guidance, pull-request validation hardening, and CI hardening were selectively synchronized from the same project at commit `794b083e816e84f271e991aed84a5a5f4e9c74fc`. They were adapted to preserve this repository's HMI-specific authority, validation command, and platform evidence.
+
 Those derived materials are provided under the source project's MIT License. This notice does not grant a license for the intelligent-cockpit-hmi project as a whole; see [README.md](README.md) for this repository's license boundary.

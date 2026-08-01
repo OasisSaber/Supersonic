@@ -1,0 +1,64 @@
+name: Complex task
+description: Record a complex, cross-module, architectural, or ambiguous task before implementation.
+title: "[Task] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for work that requires the complex-task path in `AGENTS.md`.
+        Keep the goal, allowed scope, acceptance criteria, exclusions, and authority boundary explicit.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Describe the concrete outcome this task must achieve.
+      placeholder: What will be true when this task is complete?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Allowed scope
+      description: List the files, modules, systems, and external targets that may change.
+      placeholder: Include an explicit file or module boundary.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: List observable checks that must pass before the task is ready for review.
+      placeholder: Use a checklist with testable outcomes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: exclusions
+    attributes:
+      label: Exclusions
+      description: State what this task must not change or claim.
+      placeholder: List product, architecture, release, or operational boundaries that remain out of scope.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies_order
+    attributes:
+      label: Dependencies and order
+      description: Record prerequisites or an explicit A → B → C order. Write "None" if there is no dependency chain.
+      placeholder: None
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: authority_boundary
+    attributes:
+      label: Authority boundary
+      description: Issue scope cannot override repository safety, protected-branch, release, deployment, or destructive-operation rules.
+      options:
+        - label: I acknowledge the authority order and human-reserved actions in `AGENTS.md`.
+          required: true
