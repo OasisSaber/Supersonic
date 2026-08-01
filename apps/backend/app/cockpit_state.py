@@ -43,6 +43,26 @@ class CommandRejected(ValueError):
         self.status_code = status_code
 
 
+def navigation_data_freshness(navigation: NavigationStateV1) -> DataFreshness:
+    """Map route/provider state to one authoritative navigation-health value.
+
+    No route or an unavailable service is offline. A live AMap route is fresh.
+    Any usable fallback/degraded route is stale rather than offline.
+    """
+    if (
+        navigation.provider is RouteProvider.NONE
+        or navigation.service_status is MapServiceStatus.UNAVAILABLE
+        or navigation.status in {RouteStatus.IDLE, RouteStatus.UNAVAILABLE}
+    ):
+        return DataFreshness.OFFLINE
+    if (
+        navigation.provider is RouteProvider.AMAP
+        and navigation.service_status is MapServiceStatus.LIVE
+    ):
+        return DataFreshness.FRESH
+    return DataFreshness.STALE
+
+
 class CockpitStateAuthority:
     """Owns the single in-memory cockpit state and broadcasts full snapshots."""
 
@@ -61,6 +81,12 @@ class CockpitStateAuthority:
 
     def _make_default_snapshot(self, *, revision: int) -> CockpitSnapshotV1:
         now = self._clock()
+        navigation = NavigationStateV1(
+            provider=RouteProvider.NONE,
+            service_status=MapServiceStatus.UNAVAILABLE,
+            status=RouteStatus.IDLE,
+            updated_at=now,
+        )
         return CockpitSnapshotV1(
             session_id=str(self._id_factory()),
             revision=revision,
@@ -70,7 +96,10 @@ class CockpitStateAuthority:
             active_flow=FlowId.NAVIGATION_HANDOFF,
             data_health={
                 "vehicle": DataHealth(status=DataFreshness.FRESH, updated_at=now),
-                "navigation": DataHealth(status=DataFreshness.OFFLINE, updated_at=now),
+                "navigation": DataHealth(
+                    status=navigation_data_freshness(navigation),
+                    updated_at=navigation.updated_at,
+                ),
                 "vision": DataHealth(status=DataFreshness.OFFLINE, updated_at=now),
             },
             vehicle=VehicleStateV1(
@@ -81,12 +110,7 @@ class CockpitStateAuthority:
                 drive_mode="comfort",
                 seatbelt_fastened=True,
             ),
-            navigation=NavigationStateV1(
-                provider=RouteProvider.NONE,
-                service_status=MapServiceStatus.UNAVAILABLE,
-                status=RouteStatus.IDLE,
-                updated_at=now,
-            ),
+            navigation=navigation,
             passenger=PassengerStateV1(),
             endpoint_connectivity={
                 endpoint: EndpointConnection(status=DataFreshness.OFFLINE, last_seen_at=now)
@@ -242,6 +266,7 @@ class CockpitStateAuthority:
                 polyline=[],
                 updated_at=self._clock(),
             )
+            self._synchronize_navigation_health_locked()
             return True
 
         if name is CommandName.CONFIRM_ROUTE:
@@ -252,6 +277,7 @@ class CockpitStateAuthority:
                 )
             self._snapshot.navigation.status = RouteStatus.ACTIVE
             self._snapshot.navigation.updated_at = self._clock()
+            self._synchronize_navigation_health_locked()
             return True
 
         if name in {CommandName.ACKNOWLEDGE_RISK, CommandName.RESOLVE_RISK}:
@@ -374,6 +400,13 @@ class CockpitStateAuthority:
         self._snapshot.endpoint_connectivity[endpoint] = EndpointConnection(
             status=status,
             last_seen_at=self._clock(),
+        )
+
+    def _synchronize_navigation_health_locked(self) -> None:
+        navigation = self._snapshot.navigation
+        self._snapshot.data_health["navigation"] = DataHealth(
+            status=navigation_data_freshness(navigation),
+            updated_at=navigation.updated_at,
         )
 
     def _touch_locked(self) -> None:
