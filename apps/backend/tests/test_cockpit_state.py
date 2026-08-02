@@ -102,6 +102,24 @@ async def test_select_destination_accepts_name_at_contract_max_length() -> None:
     assert changed.payload.navigation.destination_name == "x" * 160
 
 
+async def test_set_media_state_rejects_unhashable_value_without_mutation() -> None:
+    authority = CockpitStateAuthority()
+    before = await authority.get_snapshot()
+
+    with pytest.raises(CommandRejected, match="state") as captured:
+        await authority.apply_command(
+            command(
+                CommandName.SET_MEDIA_STATE,
+                {"state": {"playing": True}},
+                endpoint=EndpointId.CENTER,
+            )
+        )
+
+    after = await authority.get_snapshot()
+    assert captured.value.code == "invalid_parameters"
+    assert after == before
+
+
 async def test_navigation_handoff_is_authoritative_and_requires_a_preview() -> None:
     authority = CockpitStateAuthority()
 
