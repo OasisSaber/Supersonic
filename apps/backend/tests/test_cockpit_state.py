@@ -120,6 +120,56 @@ async def test_set_media_state_rejects_unhashable_value_without_mutation() -> No
     assert after == before
 
 
+async def test_submit_trip_suggestion_rejects_overlong_text_without_mutation() -> None:
+    authority = CockpitStateAuthority()
+    before = await authority.get_snapshot()
+
+    with pytest.raises(CommandRejected, match="suggestion") as captured:
+        await authority.apply_command(
+            command(
+                CommandName.SUBMIT_TRIP_SUGGESTION,
+                {"suggestion": "x" * 201},
+                endpoint=EndpointId.PASSENGER,
+            )
+        )
+
+    after = await authority.get_snapshot()
+    assert captured.value.code == "invalid_parameters"
+    assert after == before
+
+
+async def test_submit_trip_suggestion_accepts_text_at_max_length() -> None:
+    authority = CockpitStateAuthority()
+    initial = await authority.get_snapshot()
+
+    changed = await authority.apply_command(
+        command(
+            CommandName.SUBMIT_TRIP_SUGGESTION,
+            {"suggestion": "x" * 200},
+            endpoint=EndpointId.PASSENGER,
+        )
+    )
+
+    assert changed.payload.revision == initial.revision + 1
+    assert changed.payload.passenger.trip_suggestions[0] == "x" * 200
+
+
+async def test_submit_trip_suggestion_strips_before_length_check() -> None:
+    authority = CockpitStateAuthority()
+    initial = await authority.get_snapshot()
+
+    changed = await authority.apply_command(
+        command(
+            CommandName.SUBMIT_TRIP_SUGGESTION,
+            {"suggestion": " " * 10 + "x" * 195},
+            endpoint=EndpointId.PASSENGER,
+        )
+    )
+
+    assert changed.payload.revision == initial.revision + 1
+    assert changed.payload.passenger.trip_suggestions[0] == "x" * 195
+
+
 async def test_navigation_handoff_is_authoritative_and_requires_a_preview() -> None:
     authority = CockpitStateAuthority()
 

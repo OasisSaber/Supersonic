@@ -47,6 +47,10 @@ class CommandRejected(ValueError):
 # NavigationStateV1.destination_name max_length=160 保持一致；修改契约时须同步此处。
 DESTINATION_NAME_MAX_LENGTH = 160
 
+# SUBMIT_TRIP_SUGGESTION 参数校验上限。契约（v1.py:229）仅限制 trip_suggestions
+# 列表条数（max_length=8），单条文本无约束，此处防御性限制无界输入进入共享快照。
+SUGGESTION_MAX_LENGTH = 200
+
 
 def navigation_data_freshness(navigation: NavigationStateV1) -> DataFreshness:
     """Map route/provider state to one authoritative navigation-health value.
@@ -340,8 +344,14 @@ class CockpitStateAuthority:
                 raise CommandRejected(
                     "invalid_parameters", "suggestion must be a non-empty string."
                 )
+            suggestion = value.strip()
+            if len(suggestion) > SUGGESTION_MAX_LENGTH:
+                raise CommandRejected(
+                    "invalid_parameters",
+                    f"suggestion must be at most {SUGGESTION_MAX_LENGTH} characters.",
+                )
             self._snapshot.active_flow = FlowId.PASSENGER_COLLABORATION
-            suggestions = [value.strip(), *self._snapshot.passenger.trip_suggestions]
+            suggestions = [suggestion, *self._snapshot.passenger.trip_suggestions]
             self._snapshot.passenger.trip_suggestions = suggestions[:8]
             return True
 
