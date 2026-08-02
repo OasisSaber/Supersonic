@@ -43,6 +43,11 @@ class CommandRejected(ValueError):
         self.status_code = status_code
 
 
+# SELECT_DESTINATION 参数校验上限，与 contracts/v1.py:197 的
+# NavigationStateV1.destination_name max_length=160 保持一致；修改契约时须同步此处。
+DESTINATION_NAME_MAX_LENGTH = 160
+
+
 def navigation_data_freshness(navigation: NavigationStateV1) -> DataFreshness:
     """Map route/provider state to one authoritative navigation-health value.
 
@@ -247,12 +252,20 @@ class CockpitStateAuthority:
                 raise CommandRejected(
                     "invalid_parameters", "destinationName must be a non-empty string."
                 )
-            self._snapshot.active_flow = FlowId.NAVIGATION_HANDOFF
-            self._snapshot.navigation = NavigationStateV1(
+            destination = destination.strip()
+            if (
+                DESTINATION_NAME_MAX_LENGTH is not None
+                and len(destination) > DESTINATION_NAME_MAX_LENGTH
+            ):
+                raise CommandRejected(
+                    "invalid_parameters",
+                    f"destinationName must be at most {DESTINATION_NAME_MAX_LENGTH} characters.",
+                )
+            navigation = NavigationStateV1(
                 provider=RouteProvider.LOCAL_FALLBACK,
                 service_status=MapServiceStatus.DEGRADED,
                 status=RouteStatus.PREVIEW,
-                destination_name=destination.strip(),
+                destination_name=destination,
                 remaining_distance_meters=8400,
                 eta_seconds=960,
                 current_step=NavigationStep(
@@ -266,6 +279,8 @@ class CockpitStateAuthority:
                 polyline=[],
                 updated_at=self._clock(),
             )
+            self._snapshot.active_flow = FlowId.NAVIGATION_HANDOFF
+            self._snapshot.navigation = navigation
             self._synchronize_navigation_health_locked()
             return True
 
