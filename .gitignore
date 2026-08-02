@@ -54,3 +54,4 @@ Thumbs.db
 
 # Reasonix desktop session metadata (runtime artifacts, never commit)
 .reasonix/desktop-topic-*.json
+reasonix.toml
