@@ -68,6 +68,40 @@ async def test_rejected_command_does_not_change_snapshot() -> None:
     assert after == before
 
 
+async def test_select_destination_rejects_overlong_name_without_mutation() -> None:
+    authority = CockpitStateAuthority()
+    before = await authority.get_snapshot()
+
+    with pytest.raises(CommandRejected, match="destinationName") as captured:
+        await authority.apply_command(
+            command(
+                CommandName.SELECT_DESTINATION,
+                {"destinationName": "x" * 161},
+                endpoint=EndpointId.CENTER,
+            )
+        )
+
+    after = await authority.get_snapshot()
+    assert captured.value.code == "invalid_parameters"
+    assert after == before
+
+
+async def test_select_destination_accepts_name_at_contract_max_length() -> None:
+    authority = CockpitStateAuthority()
+    initial = await authority.get_snapshot()
+
+    changed = await authority.apply_command(
+        command(
+            CommandName.SELECT_DESTINATION,
+            {"destinationName": "x" * 160},
+            endpoint=EndpointId.CENTER,
+        )
+    )
+
+    assert changed.payload.revision == initial.revision + 1
+    assert changed.payload.navigation.destination_name == "x" * 160
+
+
 async def test_navigation_handoff_is_authoritative_and_requires_a_preview() -> None:
     authority = CockpitStateAuthority()
 
