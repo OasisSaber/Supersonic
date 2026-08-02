@@ -324,7 +324,7 @@ class CockpitStateAuthority:
         if name is CommandName.SET_MEDIA_STATE:
             self._require_keys(parameters, {"state"})
             value = parameters["state"]
-            if value not in {"playing", "paused"}:
+            if not isinstance(value, str) or value not in {"playing", "paused"}:
                 raise CommandRejected("invalid_parameters", "state must be playing or paused.")
             if self._media_is_safety_suppressed_locked() and value == "playing":
                 raise CommandRejected(

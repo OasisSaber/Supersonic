@@ -87,6 +87,22 @@ async def test_overlong_destination_is_rejected_without_mutation() -> None:
     assert snapshot.json()["revision"] == 0
 
 
+async def test_media_state_object_parameter_is_rejected_without_mutation() -> None:
+    app = control_enabled_app()
+    payload = command_payload(
+        "set_media_state",
+        {"state": {"playing": True}},
+        endpoint="center",
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/commands/center", json=payload)
+        snapshot = await client.get("/api/v1/snapshot")
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_parameters"
+    assert snapshot.json()["revision"] == 0
+
+
 async def test_cross_endpoint_spoofing_is_rejected_by_server_context() -> None:
     app = control_enabled_app()
     payload = command_payload("set_theme", {"theme": "day"}, endpoint="control")

@@ -51,8 +51,8 @@ def evaluate_risk(frame: SensorFrame) -> RiskEvent:
         road.pedestrian_detected
         or road.lane_departure
         or driver.distracted
-        or driver.fatigue_level == RiskLevel.MEDIUM
-        or road.front_vehicle_risk == RiskLevel.MEDIUM
+        or driver.fatigue_level in {RiskLevel.MEDIUM, RiskLevel.HIGH}
+        or road.front_vehicle_risk in {RiskLevel.MEDIUM, RiskLevel.HIGH}
         or (vehicle is not None and not vehicle.seatbelt_fastened)
     )
     if medium:
