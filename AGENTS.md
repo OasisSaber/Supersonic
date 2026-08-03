@@ -1,12 +1,18 @@
 # Agent 项目入口
 
-> 本文件是本仓库唯一具有约束力的通用 Agent 工作流规则来源。README、CONTRIBUTING、开发文档和模板只能解释或辅助执行，不能覆盖本文件。
+> 本文件是本仓库唯一入口：定义加载顺序与分域权威，不复制规则正文。
+> 规则分布：
+> - 任务来源、工作区检查、验证真实性、diff 审阅、自审与交接：[core/workflow.md](core/workflow.md)
+> - 权限与聚合授权、外部写操作边界、人类审批门、发布事务、安全停止条件：[core/policy.md](core/policy.md)
+> - Git / jj 发布执行命令：[profiles/git.md](profiles/git.md)、[profiles/jj.md](profiles/jj.md)
+> - Harness 映射：[adapters/generic.md](adapters/generic.md)
+> 各层通过链接引用，不复制同一规则。README、CONTRIBUTING、开发文档和模板只能解释或辅助执行，不能覆盖本文件及其引用的规则。
 
 ## 项目事实
 
 - 目标：智能座舱四屏协同 HMI（主仪表、HUD、中控、副驾）。
 - 技术：Figma、React + TypeScript + Vite、FastAPI + Python、WebSocket、pnpm、uv、Jujutsu。
-- 默认分支：`main`；验证入口：`bash scripts/validate.sh`。
+- 默认分支：`main`；验证入口：`bash scripts/validate.sh`（Windows 显式 Git Bash 调用见 `CONTRIBUTING.md`）。
 - 唯一当前决策基线：`docs/project/DECISION_BASELINE.md`。
 - `apps/` 内的道路风险、驾驶员监测与 LLM 是早期技术基线；除非任务明确涉及，不要把它们当作最终课题范围。
 
@@ -14,13 +20,23 @@
 
 1. 系统安全、法律与平台权限；
 2. 项目安全、隐私、合规和数据保护要求；
-3. 受保护分支、发布、部署和破坏性操作限制；
-4. 本文件中的通用工作流规则；
+3. 受保护分支、发布、部署和破坏性操作限制（授权语义见 [core/policy.md](core/policy.md)）；
+4. 根部 `AGENTS.md` 及其引用的 `core/` 规则；
 5. 当前 GitHub Issue 或当前会话中的明确人类授权；
 6. 项目架构、冻结决策、测试和交付资料；
 7. README、CONTRIBUTING、开发文档和其他辅助材料。
 
 Issue 或授权只能界定目标、范围和验收条件，不能覆盖安全、隐私、受保护分支、发布、部署或破坏性操作限制。
+
+## 加载顺序
+
+开始工作前按以下顺序加载：
+
+1. 根部 `AGENTS.md`（本文件）；
+2. [core/workflow.md](core/workflow.md)（任务来源、工作区、验证、自审）；
+3. [core/policy.md](core/policy.md)（授权与发布）；
+4. 选用的 [profiles/](profiles/jj.md)（Git / jj 命令）与 [adapters/](adapters/generic.md)（Harness 映射）；
+5. 当前 Issue 或明确人类授权。
 
 ## 开始工作
 
@@ -30,6 +46,8 @@ Issue 或授权只能界定目标、范围和验收条件，不能覆盖安全�
 4. 确认不覆盖、删除或混入来源不明的修改。
 
 ## 两条任务路径
+
+复杂任务与小型低风险任务的路径、适用范围与授权记录要求见 [core/workflow.md](core/workflow.md) §1。本项目落地如下：
 
 ### 复杂任务
 
@@ -44,6 +62,8 @@ GitHub Issue → 一个 jj change → 实现与验证 → Agent 自审 → Pull 
 仅适用于目标清晰、范围小、易回滚，且不涉及架构、公共接口、持久化数据、部署、发布、远端数据或破坏性操作的工作。没有 Issue 时不得伪造编号；需要扩大范围时必须停止并转为 Issue 路径。
 
 ## jj change 与工作区
+
+任务 change 卫生与完整 diff 审阅要求见 [core/workflow.md](core/workflow.md) §3 与 §5，jj 命令生命周期见 `.reasonix/skills/themasterplan/references/jj-lifecycle.md`：
 
 - 一个任务对应一个可验证的 jj change，并使用短生命周期 bookmark；不维护长期开发分支。
 - 不混入无关修改，也不覆盖来源不明的修改。
@@ -60,11 +80,15 @@ GitHub Issue → 一个 jj change → 实现与验证 → Agent 自审 → Pull 
 
 ## 验证与自审
 
+验证真实性与自审要求见 [core/workflow.md](core/workflow.md) §4 与 §6。本项目落地如下：
+
 - 文档改动检查链接、路径、事实与术语；前端改动运行 lint、测试和构建；后端改动运行 Ruff 与 pytest；跨层或交付改动运行 `pnpm check`。运行态证据需要时再单独运行 `pnpm smoke`。
 - push 前必须运行 `bash scripts/validate.sh`。失败时必须修复并重跑，不得将失败或未验证状态表述为成功。
 - 创建或更新 PR 前，Agent 必须对照任务来源检查结果、阅读完整 diff、记录真实验证、确认未扩大范围、清除调试代码/临时文件/缓存/失效引用，并记录已知限制和未覆盖项。
 
 ## 外部操作与人工保留
+
+授权语义与聚合授权见 [core/policy.md](core/policy.md) §1-§2。本项目落地如下：
 
 - 当当前 Issue、当前会话或任务说明已明确记录目标远端、Issue/授权来源、bookmark、base branch、任务目标、允许文件范围以及 Agent 可 push 和创建/更新关联 PR 时，该任务级授权覆盖同一 bookmark 的首次及后续普通 push、关联 PR 的创建和范围内更新；远端、Issue、bookmark、base、PR 和任务范围未实质变化时，普通网络或非权限技术失败可重试。
 - 未取得上述任务级远端授权时，Agent 可完成本地实现与验证，但在首次产生远端影响前必须请求一次明确授权，并列明远端、可见性、Issue、bookmark、base、文件范围、敏感信息检查和验证结果。
