@@ -114,11 +114,13 @@ pnpm smoke
 Jujutsu 版本: `0.43.0`
 Git 版本: `2.54.0`
 平台与验证入口: Windows / Git Bash（`bash scripts/validate.sh`）
-验证状态: PARTIAL（待本次采用演练的 PR 合并与后续平台烟雾测试完成后更新）
+验证状态: VERIFIED（Windows / Git Bash 入口；首次演练 PR #39 已合并；本项目不承诺 PowerShell 7 委托入口）
 
 该项目工作流是旧 [AgenticWonderwall](#agenticwonderwall-采用记录) 采用基线的后续品牌与版本演化；
 两条采用记录并存用于追溯。工作流的 MIT 来源许可证仅适用于实际派生的工作流脚本与文本，
 不自动改变本 HMI 毕业设计项目整体的许可状态，声明见 [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)。
+
+首次演练 PR: <https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/39>
 
 ## AgenticWonderwall 采用记录
 
