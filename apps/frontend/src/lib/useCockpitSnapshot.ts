@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import {
-  isMessageEnvelopeV1,
   isCockpitSnapshotV1,
+  isMessageEnvelopeV1,
   type EndpointId,
 } from '../contracts/gp05-v1'
 import { useCockpitStore } from '../stores/cockpit'
@@ -28,13 +28,26 @@ export function useCockpitSnapshot(endpoint: EndpointId) {
     let socket: WebSocket | null = null
     let retry: ReturnType<typeof setTimeout> | undefined
     let reconnectAttempt = 0
+    let hasAuthoritativeWebSocketSnapshot = false
+    const bootstrapController = new AbortController()
 
     setEndpoint(endpoint)
     setConnection('connecting')
-    void fetch(`${apiBase}/api/v1/snapshot`)
-      .then((response) => (response.ok ? response.json() : Promise.reject(response.statusText)))
+
+    void fetch(`${apiBase}/api/v1/snapshot`, {
+      signal: bootstrapController.signal,
+    })
+      .then((response) =>
+        response.ok ? response.json() : Promise.reject(new Error(response.statusText)),
+      )
       .then((payload: unknown) => {
-        if (!disposed && isCockpitSnapshotV1(payload)) receiveSnapshot(payload)
+        if (
+          !disposed &&
+          !hasAuthoritativeWebSocketSnapshot &&
+          isCockpitSnapshotV1(payload)
+        ) {
+          receiveSnapshot(payload)
+        }
       })
       .catch(() => undefined)
 
@@ -56,11 +69,12 @@ export function useCockpitSnapshot(endpoint: EndpointId) {
       try {
         currentSocket = new WebSocket(websocketUrl(endpoint))
       } catch {
-        scheduleReconnect('无法创建 FastAPI snapshot 连接')
+        scheduleReconnect('无法创建 Supersonic snapshot 连接')
         return
       }
       socket = currentSocket
-      let closeMessage = '未连接到 FastAPI snapshot 服务'
+      let closeMessage = '未连接到 Supersonic snapshot 服务'
+
       currentSocket.onmessage = (event) => {
         if (disposed || socket !== currentSocket) return
         let payload: unknown
@@ -68,23 +82,28 @@ export function useCockpitSnapshot(endpoint: EndpointId) {
           if (typeof event.data !== 'string') throw new Error('non-text message')
           payload = JSON.parse(event.data)
         } catch {
-          closeMessage = '收到无法解析的 FastAPI snapshot 消息'
+          closeMessage = '收到无法解析的 Supersonic snapshot 消息'
           currentSocket.close()
           return
         }
         if (!isMessageEnvelopeV1(payload) || payload.kind !== 'snapshot') {
-          closeMessage = '收到不兼容的 FastAPI snapshot 消息'
+          closeMessage = '收到不兼容的 Supersonic snapshot 消息'
           currentSocket.close()
           return
         }
+
+        hasAuthoritativeWebSocketSnapshot = true
+        bootstrapController.abort()
         reconnectAttempt = 0
         receiveSnapshot(payload.payload)
         setConnection('connected')
       }
+
       currentSocket.onerror = () => {
-        closeMessage = 'FastAPI snapshot 连接发生错误'
+        closeMessage = 'Supersonic snapshot 连接发生错误'
         currentSocket.close()
       }
+
       currentSocket.onclose = () => {
         if (socket === currentSocket) socket = null
         scheduleReconnect(closeMessage)
@@ -94,6 +113,7 @@ export function useCockpitSnapshot(endpoint: EndpointId) {
     connect()
     return () => {
       disposed = true
+      bootstrapController.abort()
       if (retry) clearTimeout(retry)
       socket?.close()
     }

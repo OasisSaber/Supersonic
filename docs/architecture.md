@@ -1,4 +1,4 @@
-# 系统架构
+# Supersonic 系统架构
 
 ## 项目上下文
 
@@ -66,14 +66,14 @@ Control / Center / Passenger commands
 
 | 路由 | 角色 | 当前状态 |
 | --- | --- | --- |
-| `/cluster` | 主驾驶仪表 | 已实现，继续修复状态与风险一致性 |
-| `/hud` | 最低认知负荷提示 | 已实现，继续修复风险一致性 |
-| `/center` | 路线、详情和确认操作 | 已实现本地演示流程 |
-| `/passenger` | 媒体、隐私和旅程协作 | 已实现本地演示流程 |
-| `/overview` | 四屏只读编排 | 存在命令边界缺陷，Issue #7 |
-| `/control` | 本地答辩控制 | 当前回退为 Center，Issue #17 |
+| `/cluster` | 主驾驶仪表 | 已实现；消费权威 snapshot 与统一风险仲裁 |
+| `/hud` | 最低认知负荷提示 | 已实现；只读展示最高优先级提示 |
+| `/center` | 路线、详情和确认操作 | 已实现本地确定性演示流程 |
+| `/passenger` | 媒体、隐私和旅程协作 | 已实现本地确定性演示流程 |
+| `/overview` | 四屏只读编排 | 已实现严格只读组合，不挂载命令控件 |
+| `/control` | 本地答辩控制 | 已实现独立端点；命令默认关闭并受服务端开关约束 |
 
-其他已编号架构缺陷见 [`project/PROJECT_PROGRESS.md`](project/PROJECT_PROGRESS.md)。
+当前状态、未完成能力与后续队列见 [`project/PROJECT_PROGRESS.md`](project/PROJECT_PROGRESS.md)。
 
 ## 条件性组件
 

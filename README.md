@@ -1,6 +1,6 @@
-# 智能座舱多屏协同 HMI 设计与交互原型
+# Supersonic：智能座舱多屏协同 HMI
 
-毕业设计项目：以 Figma 为设计源，使用 React + TypeScript、FastAPI 和 WebSocket 验证主驾驶仪表、HUD、中控屏与副驾驶屏的共享状态和跨屏交互。
+Supersonic 是面向毕业设计的智能座舱多屏协同 HMI：以 Figma 为设计源，使用 React + TypeScript、FastAPI 和 WebSocket 验证主驾驶仪表、HUD、中控屏与副驾驶屏的共享状态和跨屏交互。
 
 ## 项目定位
 
@@ -53,8 +53,8 @@ pnpm smoke
 ```
 
 - `pnpm check` 是当前静态检查、单元测试和前端构建入口。
-- `pnpm smoke` 当前只覆盖旧 Mock HTTP 与 `/ws/simulation` 链路，**尚不能证明四个 `gp05.v1` 客户端、命令广播、重置和重连全部成立**。
-- 核心多屏运行态 Smoke 由 Issue #14 跟踪；在其完成前，不得把现有 Smoke 表述为完整四屏集成验证。
+- `pnpm smoke` 运行 `gp05.v1` 真实进程 Smoke，覆盖四个产品端点、命令广播、权限拒绝、会话重置和 HUD 重连。
+- 该 Smoke 证明当前确定性本地链路成立；真实地图、数据库、VehicleVision、AI 语音和多显示部署仍需各自的验收证据。
 
 ## 当前工作队列
 

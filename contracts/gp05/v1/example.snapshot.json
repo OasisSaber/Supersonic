@@ -1,9 +1,9 @@
 {
-  "sessionId": "demo-session-001",
+  "sessionId": "supersonic-demo-session-001",
   "revision": 42,
   "timestamp": "2026-07-17T08:36:23Z",
   "theme": "night",
-  "systemMode": "warning",
+  "systemMode": "takeover",
   "activeFlow": "risk_takeover",
   "dataHealth": {
     "vehicle": {
@@ -11,7 +11,7 @@
       "updatedAt": "2026-07-17T08:36:23Z"
     },
     "navigation": {
-      "status": "fresh",
+      "status": "stale",
       "updatedAt": "2026-07-17T08:36:22Z"
     },
     "vision": {
@@ -28,8 +28,8 @@
     "seatbeltFastened": true
   },
   "navigation": {
-    "provider": "amap",
-    "serviceStatus": "live",
+    "provider": "local_fallback",
+    "serviceStatus": "degraded",
     "status": "active",
     "destinationName": "城市艺术中心",
     "remainingDistanceMeters": 8400,
@@ -50,28 +50,24 @@
         "maneuver": "turn_right"
       }
     ],
-    "polyline": [
-      { "longitude": 120.1551, "latitude": 30.2741 },
-      { "longitude": 120.1582, "latitude": 30.2728 }
-    ],
+    "polyline": [],
     "updatedAt": "2026-07-17T08:36:22Z"
   },
   "risks": [
     {
       "eventId": "risk-0001",
-      "sessionId": "demo-session-001",
+      "sessionId": "supersonic-demo-session-001",
       "riskType": "driver_distraction",
       "lifecycle": "active",
-      "severity": "warning",
-      "source": "live_camera",
-      "confidence": 0.96,
+      "severity": "critical",
+      "source": "simulated_event",
+      "confidence": 1,
       "occurredAt": "2026-07-17T08:36:21Z",
       "updatedAt": "2026-07-17T08:36:23Z",
-      "message": "检测到驾驶员持续分心",
-      "evidence": ["head_pose_off_road:2.1s"],
+      "message": "演示场景：驾驶员注意力风险，立即接管",
+      "evidence": ["control_scenario:simulated_takeover"],
       "metadata": {
-        "durationSeconds": 2.1,
-        "modelVersion": "driver-monitor-v1"
+        "scenario": "simulated_takeover"
       }
     }
   ],
@@ -84,7 +80,9 @@
     "cluster": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" },
     "hud": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" },
     "center": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" },
-    "passenger": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" }
+    "passenger": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" },
+    "overview": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" },
+    "control": { "status": "fresh", "lastSeenAt": "2026-07-17T08:36:23Z" }
   },
-  "capabilities": ["navigation", "vehicle_vision", "web3d"]
+  "capabilities": ["set_theme", "set_system_mode", "reset_session"]
 }

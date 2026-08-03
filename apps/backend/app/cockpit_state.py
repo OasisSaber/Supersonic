@@ -43,21 +43,12 @@ class CommandRejected(ValueError):
         self.status_code = status_code
 
 
-# SELECT_DESTINATION 参数校验上限，与 contracts/v1.py:197 的
-# NavigationStateV1.destination_name max_length=160 保持一致；修改契约时须同步此处。
 DESTINATION_NAME_MAX_LENGTH = 160
-
-# SUBMIT_TRIP_SUGGESTION 参数校验上限。契约（v1.py:229）仅限制 trip_suggestions
-# 列表条数（max_length=8），单条文本无约束，此处防御性限制无界输入进入共享快照。
 SUGGESTION_MAX_LENGTH = 200
 
 
 def navigation_data_freshness(navigation: NavigationStateV1) -> DataFreshness:
-    """Map route/provider state to one authoritative navigation-health value.
-
-    No route or an unavailable service is offline. A live AMap route is fresh.
-    Any usable fallback/degraded route is stale rather than offline.
-    """
+    """Map route/provider state to one authoritative navigation-health value."""
     if (
         navigation.provider is RouteProvider.NONE
         or navigation.service_status is MapServiceStatus.UNAVAILABLE
@@ -73,7 +64,7 @@ def navigation_data_freshness(navigation: NavigationStateV1) -> DataFreshness:
 
 
 class CockpitStateAuthority:
-    """Owns the single in-memory cockpit state and broadcasts full snapshots."""
+    """Own the single in-memory cockpit state and broadcast complete snapshots."""
 
     def __init__(
         self,
@@ -122,7 +113,10 @@ class CockpitStateAuthority:
             navigation=navigation,
             passenger=PassengerStateV1(),
             endpoint_connectivity={
-                endpoint: EndpointConnection(status=DataFreshness.OFFLINE, last_seen_at=now)
+                endpoint: EndpointConnection(
+                    status=DataFreshness.OFFLINE,
+                    last_seen_at=now,
+                )
                 for endpoint in EndpointId
             },
             capabilities=[
@@ -146,12 +140,14 @@ class CockpitStateAuthority:
             self._validate_command(command, server_endpoint)
             changed = self._apply_supported_command(command)
             if changed:
+                self._synchronize_risk_dependent_state_locked()
                 self._touch_locked()
                 self._publish_locked(command.correlation_id)
             return self._make_envelope_locked(command.correlation_id)
 
     async def connect_endpoint(
-        self, endpoint: EndpointId
+        self,
+        endpoint: EndpointId,
     ) -> asyncio.Queue[SnapshotEnvelopeV1]:
         queue: asyncio.Queue[SnapshotEnvelopeV1] = asyncio.Queue(maxsize=1)
         async with self._lock:
@@ -223,6 +219,7 @@ class CockpitStateAuthority:
     def _apply_supported_command(self, command: CommandEnvelopeV1) -> bool:
         name = command.payload.name
         parameters = command.payload.parameters
+
         if name is CommandName.SET_THEME:
             self._require_keys(parameters, {"theme"})
             try:
@@ -233,6 +230,7 @@ class CockpitStateAuthority:
                 return False
             self._snapshot.theme = value
             return True
+
         if name is CommandName.SET_SYSTEM_MODE:
             self._require_keys(parameters, {"mode"})
             try:
@@ -242,6 +240,15 @@ class CockpitStateAuthority:
                     "invalid_parameters",
                     "mode is not a valid system mode.",
                 ) from exc
+            if (
+                value is not SystemMode.TAKEOVER
+                and self._has_unresolved_critical_risk_locked()
+            ):
+                raise CommandRejected(
+                    "invalid_transition",
+                    "Resolve all critical risks before leaving takeover mode.",
+                    status_code=409,
+                )
             if value == self._snapshot.system_mode:
                 return False
             self._snapshot.system_mode = value
@@ -254,13 +261,11 @@ class CockpitStateAuthority:
             destination = parameters["destinationName"]
             if not isinstance(destination, str) or not destination.strip():
                 raise CommandRejected(
-                    "invalid_parameters", "destinationName must be a non-empty string."
+                    "invalid_parameters",
+                    "destinationName must be a non-empty string.",
                 )
             destination = destination.strip()
-            if (
-                DESTINATION_NAME_MAX_LENGTH is not None
-                and len(destination) > DESTINATION_NAME_MAX_LENGTH
-            ):
+            if len(destination) > DESTINATION_NAME_MAX_LENGTH:
                 raise CommandRejected(
                     "invalid_parameters",
                     f"destinationName must be at most {DESTINATION_NAME_MAX_LENGTH} characters.",
@@ -292,7 +297,8 @@ class CockpitStateAuthority:
             self._require_keys(parameters, set())
             if self._snapshot.navigation.status is not RouteStatus.PREVIEW:
                 raise CommandRejected(
-                    "invalid_transition", "A route preview is required before confirmation."
+                    "invalid_transition",
+                    "A route preview is required before confirmation.",
                 )
             self._snapshot.navigation.status = RouteStatus.ACTIVE
             self._snapshot.navigation.updated_at = self._clock()
@@ -304,25 +310,33 @@ class CockpitStateAuthority:
             event_id = parameters["eventId"]
             if not isinstance(event_id, str):
                 raise CommandRejected("invalid_parameters", "eventId must be a string.")
-            risk = next((item for item in self._snapshot.risks if item.event_id == event_id), None)
+            risk = next(
+                (item for item in self._snapshot.risks if item.event_id == event_id),
+                None,
+            )
             if risk is None:
                 raise CommandRejected(
-                    "risk_not_found", "The risk event is not active in this snapshot.", 404
+                    "risk_not_found",
+                    "The risk event is not active in this snapshot.",
+                    404,
                 )
             if name is CommandName.ACKNOWLEDGE_RISK:
-                if risk.lifecycle.value != "active":
+                if risk.lifecycle is not RiskLifecycle.ACTIVE:
                     raise CommandRejected(
-                        "invalid_transition", "Only active risks can be acknowledged."
+                        "invalid_transition",
+                        "Only active risks can be acknowledged.",
                     )
                 risk.lifecycle = RiskLifecycle.ACKNOWLEDGED
             else:
-                if risk.lifecycle.value != "acknowledged":
+                if risk.lifecycle is not RiskLifecycle.ACKNOWLEDGED:
                     raise CommandRejected(
-                        "invalid_transition", "Only acknowledged risks can be resolved."
+                        "invalid_transition",
+                        "Only acknowledged risks can be resolved.",
                     )
                 risk.lifecycle = RiskLifecycle.RESOLVED
                 self._snapshot.system_mode = SystemMode.RECOVERY
             risk.updated_at = self._clock()
+            self._synchronize_risk_dependent_state_locked(resolved_risk=risk)
             return True
 
         if name is CommandName.SET_MEDIA_STATE:
@@ -330,10 +344,14 @@ class CockpitStateAuthority:
             value = parameters["state"]
             if not isinstance(value, str) or value not in {"playing", "paused"}:
                 raise CommandRejected("invalid_parameters", "state must be playing or paused.")
-            if self._media_is_safety_suppressed_locked() and value == "playing":
+            if self._media_is_safety_suppressed_locked():
                 raise CommandRejected(
-                    "safety_suppressed", "Media cannot play during driver takeover.", 409
+                    "safety_suppressed",
+                    "Media controls are disabled during driver takeover.",
+                    409,
                 )
+            if self._snapshot.passenger.media_state == value:
+                return False
             self._snapshot.passenger.media_state = value
             return True
 
@@ -342,7 +360,8 @@ class CockpitStateAuthority:
             value = parameters["suggestion"]
             if not isinstance(value, str) or not value.strip():
                 raise CommandRejected(
-                    "invalid_parameters", "suggestion must be a non-empty string."
+                    "invalid_parameters",
+                    "suggestion must be a non-empty string.",
                 )
             suggestion = value.strip()
             if len(suggestion) > SUGGESTION_MAX_LENGTH:
@@ -359,7 +378,12 @@ class CockpitStateAuthority:
             self._require_keys(parameters, {"privacyEnabled"})
             value = parameters["privacyEnabled"]
             if not isinstance(value, bool):
-                raise CommandRejected("invalid_parameters", "privacyEnabled must be boolean.")
+                raise CommandRejected(
+                    "invalid_parameters",
+                    "privacyEnabled must be boolean.",
+                )
+            if self._snapshot.passenger.privacy_enabled is value:
+                return False
             self._snapshot.passenger.privacy_enabled = value
             return True
 
@@ -370,11 +394,8 @@ class CockpitStateAuthority:
         return True
 
     def _activate_simulated_takeover_locked(self) -> None:
-        has_active_risk = any(
-            risk.lifecycle in {RiskLifecycle.ACTIVE, RiskLifecycle.ACKNOWLEDGED}
-            for risk in self._snapshot.risks
-        )
-        if has_active_risk:
+        if self._has_unresolved_critical_risk_locked():
+            self._synchronize_risk_dependent_state_locked()
             return
         now = self._clock()
         self._snapshot.active_flow = FlowId.RISK_TAKEOVER
@@ -399,13 +420,39 @@ class CockpitStateAuthority:
                 metadata={"scenario": "simulated_takeover"},
             )
         )
+        self._synchronize_risk_dependent_state_locked()
 
-    def _media_is_safety_suppressed_locked(self) -> bool:
+    def _has_unresolved_critical_risk_locked(self) -> bool:
         return any(
             risk.severity is RiskSeverity.CRITICAL
             and risk.lifecycle in {RiskLifecycle.ACTIVE, RiskLifecycle.ACKNOWLEDGED}
             for risk in self._snapshot.risks
         )
+
+    def _media_is_safety_suppressed_locked(self) -> bool:
+        return self._has_unresolved_critical_risk_locked()
+
+    def _synchronize_risk_dependent_state_locked(
+        self,
+        *,
+        resolved_risk: RiskEventV1 | None = None,
+    ) -> None:
+        if self._has_unresolved_critical_risk_locked():
+            self._snapshot.system_mode = SystemMode.TAKEOVER
+            self._snapshot.active_flow = FlowId.RISK_TAKEOVER
+            self._snapshot.passenger.media_state = "suppressed"
+            return
+
+        if self._snapshot.passenger.media_state == "suppressed":
+            self._snapshot.passenger.media_state = "paused"
+        if self._snapshot.active_flow is FlowId.RISK_TAKEOVER:
+            self._snapshot.active_flow = FlowId.NAVIGATION_HANDOFF
+        if resolved_risk is not None and resolved_risk.source is RiskSource.SIMULATED_EVENT:
+            now = self._clock()
+            self._snapshot.data_health["vision"] = DataHealth(
+                status=DataFreshness.OFFLINE,
+                updated_at=now,
+            )
 
     @staticmethod
     def _require_keys(parameters: dict, expected: set[str]) -> None:

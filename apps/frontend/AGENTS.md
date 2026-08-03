@@ -18,7 +18,7 @@
 验证：
 
 ```powershell
-pnpm --filter @cockpit/frontend lint
-pnpm --filter @cockpit/frontend test --run
-pnpm --filter @cockpit/frontend build
+pnpm --filter @supersonic/frontend lint
+pnpm --filter @supersonic/frontend test --run
+pnpm --filter @supersonic/frontend build
 ```

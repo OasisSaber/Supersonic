@@ -1,16 +1,70 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { CockpitSnapshotV1 } from '../contracts/gp05-v1'
+import type { CockpitSnapshotV1, EndpointId } from '../contracts/gp05-v1'
 import { shouldAcceptSnapshot, useCockpitStore } from './cockpit'
 
+const endpoints: EndpointId[] = [
+  'cluster',
+  'hud',
+  'center',
+  'passenger',
+  'overview',
+  'control',
+]
+
+const endpointConnectivity = Object.fromEntries(
+  endpoints.map((endpoint) => [
+    endpoint,
+    { status: 'offline' as const, lastSeenAt: '2026-07-18T00:00:00Z' },
+  ]),
+) as CockpitSnapshotV1['endpointConnectivity']
+
 const snapshot = (revision: number, sessionId = 'test-session'): CockpitSnapshotV1 => ({
-  sessionId, revision, timestamp: '2026-07-18T00:00:00Z', theme: 'night', systemMode: 'normal', activeFlow: 'navigation_handoff',
-  dataHealth: {}, vehicle: { speedKph: 40, gear: 'D', batteryPercent: 80, rangeKm: 420, driveMode: 'comfort', seatbeltFastened: true },
-  navigation: { provider: 'none', serviceStatus: 'unavailable', status: 'idle', destinationName: null, remainingDistanceMeters: 0, etaSeconds: 0, currentStep: null, steps: [], polyline: [], updatedAt: '2026-07-18T00:00:00Z' },
-  risks: [], passenger: { mediaState: 'paused', privacyEnabled: true, tripSuggestions: [] }, endpointConnectivity: {}, capabilities: [],
+  sessionId,
+  revision,
+  timestamp: '2026-07-18T00:00:00Z',
+  theme: 'night',
+  systemMode: 'normal',
+  activeFlow: 'navigation_handoff',
+  dataHealth: {
+    vehicle: { status: 'fresh', updatedAt: '2026-07-18T00:00:00Z' },
+    navigation: { status: 'offline', updatedAt: '2026-07-18T00:00:00Z' },
+    vision: { status: 'offline', updatedAt: '2026-07-18T00:00:00Z' },
+  },
+  vehicle: {
+    speedKph: 40,
+    gear: 'D',
+    batteryPercent: 80,
+    rangeKm: 420,
+    driveMode: 'comfort',
+    seatbeltFastened: true,
+  },
+  navigation: {
+    provider: 'none',
+    serviceStatus: 'unavailable',
+    status: 'idle',
+    destinationName: null,
+    remainingDistanceMeters: 0,
+    etaSeconds: 0,
+    currentStep: null,
+    steps: [],
+    polyline: [],
+    updatedAt: '2026-07-18T00:00:00Z',
+  },
+  risks: [],
+  passenger: { mediaState: 'paused', privacyEnabled: true, tripSuggestions: [] },
+  endpointConnectivity,
+  capabilities: [],
 })
 
 describe('cockpit snapshot store', () => {
-  beforeEach(() => useCockpitStore.setState({ snapshot: null, connection: 'connecting', lastError: null, endpoint: 'overview' }))
+  beforeEach(() =>
+    useCockpitStore.setState({
+      snapshot: null,
+      connection: 'connecting',
+      lastError: null,
+      endpoint: 'overview',
+    }),
+  )
 
   it('does not let an old snapshot overwrite the latest authoritative revision', () => {
     useCockpitStore.getState().receiveSnapshot(snapshot(8))
@@ -33,7 +87,7 @@ describe('cockpit snapshot store', () => {
 })
 
 describe('shouldAcceptSnapshot', () => {
-  it('rejects only same-session stale revisions and accepts all valid transitions', () => {
+  it('rejects only same-session stale revisions and accepts valid transitions', () => {
     const current = snapshot(8)
     expect(shouldAcceptSnapshot(current, snapshot(7))).toBe(false)
     expect(shouldAcceptSnapshot(current, snapshot(8))).toBe(true)

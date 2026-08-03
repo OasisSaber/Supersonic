@@ -1,19 +1,19 @@
 {
-  "name": "commute-cockpit-hmi",
+  "name": "supersonic",
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@11.7.0",
   "scripts": {
-    "dev": "concurrently -k -n backend,frontend -c cyan,magenta \"pnpm dev:backend\" \"pnpm --filter @cockpit/frontend dev\"",
+    "dev": "concurrently -k -n backend,frontend -c cyan,magenta \"pnpm dev:backend\" \"pnpm --filter @supersonic/frontend dev\"",
     "dev:backend": "uv --cache-dir .uv-cache run --project apps/backend --no-sync uvicorn app.main:app --reload --reload-dir apps/backend/app --app-dir apps/backend --host 127.0.0.1 --port 8000",
-    "test": "pnpm test:backend && pnpm --filter @cockpit/frontend test --run",
+    "test": "pnpm test:backend && pnpm --filter @supersonic/frontend test --run",
     "test:backend": "uv --cache-dir .uv-cache run --project apps/backend --no-sync pytest apps/backend/tests -q",
     "smoke": "pnpm smoke:gp05",
     "smoke:gp05": "uv --cache-dir .uv-cache run --project apps/backend --no-sync python scripts/gp05_smoke_test.py",
     "smoke:legacy": "uv --cache-dir .uv-cache run --project apps/backend --no-sync python scripts/smoke_test.py",
-    "lint": "pnpm lint:backend && pnpm --filter @cockpit/frontend lint",
+    "lint": "pnpm lint:backend && pnpm --filter @supersonic/frontend lint",
     "lint:backend": "uv --cache-dir .uv-cache run --project apps/backend --no-sync ruff check apps/backend",
-    "build": "pnpm --filter @cockpit/frontend build",
+    "build": "pnpm --filter @supersonic/frontend build",
     "check": "pnpm lint && pnpm test && pnpm build"
   },
   "devDependencies": {

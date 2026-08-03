@@ -150,7 +150,7 @@ wheels = [
 ]
 
 [[package]]
-name = "commute-cockpit-backend"
+name = "supersonic-backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

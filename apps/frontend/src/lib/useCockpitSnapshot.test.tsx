@@ -9,7 +9,7 @@ const snapshotEnvelope = {
   messageId: '5eb3f63d-bebd-4855-98bb-2f706b8aa378',
   correlationId: '5fcff1d6-1d44-4d23-aad2-967ec94b7052',
   timestamp: '2026-07-17T08:36:23Z',
-  source: { kind: 'service', id: 'fastapi' },
+  source: { kind: 'service', id: 'cockpit-state-authority' },
   target: null,
   kind: 'snapshot',
   payload: snapshotFixture,
@@ -69,7 +69,7 @@ describe('useCockpitSnapshot', () => {
     unmount()
   })
 
-  it('contains malformed JSON, retries deterministically, and recovers without reload', async () => {
+  it('contains malformed JSON, retries deterministically, and recovers', async () => {
     const { unmount } = renderHook(() => useCockpitSnapshot('hud'))
 
     expect(() => act(() => FakeWebSocket.instances[0].message('{not-json'))).not.toThrow()
@@ -88,10 +88,55 @@ describe('useCockpitSnapshot', () => {
     unmount()
   })
 
+  it('does not let a delayed HTTP bootstrap roll back a newer WS session', async () => {
+    let resolveBootstrap: ((value: unknown) => void) | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveBootstrap = resolve
+          }),
+      ),
+    )
+
+    const { unmount } = renderHook(() => useCockpitSnapshot('center'))
+    const websocketSnapshot = {
+      ...snapshotEnvelope,
+      payload: {
+        ...snapshotFixture,
+        sessionId: 'supersonic-new-session',
+        revision: 1,
+      },
+    }
+
+    act(() => FakeWebSocket.instances[0].message(JSON.stringify(websocketSnapshot)))
+    expect(useCockpitStore.getState().snapshot?.sessionId).toBe('supersonic-new-session')
+
+    await act(async () => {
+      resolveBootstrap?.({
+        ok: true,
+        statusText: 'OK',
+        json: async () => ({
+          ...snapshotFixture,
+          sessionId: 'supersonic-old-session',
+          revision: 999,
+        }),
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(useCockpitStore.getState().snapshot?.sessionId).toBe('supersonic-new-session')
+    expect(useCockpitStore.getState().snapshot?.revision).toBe(1)
+    unmount()
+  })
+
   it.each([
     ['wrong protocol', { ...snapshotEnvelope, protocolVersion: 'gp04.v1' }],
     ['invalid snapshot', { ...snapshotEnvelope, payload: { ...snapshotFixture, revision: -1 } }],
     ['missing critical field', { ...snapshotEnvelope, payload: { ...snapshotFixture, vehicle: undefined } }],
+    ['incomplete connectivity', { ...snapshotEnvelope, payload: { ...snapshotFixture, endpointConnectivity: {} } }],
   ])('rejects %s before it enters the Store', (_name, message) => {
     const { unmount } = renderHook(() => useCockpitSnapshot('center'))
 

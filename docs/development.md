@@ -35,7 +35,7 @@ pnpm smoke
 
 | 任务 | 命令 | 当前含义 |
 | --- | --- | --- |
-| 前端 lint / 测试 / 构建 | `pnpm --filter @cockpit/frontend lint`；`test --run`；`build` | 前端静态、行为和生产构建验证 |
+| 前端 lint / 测试 / 构建 | `pnpm --filter @supersonic/frontend lint`；`test --run`；`build` | 前端静态、行为和生产构建验证 |
 | 后端 lint / 测试 | `pnpm lint:backend`；`pnpm test:backend` | Ruff 与 pytest |
 | 全量检查 | `pnpm check` | Lint、单元测试与前端构建 |
 | 仓库验证 | `bash scripts/validate.sh` | Markdown、YAML、Shell/mode 与 `pnpm check` |
