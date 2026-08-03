@@ -43,16 +43,51 @@ describe('GP05 v1 cross-layer contract', () => {
     expect(GP05_COMPONENT_STATES).toEqual(manifest.enums.componentStates)
   })
 
-  it('accepts the canonical snapshot and rejects obvious invalid data', () => {
+  it('accepts the canonical snapshot and rejects malformed or incomplete data', () => {
     expect(isCockpitSnapshotV1(snapshotFixture)).toBe(true)
     expect(isCockpitSnapshotV1({ ...snapshotFixture, revision: -1.5 })).toBe(false)
     expect(isCockpitSnapshotV1({ ...snapshotFixture, revision: -1 })).toBe(false)
     expect(isCockpitSnapshotV1({ ...snapshotFixture, systemMode: 'unknown' })).toBe(false)
     expect(isCockpitSnapshotV1({ ...snapshotFixture, vehicle: undefined })).toBe(false)
+    expect(isCockpitSnapshotV1({ ...snapshotFixture, dataHealth: {} })).toBe(false)
+    expect(isCockpitSnapshotV1({ ...snapshotFixture, endpointConnectivity: {} })).toBe(false)
+    expect(
+      isCockpitSnapshotV1({
+        ...snapshotFixture,
+        endpointConnectivity: {
+          ...snapshotFixture.endpointConnectivity,
+          control: undefined,
+        },
+      }),
+    ).toBe(false)
+    expect(
+      isCockpitSnapshotV1({
+        ...snapshotFixture,
+        navigation: { ...snapshotFixture.navigation, destinationName: 'x'.repeat(161) },
+      }),
+    ).toBe(false)
     expect(
       isCockpitSnapshotV1({
         ...snapshotFixture,
         navigation: { ...snapshotFixture.navigation, currentStep: { index: -1 } },
+      }),
+    ).toBe(false)
+    expect(
+      isCockpitSnapshotV1({
+        ...snapshotFixture,
+        passenger: {
+          ...snapshotFixture.passenger,
+          tripSuggestions: ['x'.repeat(201)],
+        },
+      }),
+    ).toBe(false)
+    expect(
+      isCockpitSnapshotV1({
+        ...snapshotFixture,
+        passenger: {
+          ...snapshotFixture.passenger,
+          tripSuggestions: [''],
+        },
       }),
     ).toBe(false)
     expect(
@@ -63,7 +98,7 @@ describe('GP05 v1 cross-layer contract', () => {
     ).toBe(false)
   })
 
-  it('requires version, IDs, timestamp and source on every envelope', () => {
+  it('requires canonical UUIDs, version, timestamp, source and complete payloads', () => {
     const envelope = {
       protocolVersion: 'gp05.v1',
       messageId: '5eb3f63d-bebd-4855-98bb-2f706b8aa378',
@@ -76,9 +111,14 @@ describe('GP05 v1 cross-layer contract', () => {
     }
 
     expect(isMessageEnvelopeV1(envelope)).toBe(true)
-    const missingCorrelation = { ...envelope, correlationId: undefined }
-    expect(isMessageEnvelopeV1(missingCorrelation)).toBe(false)
+    expect(isMessageEnvelopeV1({ ...envelope, correlationId: undefined })).toBe(false)
+    expect(isMessageEnvelopeV1({ ...envelope, correlationId: 'not-a-uuid' })).toBe(false)
     expect(isMessageEnvelopeV1({ ...envelope, protocolVersion: 'gp04.v1' })).toBe(false)
-    expect(isMessageEnvelopeV1({ ...envelope, payload: { ...snapshotFixture, risks: [{}] } })).toBe(false)
+    expect(
+      isMessageEnvelopeV1({
+        ...envelope,
+        payload: { ...snapshotFixture, risks: [{}] },
+      }),
+    ).toBe(false)
   })
 })

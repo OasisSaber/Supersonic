@@ -5,10 +5,11 @@ from enum import StrEnum
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 from pydantic.alias_generators import to_camel
 
 CONTRACT_VERSION = "gp05.v1"
+REQUIRED_DATA_HEALTH_DOMAINS = frozenset({"vehicle", "navigation", "vision"})
 
 
 class ContractModel(BaseModel):
@@ -162,6 +163,8 @@ ENDPOINT_COMMAND_PERMISSIONS: dict[EndpointId, frozenset[CommandName]] = {
     EndpointId.CONTROL: frozenset(CommandName),
 }
 
+TripSuggestion = Annotated[str, Field(min_length=1, max_length=200)]
+
 
 class DataHealth(ContractModel):
     status: DataFreshness
@@ -226,7 +229,7 @@ class EndpointConnection(ContractModel):
 class PassengerStateV1(ContractModel):
     media_state: Literal["playing", "paused", "suppressed"] = "paused"
     privacy_enabled: bool = True
-    trip_suggestions: list[str] = Field(default_factory=list, max_length=8)
+    trip_suggestions: list[TripSuggestion] = Field(default_factory=list, max_length=8)
 
 
 class CockpitSnapshotV1(ContractModel):
@@ -243,6 +246,19 @@ class CockpitSnapshotV1(ContractModel):
     passenger: PassengerStateV1 = Field(default_factory=PassengerStateV1)
     endpoint_connectivity: dict[EndpointId, EndpointConnection]
     capabilities: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_complete_runtime_maps(self) -> CockpitSnapshotV1:
+        missing_health = REQUIRED_DATA_HEALTH_DOMAINS.difference(self.data_health)
+        if missing_health:
+            missing = ", ".join(sorted(missing_health))
+            raise ValueError(f"data_health is missing required domains: {missing}")
+
+        missing_endpoints = set(EndpointId).difference(self.endpoint_connectivity)
+        if missing_endpoints:
+            missing = ", ".join(sorted(endpoint.value for endpoint in missing_endpoints))
+            raise ValueError(f"endpoint_connectivity is missing endpoints: {missing}")
+        return self
 
 
 class MessageSource(ContractModel):

@@ -48,7 +48,7 @@ pnpm dev
 
 ```bash
 pnpm dev:backend
-pnpm --filter @cockpit/frontend dev
+pnpm --filter @supersonic/frontend dev
 ```
 
 ## 依赖分层

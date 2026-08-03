@@ -20,4 +20,4 @@ pnpm lint:backend
 pnpm test:backend
 ```
 
-涉及真实运行链时，运行与任务对应的 Smoke。当前 `pnpm smoke` 在 Issue #14 完成前只覆盖旧 Mock 链。
+涉及真实运行链时，运行与任务对应的 Smoke。当前 `pnpm smoke` 执行 `gp05.v1` 四端点真实进程链路；旧链路仅通过 `pnpm smoke:legacy` 显式运行。

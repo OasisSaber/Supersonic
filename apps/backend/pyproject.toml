@@ -1,7 +1,7 @@
 [project]
-name = "commute-cockpit-backend"
+name = "supersonic-backend"
 version = "0.1.0"
-description = "城市通勤智能座舱HMI教学验证原型后端"
+description = "Supersonic 智能座舱多屏协同 HMI 原型后端"
 requires-python = ">=3.11,<3.13"
 dependencies = [
   "fastapi>=0.116.0,<1.0",
@@ -36,4 +36,3 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
-

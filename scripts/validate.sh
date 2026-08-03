@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Repository validation for intelligent-cockpit-hmi.
+# Repository validation for Supersonic.
 # Runs validator tests, then checks tracked Markdown links, YAML, shell syntax/modes, and pnpm check.
 
 set -euo pipefail

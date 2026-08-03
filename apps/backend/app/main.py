@@ -17,13 +17,7 @@ from .contracts.v1 import (
 )
 from .data import load_mock_frames, vehicle_for_sequence
 from .mock_llm import generate_mock_report
-from .models import (
-    ReportRequest,
-    ReportResponse,
-    RiskLevel,
-    SimulationFrame,
-    TripRecord,
-)
+from .models import ReportRequest, ReportResponse, RiskLevel, SimulationFrame, TripRecord
 from .risk_engine import evaluate_risk
 
 
@@ -91,7 +85,7 @@ def create_app(
 ) -> FastAPI:
     runtime_settings = settings or load_settings()
     api = FastAPI(
-        title="城市通勤风险感知智能座舱 HMI Demo API",
+        title="Supersonic 智能座舱 HMI API",
         version="0.2.0",
         lifespan=lifespan,
     )
@@ -135,7 +129,8 @@ def create_app(
 
     @api.post("/api/v1/commands/{endpoint}", response_model=SnapshotEnvelopeV1)
     async def cockpit_command(
-        endpoint: EndpointId, command: CommandEnvelopeV1
+        endpoint: EndpointId,
+        command: CommandEnvelopeV1,
     ) -> SnapshotEnvelopeV1:
         if endpoint == EndpointId.CONTROL and not runtime_settings.control_enabled:
             raise CommandRejected(
@@ -144,7 +139,8 @@ def create_app(
                 status_code=403,
             )
         return await api.state.cockpit_authority.apply_command(
-            command, server_endpoint=endpoint
+            command,
+            server_endpoint=endpoint,
         )
 
     @api.websocket("/ws/simulation")
@@ -172,7 +168,9 @@ def create_app(
                         break
                 if send_task in done:
                     envelope = send_task.result()
-                    await websocket.send_json(envelope.model_dump(mode="json", by_alias=True))
+                    await websocket.send_json(
+                        envelope.model_dump(mode="json", by_alias=True)
+                    )
         except (WebSocketDisconnect, asyncio.CancelledError):
             pass
         finally:
