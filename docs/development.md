@@ -105,6 +105,21 @@ pnpm smoke
 
 具体顺序见 [`project/IMPLEMENTATION_ROADMAP.md`](project/IMPLEMENTATION_ROADMAP.md)。
 
+## TheMasterplan 采用记录
+
+来源: [TheMasterplan](https://github.com/OasisSaber/TheMasterplan) `v3.0.0` / `6e49aeeaa2eeaa8ce9be2d81a2fa8f5ba88bef18`
+采用范围: 完整模板采用（AGENTS.md + core/ + profiles/ + adapters/ + 本地维护 CI + 薄 Skill 加载入口）
+采用日期: 2026-08-03
+首次演练任务: 当前会话明确人类授权（采纳 TheMasterplan 作为项目工作流）
+Jujutsu 版本: `0.43.0`
+Git 版本: `2.54.0`
+平台与验证入口: Windows / Git Bash（`bash scripts/validate.sh`）
+验证状态: PARTIAL（待本次采用演练的 PR 合并与后续平台烟雾测试完成后更新）
+
+该项目工作流是旧 [AgenticWonderwall](#agenticwonderwall-采用记录) 采用基线的后续品牌与版本演化；
+两条采用记录并存用于追溯。工作流的 MIT 来源许可证仅适用于实际派生的工作流脚本与文本，
+不自动改变本 HMI 毕业设计项目整体的许可状态，声明见 [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)。
+
 ## AgenticWonderwall 采用记录
 
 - 来源：[OasisSaber/AgenticWonderwall](https://github.com/OasisSaber/AgenticWonderwall)
