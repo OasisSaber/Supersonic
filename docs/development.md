@@ -120,7 +120,7 @@ Git 版本: `2.54.0`
 两条采用记录并存用于追溯。工作流的 MIT 来源许可证仅适用于实际派生的工作流脚本与文本，
 不自动改变本 HMI 毕业设计项目整体的许可状态，声明见 [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)。
 
-首次演练 PR: <https://github.com/OasisSaber/intelligent-cockpit-hmi/pull/39>
+首次演练 PR: <https://github.com/OasisSaber/Supersonic/pull/39>
 
 ## AgenticWonderwall 采用记录
 
