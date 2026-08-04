@@ -12,37 +12,59 @@ const apiBase = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
 export function useCockpitCommand(endpoint: EndpointId) {
   const receiveSnapshot = useCockpitStore((state) => state.receiveSnapshot)
-  const [pending, setPending] = useState(false)
+  const [pendingCommand, setPendingCommand] = useState<CommandName | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const send = useCallback(async (name: CommandName, parameters: Record<string, JsonValue>) => {
-    setPending(true)
+    setPendingCommand(name)
     setError(null)
     try {
       const now = new Date().toISOString()
       const response = await fetch(`${apiBase}/api/v1/commands/${endpoint}`, {
-        method: 'POST', headers: { 'content-type': 'application/json' },
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          protocolVersion: CONTRACT_VERSION, messageId: crypto.randomUUID(), correlationId: crypto.randomUUID(), timestamp: now,
-          source: { kind: 'endpoint', id: endpoint }, target: null, kind: 'command', payload: { name, endpoint, parameters },
+          protocolVersion: CONTRACT_VERSION,
+          messageId: crypto.randomUUID(),
+          correlationId: crypto.randomUUID(),
+          timestamp: now,
+          source: { kind: 'endpoint', id: endpoint },
+          target: null,
+          kind: 'command',
+          payload: { name, endpoint, parameters },
         }),
       })
       const payload: unknown = await response.json()
-      if (!response.ok) throw new Error(isError(payload) ? payload.error.message : '命令未被服务端接受')
-      if (!isMessageEnvelopeV1(payload) || payload.kind !== 'snapshot') throw new Error('服务端未返回有效 snapshot')
+      if (!response.ok) {
+        throw new Error(isError(payload) ? payload.error.message : '命令未被服务端接受')
+      }
+      if (!isMessageEnvelopeV1(payload) || payload.kind !== 'snapshot') {
+        throw new Error('服务端未返回有效 snapshot')
+      }
       receiveSnapshot(payload.payload)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '命令失败')
     } finally {
-      setPending(false)
+      setPendingCommand(null)
     }
   }, [endpoint, receiveSnapshot])
 
-  return { send, pending, error }
+  return {
+    send,
+    pending: pendingCommand !== null,
+    pendingCommand,
+    error,
+  }
 }
 
 function isError(value: unknown): value is { error: { message: string } } {
-  return typeof value === 'object' && value !== null && 'error' in value &&
-    typeof value.error === 'object' && value.error !== null && 'message' in value.error &&
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'error' in value &&
+    typeof value.error === 'object' &&
+    value.error !== null &&
+    'message' in value.error &&
     typeof value.error.message === 'string'
+  )
 }

@@ -1,47 +1,147 @@
 :root,
 [data-theme='night'] {
   color-scheme: dark;
-  --gp-page: #080a0d;
-  --gp-panel: #12171d;
-  --gp-screen: #080b0f;
-  --gp-surface: #101419;
-  --gp-surface-2: #0e1217;
-  --gp-text: #f5f7f9;
-  --gp-text-secondary: #cbd2d9;
-  --gp-muted: #97a1ad;
-  --gp-muted-2: #78838e;
-  --gp-border: rgba(255, 255, 255, 0.1);
-  --gp-border-strong: rgba(255, 255, 255, 0.15);
-  --gp-raised: rgba(255, 255, 255, 0.035);
-  --gp-overlay: rgba(0, 0, 0, 0.32);
+
+  /* Primitive palette: neutral-first so status colors retain meaning. */
+  --sp-gray-1000: #05070a;
+  --sp-gray-950: #090d12;
+  --sp-gray-900: #0e141b;
+  --sp-gray-850: #121a23;
+  --sp-gray-800: #18222d;
+  --sp-gray-700: #263442;
+  --sp-gray-500: #748393;
+  --sp-gray-400: #96a3af;
+  --sp-gray-200: #d7dde3;
+  --sp-gray-100: #f3f6f8;
+
+  --sp-accent-500: #59d8e8;
+  --sp-accent-400: #7ce6f2;
+  --sp-success-500: #5fd6a8;
+  --sp-warning-500: #f2c75c;
+  --sp-critical-500: #f26d7d;
+
+  /* Semantic surfaces. */
+  --sp-page: var(--sp-gray-1000);
+  --sp-screen: #080c11;
+  --sp-surface-1: var(--sp-gray-950);
+  --sp-surface-2: var(--sp-gray-900);
+  --sp-surface-3: var(--sp-gray-850);
+  --sp-surface-raised: color-mix(in srgb, var(--sp-gray-800) 82%, black);
+  --sp-text-strong: var(--sp-gray-100);
+  --sp-text: var(--sp-gray-200);
+  --sp-text-muted: var(--sp-gray-400);
+  --sp-text-subtle: var(--sp-gray-500);
+  --sp-border: rgb(255 255 255 / 0.09);
+  --sp-border-strong: rgb(255 255 255 / 0.16);
+  --sp-focus-ring: color-mix(in srgb, var(--sp-accent-500) 72%, white);
+  --sp-overlay: rgb(2 5 8 / 0.72);
+
+  --sp-shadow-1:
+    0 1px 0 rgb(255 255 255 / 0.035) inset,
+    0 14px 36px rgb(0 0 0 / 0.28),
+    0 1px 2px rgb(0 0 0 / 0.4);
+  --sp-shadow-2:
+    0 1px 0 rgb(255 255 255 / 0.05) inset,
+    0 20px 54px rgb(0 0 0 / 0.34),
+    0 2px 5px rgb(0 0 0 / 0.38);
 }
 
 [data-theme='day'] {
   color-scheme: light;
-  --gp-page: #e8edf1;
-  --gp-panel: #ffffff;
-  --gp-screen: #e8edf1;
-  --gp-surface: #f8fafb;
-  --gp-surface-2: #f2f5f7;
-  --gp-text: #14191f;
-  --gp-text-secondary: #3f4852;
-  --gp-muted: #64707d;
-  --gp-muted-2: #69737e;
-  --gp-border: rgba(24, 31, 39, 0.13);
-  --gp-border-strong: rgba(24, 31, 39, 0.22);
-  --gp-raised: rgba(17, 24, 33, 0.035);
-  --gp-overlay: rgba(255, 255, 255, 0.74);
+
+  --sp-page: #dfe6ec;
+  --sp-screen: #eef2f5;
+  --sp-surface-1: #f7f9fb;
+  --sp-surface-2: #ffffff;
+  --sp-surface-3: #f0f4f7;
+  --sp-surface-raised: #ffffff;
+  --sp-text-strong: #101820;
+  --sp-text: #25323e;
+  --sp-text-muted: #566573;
+  --sp-text-subtle: #6b7986;
+  --sp-border: rgb(16 24 32 / 0.11);
+  --sp-border-strong: rgb(16 24 32 / 0.2);
+  --sp-focus-ring: #087f90;
+  --sp-overlay: rgb(255 255 255 / 0.76);
+
+  --sp-shadow-1:
+    0 1px 0 rgb(255 255 255 / 0.85) inset,
+    0 12px 28px rgb(32 48 60 / 0.12),
+    0 1px 2px rgb(32 48 60 / 0.08);
+  --sp-shadow-2:
+    0 1px 0 rgb(255 255 255 / 0.95) inset,
+    0 18px 44px rgb(32 48 60 / 0.17),
+    0 2px 4px rgb(32 48 60 / 0.1);
 }
 
 :root {
-  --gp-focus: #67e8f9;
-  --gp-success: #6ee7b7;
-  --gp-warning: #fcd34d;
-  --gp-critical: #fb7185;
-  --gp-radius-sm: 8px;
-  --gp-radius-md: 12px;
-  --gp-radius-lg: 16px;
-  --gp-font-cjk: 'Noto Sans SC', 'Barlow', 'Segoe UI', sans-serif;
-  --gp-font-latin: 'Bahnschrift', 'Barlow', 'Segoe UI', sans-serif;
-  --gp-font-ui: 'Barlow', 'Noto Sans SC', 'Segoe UI', sans-serif;
+  /* Status semantics. */
+  --sp-accent: var(--sp-accent-500);
+  --sp-accent-hover: var(--sp-accent-400);
+  --sp-success: var(--sp-success-500);
+  --sp-warning: var(--sp-warning-500);
+  --sp-critical: var(--sp-critical-500);
+
+  /* Typography. Prefer local/system fonts for deterministic offline demos. */
+  --sp-font-ui: Inter, 'Noto Sans SC', 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+  --sp-font-display: Bahnschrift, 'DIN Alternate', 'Segoe UI Variable Display', sans-serif;
+  --sp-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+
+  --sp-text-xs: 0.75rem;
+  --sp-text-sm: 0.875rem;
+  --sp-text-md: 1rem;
+  --sp-text-lg: clamp(1.125rem, 1.4vw, 1.375rem);
+  --sp-text-xl: clamp(1.45rem, 2.3vw, 2.25rem);
+  --sp-text-hero: clamp(5rem, 15vw, 13rem);
+
+  /* 4px baseline spacing. */
+  --sp-space-1: 0.25rem;
+  --sp-space-2: 0.5rem;
+  --sp-space-3: 0.75rem;
+  --sp-space-4: 1rem;
+  --sp-space-5: 1.25rem;
+  --sp-space-6: 1.5rem;
+  --sp-space-8: 2rem;
+  --sp-space-10: 2.5rem;
+  --sp-space-12: 3rem;
+  --sp-space-16: 4rem;
+
+  /* Concentric radii: inner + padding = outer. */
+  --sp-radius-control: 10px;
+  --sp-radius-inner: 14px;
+  --sp-radius-panel: 22px;
+  --sp-radius-shell: 30px;
+  --sp-radius-pill: 999px;
+
+  --sp-hit-target: 44px;
+  --sp-content-max: 1920px;
+
+  --sp-duration-fast: 120ms;
+  --sp-duration-standard: 220ms;
+  --sp-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Backward-compatible aliases for existing components and tests. */
+  --gp-page: var(--sp-page);
+  --gp-panel: var(--sp-surface-2);
+  --gp-screen: var(--sp-screen);
+  --gp-surface: var(--sp-surface-1);
+  --gp-surface-2: var(--sp-surface-3);
+  --gp-text: var(--sp-text-strong);
+  --gp-text-secondary: var(--sp-text);
+  --gp-muted: var(--sp-text-muted);
+  --gp-muted-2: var(--sp-text-subtle);
+  --gp-border: var(--sp-border);
+  --gp-border-strong: var(--sp-border-strong);
+  --gp-raised: var(--sp-surface-raised);
+  --gp-overlay: var(--sp-overlay);
+  --gp-focus: var(--sp-accent);
+  --gp-success: var(--sp-success);
+  --gp-warning: var(--sp-warning);
+  --gp-critical: var(--sp-critical);
+  --gp-radius-sm: var(--sp-radius-control);
+  --gp-radius-md: var(--sp-radius-inner);
+  --gp-radius-lg: var(--sp-radius-panel);
+  --gp-font-cjk: var(--sp-font-ui);
+  --gp-font-latin: var(--sp-font-display);
+  --gp-font-ui: var(--sp-font-ui);
 }

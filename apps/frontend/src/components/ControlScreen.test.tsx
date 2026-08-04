@@ -36,7 +36,7 @@ describe('ControlScreen', () => {
 
     render(<Harness />)
 
-    expect(await screen.findByText(/Control 命令未启用/)).toBeInTheDocument()
+    expect(await screen.findByText(/CONTROL_ENABLED 未启用/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '日间主题' })).toBeDisabled()
     expect(screen.getByRole('button', { name: '重置权威会话' })).toBeDisabled()
     expect(screen.getByText(initialSnapshot.sessionId)).toBeInTheDocument()
@@ -52,7 +52,7 @@ describe('ControlScreen', () => {
     render(<CockpitScreen endpoint="control" snapshot={initialSnapshot} connection="connected" />)
 
     expect(await screen.findByRole('button', { name: '重置权威会话' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Control 命令' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '演示控制命令' })).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: '目的地' })).not.toBeInTheDocument()
   })
 
@@ -68,18 +68,25 @@ describe('ControlScreen', () => {
       const command = JSON.parse(String(init?.body)).payload
       if (command.name === 'set_theme') await themeResponseGate
       const snapshots = {
-        set_theme: { ...initialSnapshot, revision: 43, theme: 'day' as const },
+        set_theme: {
+          ...initialSnapshot,
+          revision: 43,
+          theme: 'day' as const,
+          risks: [],
+        },
         set_system_mode: {
           ...initialSnapshot,
           revision: 44,
           theme: 'day' as const,
           systemMode: 'normal' as const,
+          risks: [],
         },
         reset_session: {
           ...initialSnapshot,
           sessionId: 'reset-session',
           revision: 45,
           systemMode: 'normal' as const,
+          risks: [],
         },
       }
       return {
@@ -108,13 +115,13 @@ describe('ControlScreen', () => {
     )).toHaveLength(1))
     expect(useCockpitStore.getState().snapshot).toBe(initialSnapshot)
     expect(screen.getByText(String(initialSnapshot.revision))).toBeInTheDocument()
-    expect(screen.getByText(initialSnapshot.theme)).toBeInTheDocument()
+    expect(screen.getByText('夜间')).toBeInTheDocument()
 
     releaseThemeResponse()
     await waitFor(() => expect(screen.getByText('43')).toBeInTheDocument())
-    expect(screen.getByText('day')).toBeInTheDocument()
+    expect(screen.getByText('日间')).toBeInTheDocument()
 
-    const normalButton = screen.getByRole('button', { name: '正常模式' })
+    const normalButton = screen.getByRole('button', { name: '正常' })
     await waitFor(() => expect(normalButton).toBeEnabled())
     fireEvent.click(normalButton)
     await waitFor(() => expect(useCockpitStore.getState().snapshot).toMatchObject({
@@ -122,7 +129,7 @@ describe('ControlScreen', () => {
       systemMode: 'normal',
     }))
     expect(screen.getByText('44')).toBeInTheDocument()
-    expect(screen.getByText('normal')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '正常' })).toBeInTheDocument()
 
     const resetButton = screen.getByRole('button', { name: '重置权威会话' })
     await waitFor(() => expect(resetButton).toBeEnabled())
