@@ -7,27 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .api import create_cockpit_router, create_legacy_router
-from .api.legacy_router import (
-    build_demo_trip,
-    demo_trip,
-    events,
-    report,
-    simulation,
-)
 from .cockpit.errors import CommandRejected
 from .cockpit.service import CockpitService
 from .config import RuntimeSettings, load_settings
 from .data import load_mock_frames
-
-__all__ = [
-    "app",
-    "create_app",
-    "build_demo_trip",
-    "demo_trip",
-    "events",
-    "report",
-    "simulation",
-]
 
 LOCAL_UI_ORIGINS = (
     "http://localhost:5173",

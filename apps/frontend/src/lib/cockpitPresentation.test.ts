@@ -18,7 +18,7 @@ describe('cockpit presentation helpers', () => {
   it('maps status to semantic tone rather than raw colors', () => {
     expect(freshnessTone('fresh')).toBe('success')
     expect(freshnessTone('stale')).toBe('warning')
-    expect(freshnessTone('offline')).toBe('neutral')
+    expect(freshnessTone('offline')).toBe('warning')
   })
 
   it('keeps source labels explicit for mock and real data', () => {

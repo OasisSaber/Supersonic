@@ -33,7 +33,7 @@ export const SYSTEM_MODE_LABELS: Record<SystemMode, string> = {
 
 export const FRESHNESS_LABELS: Record<DataFreshness, string> = {
   fresh: '实时',
-  stale: '降级',
+  stale: '滞后',
   offline: '离线',
 }
 
@@ -42,12 +42,14 @@ export type SemanticTone = 'neutral' | 'accent' | 'success' | 'warning' | 'criti
 export function freshnessTone(status: DataFreshness): SemanticTone {
   if (status === 'fresh') return 'success'
   if (status === 'stale') return 'warning'
-  return 'neutral'
+  return 'warning'
 }
 
 export function systemModeTone(mode?: SystemMode): SemanticTone {
   if (mode === 'takeover') return 'critical'
-  if (mode === 'warning' || mode === 'stale' || mode === 'recovery') return 'warning'
+  if (mode === 'warning' || mode === 'stale' || mode === 'recovery' || mode === 'offline') {
+    return 'warning'
+  }
   if (mode === 'normal') return 'success'
   return 'neutral'
 }

@@ -1,12 +1,14 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   AlertTriangle,
+  Check,
   Moon,
   Radio,
   RotateCcw,
   Settings2,
   ShieldCheck,
   Sun,
+  X,
 } from 'lucide-react'
 import type { CockpitSnapshotV1, EndpointId, SystemMode } from '../../contracts/gp05-v1'
 import { ENDPOINTS } from '../../contracts/gp05-v1'
@@ -23,8 +25,24 @@ interface ControlScreenProps {
 export function ControlScreen({ snapshot }: ControlScreenProps) {
   const availability = useControlAvailability()
   const { error, pending, pendingCommand, send } = useCockpitCommand('control')
+  const [resetArmed, setResetArmed] = useState(false)
   const commandsDisabled = availability !== 'enabled' || pending || snapshot === null
   const takeoverLocked = isMediaSafetySuppressed(snapshot?.risks ?? [])
+
+  useEffect(() => {
+    if (!resetArmed) return
+    const timeout = window.setTimeout(() => setResetArmed(false), 8000)
+    return () => window.clearTimeout(timeout)
+  }, [resetArmed])
+
+  async function handleReset() {
+    if (!resetArmed) {
+      setResetArmed(true)
+      return
+    }
+    setResetArmed(false)
+    await send('reset_session', {})
+  }
 
   return (
     <div className="sp-control-layout">
@@ -89,20 +107,38 @@ export function ControlScreen({ snapshot }: ControlScreenProps) {
           ))}
         </ControlGroup>
 
-        <div className="sp-control-panel__danger-zone">
+        <div className={`sp-control-panel__danger-zone ${resetArmed ? 'is-armed' : ''}`}>
           <div>
             <span>会话重置</span>
-            <p>创建新 session，并让所有已连接端点收敛到同一初始快照。</p>
+            <p>
+              {resetArmed
+                ? '再次确认将创建新 session；当前草稿与临时状态不会被保留。'
+                : '创建新 session，并让所有已连接端点收敛到同一初始快照。'}
+            </p>
           </div>
-          <ActionButton
-            disabled={commandsDisabled}
-            icon={<RotateCcw size={18} strokeWidth={2} />}
-            pending={pendingCommand === 'reset_session'}
-            onClick={() => void send('reset_session', {})}
-            variant="danger"
-          >
-            重置权威会话
-          </ActionButton>
+          <div className="sp-danger-actions">
+            {resetArmed ? (
+              <ActionButton
+                icon={<X size={18} strokeWidth={2} />}
+                onClick={() => setResetArmed(false)}
+                variant="ghost"
+              >
+                取消
+              </ActionButton>
+            ) : null}
+            <ActionButton
+              disabled={commandsDisabled}
+              icon={resetArmed ? <Check size={18} strokeWidth={2} /> : <RotateCcw size={18} strokeWidth={2} />}
+              pending={pendingCommand === 'reset_session'}
+              onClick={() => void handleReset()}
+              variant="danger"
+            >
+              {resetArmed ? '确认重置会话' : '重置权威会话'}
+            </ActionButton>
+          </div>
+          <p className="sp-visually-hidden" aria-live="polite">
+            {resetArmed ? '会话重置等待二次确认，八秒后自动取消。' : ''}
+          </p>
         </div>
 
         {error ? <p className="sp-inline-error" role="alert">{error}</p> : null}
