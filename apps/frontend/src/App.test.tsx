@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import snapshotFixture from '../../../contracts/gp05/v1/example.snapshot.json'
 import App from './App'
@@ -49,13 +49,13 @@ describe('authoritative cockpit theme', () => {
   })
 
   it('uses Night before the first valid authoritative snapshot', () => {
-    render(<App />)
+    const { container } = render(<App />)
 
-    expect(screen.getByRole('main')).toHaveAttribute('data-theme', 'night')
+    expect(container.querySelector('.sp-app-root')).toHaveAttribute('data-theme', 'night')
   })
 
   it('renders the theme from the latest authoritative snapshot', () => {
-    render(<App />)
+    const { container } = render(<App />)
 
     act(() => {
       useCockpitStore.setState({
@@ -63,7 +63,7 @@ describe('authoritative cockpit theme', () => {
       })
     })
 
-    expect(screen.getByRole('main')).toHaveAttribute('data-theme', 'day')
+    expect(container.querySelector('.sp-app-root')).toHaveAttribute('data-theme', 'day')
 
     act(() => {
       useCockpitStore.setState({
@@ -71,6 +71,6 @@ describe('authoritative cockpit theme', () => {
       })
     })
 
-    expect(screen.getByRole('main')).toHaveAttribute('data-theme', 'night')
+    expect(container.querySelector('.sp-app-root')).toHaveAttribute('data-theme', 'night')
   })
 })

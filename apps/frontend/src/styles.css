@@ -1490,3 +1490,128 @@ h3 {
     transform: none;
   }
 }
+
+
+/* --------------------------------------------------------------------------
+   GP22 phase-two refinement — Apple HIG-inspired, licensing-safe.
+   Uses platform system fonts and Lucide only; no Apple font/icon/template files.
+   -------------------------------------------------------------------------- */
+
+.sp-screen-shell {
+  padding-top: max(clamp(var(--sp-space-5), 3vw, var(--sp-space-12)), var(--sp-safe-top));
+  padding-right: max(clamp(var(--sp-space-5), 3vw, var(--sp-space-12)), var(--sp-safe-right));
+  padding-bottom: max(clamp(var(--sp-space-5), 3vw, var(--sp-space-12)), var(--sp-safe-bottom));
+  padding-left: max(clamp(var(--sp-space-5), 3vw, var(--sp-space-12)), var(--sp-safe-left));
+}
+
+.sp-screen-header {
+  position: relative;
+  isolation: isolate;
+}
+
+.sp-screen-header::before {
+  position: absolute;
+  z-index: -1;
+  inset: calc(var(--sp-space-3) * -1);
+  border: 1px solid var(--sp-material-border);
+  border-radius: calc(var(--sp-radius-panel) + var(--sp-space-3));
+  background: var(--sp-material-thin);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  backdrop-filter: blur(var(--sp-backdrop-blur)) saturate(1.12);
+  content: '';
+}
+
+.sp-health-strip__domain {
+  display: inline-grid;
+  grid-template-columns: 16px 14px;
+  align-items: center;
+  gap: 3px;
+}
+
+.sp-service-notice.is-offline {
+  color: var(--sp-warning);
+  border-style: solid;
+  border-left-width: 4px;
+}
+
+.sp-service-notice.is-stale {
+  border-style: dashed;
+}
+
+.sp-service-notice.is-recovery {
+  color: var(--sp-accent);
+  border-color: color-mix(in srgb, var(--sp-accent) 40%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-accent) 7%, var(--sp-surface-1));
+}
+
+.sp-control-panel__danger-zone.is-armed {
+  border-color: color-mix(in srgb, var(--sp-critical) 62%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-critical) 10%, var(--sp-surface-2));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sp-critical) 14%, transparent) inset;
+}
+
+.sp-danger-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sp-space-2);
+}
+
+.sp-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.sp-endpoint-status.is-offline {
+  color: var(--sp-warning);
+}
+
+input,
+textarea,
+button {
+  accent-color: var(--sp-accent);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --sp-hit-target: 48px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root,
+  [data-theme='night'],
+  [data-theme='day'] {
+    --sp-border: color-mix(in srgb, currentColor 28%, transparent);
+    --sp-border-strong: color-mix(in srgb, currentColor 46%, transparent);
+  }
+
+  .sp-status-badge,
+  .sp-button,
+  .sp-service-notice,
+  .sp-risk-banner {
+    border-width: 2px;
+  }
+}
+
+@media (forced-colors: active) {
+  .sp-brand-mark,
+  .sp-button,
+  .sp-status-badge,
+  .sp-service-notice,
+  .sp-risk-banner {
+    forced-color-adjust: auto;
+  }
+
+  .sp-screen-header::before {
+    display: none;
+  }
+}

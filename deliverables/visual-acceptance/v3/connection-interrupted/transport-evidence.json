@@ -1,0 +1,23 @@
+{
+    "capturedAt":  "2026-08-08T05:06:31.6203832+00:00",
+    "origin":  "http://127.0.0.1:5173",
+    "api":  "http://127.0.0.1:8001",
+    "transportStatus":  "offline",
+    "backendReachable":  false,
+    "message":  "连接中断：保留最后一次权威快照，不生成伪实时数据。",
+    "lastAuthoritativeSessionId":  "9551df1a-0271-4922-aa9a-dcb84560ee4c",
+    "lastAuthoritativeRevision":  25,
+    "lastAuthoritativeSystemMode":  "normal",
+    "viewport":  {
+                     "height":  1080,
+                     "width":  1920
+                 },
+    "screenshots":  [
+                        "center.png",
+                        "cluster.png",
+                        "control.png",
+                        "hud.png",
+                        "overview.png",
+                        "passenger.png"
+                    ]
+}

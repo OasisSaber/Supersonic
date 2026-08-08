@@ -1,6 +1,6 @@
 import type { CockpitSnapshotV1, EndpointId } from '../contracts/gp05-v1'
-import { selectPrimaryRisk } from '../lib/riskSelection'
 import { screenStateClass } from '../lib/cockpitPresentation'
+import { selectPrimaryRisk } from '../lib/riskSelection'
 import type { ConnectionState } from '../stores/cockpit'
 import { CenterScreen } from './screens/CenterScreen'
 import { ClusterScreen } from './screens/ClusterScreen'
@@ -25,7 +25,6 @@ export function CockpitScreen({ connection, endpoint, snapshot }: CockpitScreenP
         activeRisk ? `risk-${activeRisk.severity}` : ''
       }`}
       data-endpoint={endpoint}
-      data-theme={snapshot?.theme ?? 'night'}
     >
       <ScreenShell connection={connection} endpoint={endpoint} snapshot={snapshot}>
         {endpoint === 'cluster' ? <ClusterScreen activeRisk={activeRisk} snapshot={snapshot} /> : null}

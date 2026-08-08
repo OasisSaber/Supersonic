@@ -56,7 +56,7 @@ describe('ControlScreen', () => {
     expect(screen.queryByRole('textbox', { name: '目的地' })).not.toBeInTheDocument()
   })
 
-  it('submits every Control action and renders only authoritative responses', async () => {
+  it('submits actions, requires reset confirmation, and renders only authoritative responses', async () => {
     let releaseThemeResponse: () => void = () => {}
     const themeResponseGate = new Promise<void>((resolve) => {
       releaseThemeResponse = resolve
@@ -129,11 +129,17 @@ describe('ControlScreen', () => {
       systemMode: 'normal',
     }))
     expect(screen.getByText('44')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '正常' })).toBeInTheDocument()
 
     const resetButton = screen.getByRole('button', { name: '重置权威会话' })
     await waitFor(() => expect(resetButton).toBeEnabled())
     fireEvent.click(resetButton)
+
+    expect(screen.getByRole('button', { name: '确认重置会话' })).toBeInTheDocument()
+    expect(fetchMock.mock.calls.filter(([input]) =>
+      String(input).includes('/commands/'),
+    )).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('button', { name: '确认重置会话' }))
     await waitFor(() => expect(useCockpitStore.getState().snapshot).toMatchObject({
       sessionId: 'reset-session',
       revision: 45,
