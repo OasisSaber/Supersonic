@@ -15,7 +15,7 @@ PR #45 已提供候选文档，但合并前必须保留环境配置、项目入�
 
 已完成主要正常、导航、接管、确认、恢复、Day/Night、数据域离线、
 `systemMode=offline`、`systemMode=stale`、实际后端/WebSocket 连接中断与恢复截图。
-截图、权威快照、传输证据和矩阵名称一致；G1 最终通过仍需 GitHub Actions 独立通过。
+截图、权威快照、传输证据和矩阵名称一致；GitHub Actions 已独立通过，G1 已完成。
 
 退出条件：无阻塞溢出或不可操作控件，Overview 无命令，六端点状态来源准确，所有
 未覆盖项明确记录。

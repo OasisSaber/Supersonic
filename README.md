@@ -65,12 +65,11 @@ GitHub Actions 必须独立通过。PR 描述中的本地验证记录不能替�
 
 ## 当前推进顺序
 
-1. 完成 PR #45 Code Review 修复与本地验证；
-2. 使用仓库模板更新 PR body，并等待 GitHub Actions 独立验证；
-3. 完成最终 Code Review，由人类决定是否合并并冻结 GP22 第一轮 UI；
-4. 评审 PostgreSQL / RBAC / Audit 最小纵向切片；
-5. G3 通过后实施登录、会话、审计、撤销和备份恢复；
-6. 再分别立项真实地图、VehicleVision、AI 语音、多显示部署和 Web3D。
+1. PR #45 已完成 Review 修复、本地验证、最终 Code Review 与 GitHub Actions 独立验证；
+2. PR 保持 Draft，由人类决定是否标记 Ready、Squash Merge 并冻结 GP22 第一轮 UI；
+3. 合并后同步新的 `main` squash commit，再评审 PostgreSQL / RBAC / Audit 最小纵向切片；
+4. G3 通过后实施登录、会话、审计、撤销和备份恢复；
+5. 再分别立项真实地图、VehicleVision、AI 语音、多显示部署和 Web3D。
 
 ## 项目入口
 

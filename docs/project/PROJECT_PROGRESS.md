@@ -3,7 +3,7 @@
 - 最后更新：2026-08-08
 - 远端主线：`main@e8610d8712f2fc878525ee2e62cd88693dbc7396`
 - 开放任务：Issue #44、Draft PR #45
-- 当前阶段：PR #45 Review 修复和 G1 本地视觉证据已完成，等待最终 Review 与 CI
+- 当前阶段：PR #45 Review 修复、G1 视觉证据、最终 Review 与 CI 已完成，等待人类决策
 
 ## 1. 已合并事实
 
@@ -22,9 +22,9 @@
 ## 2. PR #45 当前状态
 
 PR #45 已实现 v3 默认 overlay、平台领域端口和 72 张 Windows 截图，但仍为 Draft。
-Review 修复包已在本地应用并通过后端 88 tests、前端 46 tests、构建、
-`bash scripts/validate.sh` 与 `pnpm smoke`。这些本地结果不能表述为 GitHub Actions 已通过；
-仍需用仓库模板更新 PR body 并等待 CI 独立验证。
+Review 修复包已进入候选 head，并通过后端 88 tests、前端 46 tests、构建、
+`bash scripts/validate.sh` 与 `pnpm smoke`。PR body 已按仓库模板更新，GitHub Actions
+已独立完成 Validate 与 GP05 Smoke 验证；PR 仍保持 Draft。
 
 已修复的 Code Review 阻断项：
 
@@ -32,21 +32,20 @@ Review 修复包已在本地应用并通过后端 88 tests、前端 46 tests、�
 - fallback 把原始 succeeded/rejected 结果覆盖成 degraded；
 - `app.main` 的兼容导出被移除；
 - offline/stale 视觉矩阵混淆数据域状态与系统/连接状态；
-- PR body 不符合仓库模板，CI 无法进入真实验证。
+- PR body 原不符合仓库模板，导致 CI 无法进入真实验证；现已修复并通过。
 
 ## 3. 当前模块状态
 
 | 模块 | 状态 | 边界 |
 | --- | --- | --- |
 | `gp05.v1` 运行时 | `VERIFIED_MAIN_BASELINE` | 主线权威状态、权限、reset/reconnect 与 Smoke 已建立 |
-| GP22 第一轮 UI | `CANDIDATE_G1_LOCAL_EVIDENCE_COMPLETE` | 系统 offline/stale、连接中断与恢复证据已补；等待 CI |
+| GP22 第一轮 UI | `CANDIDATE_G1_VERIFIED` | 系统 offline/stale、连接中断与恢复证据及 CI 已通过 |
 | 平台领域端口 | `REVIEW_FIXED_NOT_WIRED` | 不接公开路由；审计结果与故障语义已修复并测试 |
 | PostgreSQL / RBAC / Audit adapter | `G3_NOT_APPROVED` | 不得进入当前 PR |
 | 真实地图、Vision、语音、Web3D | `PLANNED` | 不属于当前修复范围 |
 
 ## 4. 下一步
 
-1. 完成 PR #45 整份 diff 的最终 Code Review；
-2. 使用仓库模板重写 PR body，使 GitHub Actions 完整运行；
-3. CI 的 Validate 与 Smoke 独立通过后，由人类决定是否合并；
-4. 合并后更新本文件到新的 `main` squash commit，再进入 G3 架构评审。
+1. 由人类决定是否将 PR #45 标记 Ready 并 Squash Merge；
+2. 合并后更新本文件到新的 `main` squash commit；
+3. 再进入 G3 架构评审。

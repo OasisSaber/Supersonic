@@ -1,10 +1,10 @@
 # Supersonic Windows 六端点视觉验收矩阵
 
 - 候选 PR：#45
-- 候选基线：`c5a5851831448dfcd1c3d5086d978a5016ad0e80`
+- 候选基线：PR #45 当前 head
 - 执行日期：2026-08-06、2026-08-08（Windows）
 - 已有资产：72 张截图、权威快照与 `deliverables/visual-acceptance/v3/evidence.jsonl`
-- 当前结论：`LOCAL_VISUAL_EVIDENCE_COMPLETE`；G1 仍等待 PR #45 GitHub Actions 独立通过
+- 当前结论：`G1_VERIFIED`；视觉证据与 PR #45 GitHub Actions 已独立通过
 
 ## 已验证状态
 
