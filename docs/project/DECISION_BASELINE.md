@@ -1,7 +1,7 @@
 # Supersonic / GP22 实施决策基线
 
 - 状态：`GP22-DESIGN-APPROVED`
-- 最后更新：2026-08-02
+- 最后更新：2026-08-09
 - 项目标题：**《Supersonic：智能座舱多屏协同 HMI 设计与交互原型》**
 - 当前形态：本地/内网、可审计、多用户的毕业设计平台型原型，仍处于积极迭代期
 - 当前设计主版本：`GP22-DESIGN-APPROVED`（2026-08-01 由 Oasis 批准；GP21 保留为历史设计参考）
@@ -16,6 +16,14 @@
 - GP22 资产引入和持续接收经验证的 Figma 产出是最高优先级；未来 4–6 周先完成 GP22 四屏迁移闭环，同时并行建设 PostgreSQL、RBAC 和审计基础。
 - PostgreSQL、多用户登录、`admin/operator/viewer` RBAC、会话撤销、审计、真实地图/地点搜索、持久化恢复、一个真实 VehicleVision 场景、受限 AI 语音、多显示部署和后置 Web3D 均纳入 2027 年 4 月最终验收。
 - 共同理解的完整记录、短期完成证据、运行质量基线和旗舰演示见 [`PROJECT_DIRECTION.md`](./PROJECT_DIRECTION.md)。
+
+## 0.2 2026-08-09 G3 平台架构批准
+
+- Oasis 已批准 [`G3 PostgreSQL、Platform Session、RBAC 与审计架构设计`](../design/2026-08-09-g3-platform-architecture-design.md) 与 [`ADR 0001`](../adr/0001-postgresql-platform-boundary.md)。
+- G3 固定 Cockpit Session 与 Platform Session 的不同含义；完整领域词汇见 [`CONTEXT.md`](../../CONTEXT.md)。
+- `app.platform` 采用深模块边界，FastAPI 与 PostgreSQL 作为 Adapter；`CockpitService` 继续是实时状态唯一权威。
+- 变更请求使用严格数据库 Session 并 fail-closed；管理命令要求 durable `attempted` 审计后才允许 mutation；现有 WebSocket 使用单进程连接注册表主动撤销。
+- **G3 架构批准不表示 PostgreSQL、登录、RBAC、审计、Router 接线或管理界面已经实现。** G4 必须按独立 Slice、Issue/授权、jj change、验证和 PR 推进。
 
 ## 0. 设计版本记录
 
