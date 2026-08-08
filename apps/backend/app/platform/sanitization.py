@@ -5,15 +5,34 @@ from typing import Any
 _SENSITIVE_KEYS = frozenset(
     {
         "password",
-        "passwordHash",
+        "passwordhash",
+        "passworddigest",
         "token",
-        "sessionToken",
+        "accesstoken",
+        "refreshtoken",
+        "sessiontoken",
         "authorization",
-        "apiKey",
+        "apikey",
         "secret",
+        "clientsecret",
+        "cookie",
+        "setcookie",
     }
 )
-_SENSITIVE_KEYS_LOWER = frozenset(key.lower() for key in _SENSITIVE_KEYS)
+_PRIVATE_TEXT_KEYS = frozenset(
+    {
+        "destination",
+        "destinationname",
+        "instruction",
+        "message",
+        "prompt",
+        "query",
+        "roadname",
+        "suggestion",
+        "text",
+        "userinput",
+    }
+)
 _MAX_TEXT_LENGTH = 160
 _MAX_LIST_ITEMS = 8
 _MAX_DEPTH = 4
@@ -32,10 +51,23 @@ def sanitize_parameters(value: Any, *, depth: int = 0) -> Any:
     if isinstance(value, dict):
         result: dict[str, Any] = {}
         for key, item in list(value.items())[:_MAX_LIST_ITEMS]:
-            normalized = str(key)
-            if normalized.lower() in _SENSITIVE_KEYS_LOWER:
-                result[normalized] = "[redacted]"
+            rendered_key = str(key)
+            normalized_key = _normalize_key(rendered_key)
+            if _should_redact_key(normalized_key):
+                result[rendered_key] = "[redacted]"
             else:
-                result[normalized] = sanitize_parameters(item, depth=depth + 1)
+                result[rendered_key] = sanitize_parameters(item, depth=depth + 1)
         return result
     return str(value)[:_MAX_TEXT_LENGTH]
+
+
+def _normalize_key(value: str) -> str:
+    return "".join(character for character in value.lower() if character.isalnum())
+
+
+def _should_redact_key(normalized_key: str) -> bool:
+    return (
+        normalized_key in _SENSITIVE_KEYS
+        or normalized_key in _PRIVATE_TEXT_KEYS
+        or normalized_key.endswith("path")
+    )

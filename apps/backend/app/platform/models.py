@@ -16,8 +16,15 @@ class AuditResult(StrEnum):
     ATTEMPTED = "attempted"
     SUCCEEDED = "succeeded"
     REJECTED = "rejected"
-    DEGRADED = "degraded"
     ERROR = "error"
+    # Compatibility value from the v3 draft. New code records delivery separately.
+    DEGRADED = "degraded"
+
+
+class AuditDelivery(StrEnum):
+    PRIMARY = "primary"
+    FALLBACK = "fallback"
+    LOST = "lost"
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,3 +50,4 @@ class AuditRecord:
     parameters: dict[str, Any] = field(default_factory=dict)
     error_code: str | None = None
     source_type: str = "local_hmi"
+    delivery: AuditDelivery = AuditDelivery.PRIMARY

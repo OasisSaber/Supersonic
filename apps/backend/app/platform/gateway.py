@@ -10,7 +10,7 @@ from ..contracts.v1 import CommandEnvelopeV1, CommandName, EndpointId, SnapshotE
 from .audit import AuditBuffer, AuditFallback, AuditSink
 from .authorization import RoleCommandPolicy
 from .errors import AuditUnavailable, RoleForbidden
-from .models import AuditRecord, AuditResult, Principal
+from .models import AuditDelivery, AuditRecord, AuditResult, Principal
 from .sanitization import sanitize_parameters
 
 _MANAGEMENT_COMMANDS = frozenset(
@@ -20,25 +20,29 @@ _MANAGEMENT_COMMANDS = frozenset(
         CommandName.RESET_SESSION,
     }
 )
-_SAFETY_CRITICAL_COMMANDS = frozenset(
-    {
-        CommandName.ACKNOWLEDGE_RISK,
-        CommandName.RESOLVE_RISK,
-    }
-)
 
 
 @dataclass(frozen=True, slots=True)
 class GatewayResult:
     envelope: SnapshotEnvelopeV1
-    audit_degraded: bool = False
+    audit_delivery: AuditDelivery = AuditDelivery.PRIMARY
+
+    @property
+    def audit_degraded(self) -> bool:
+        return self.audit_delivery is not AuditDelivery.PRIMARY
+
+    @property
+    def audit_recorded(self) -> bool:
+        return self.audit_delivery is not AuditDelivery.LOST
 
 
 class AuthorizedCockpitGateway:
-    """Future platform boundary around the existing authoritative CockpitService.
+    """Future platform boundary around the authoritative CockpitService.
 
-    This class is intentionally not connected to the public router until server-side
-    sessions and the PostgreSQL adapter pass the G3/G4 approval gates.
+    The public router must not use this gateway until server-side sessions and the
+    PostgreSQL adapter pass the G3/G4 gates. Management commands require a primary
+    intent record before mutation. Other commands may use a bounded fallback so a
+    primary audit outage never turns a successful state mutation into a false error.
     """
 
     def __init__(
@@ -63,8 +67,8 @@ class AuthorizedCockpitGateway:
     ) -> GatewayResult:
         try:
             self._policy.authorize(principal, command.payload.name)
-        except RoleForbidden:
-            await self._record(
+        except RoleForbidden as exc:
+            delivery = await self._record(
                 principal,
                 command,
                 server_endpoint,
@@ -72,14 +76,13 @@ class AuthorizedCockpitGateway:
                 error_code="role_forbidden",
                 allow_fallback=True,
             )
+            self._note_lost_delivery(exc, delivery)
             raise
 
         management_command = command.payload.name in _MANAGEMENT_COMMANDS
         if management_command:
-            if not await self._audit_sink.is_available():
+            if not await self._primary_available():
                 raise AuditUnavailable("Management commands require an available audit sink.")
-            # Persist an intent before mutating the in-memory authority. A later outcome
-            # write may degrade, but the command will never be completely unaudited.
             await self._record(
                 principal,
                 command,
@@ -93,18 +96,19 @@ class AuthorizedCockpitGateway:
                 command,
                 server_endpoint=server_endpoint,
             )
-        except CommandRejected:
-            await self._record(
+        except CommandRejected as exc:
+            delivery = await self._record(
                 principal,
                 command,
                 server_endpoint,
                 result=AuditResult.REJECTED,
-                error_code="command_rejected",
+                error_code=exc.code,
                 allow_fallback=True,
             )
+            self._note_lost_delivery(exc, delivery)
             raise
-        except Exception:
-            await self._record(
+        except Exception as exc:
+            delivery = await self._record(
                 principal,
                 command,
                 server_endpoint,
@@ -112,19 +116,17 @@ class AuthorizedCockpitGateway:
                 error_code="internal_error",
                 allow_fallback=True,
             )
+            self._note_lost_delivery(exc, delivery)
             raise
 
-        degraded = not await self._record(
+        delivery = await self._record(
             principal,
             command,
             server_endpoint,
             result=AuditResult.SUCCEEDED,
-            allow_fallback=(
-                management_command
-                or command.payload.name in _SAFETY_CRITICAL_COMMANDS
-            ),
+            allow_fallback=True,
         )
-        return GatewayResult(envelope=envelope, audit_degraded=degraded)
+        return GatewayResult(envelope=envelope, audit_delivery=delivery)
 
     async def _record(
         self,
@@ -135,7 +137,7 @@ class AuthorizedCockpitGateway:
         result: AuditResult,
         error_code: str | None = None,
         allow_fallback: bool,
-    ) -> bool:
+    ) -> AuditDelivery:
         record = AuditRecord(
             audit_id=str(uuid4()),
             occurred_at=datetime.now(UTC),
@@ -150,10 +152,35 @@ class AuthorizedCockpitGateway:
             error_code=error_code,
         )
         try:
-            await self._audit_sink.append(record)
-            return True
+            await self._append_primary(record)
+            return AuditDelivery.PRIMARY
         except AuditUnavailable:
             if not allow_fallback:
                 raise
-            self._fallback.append(replace(record, result=AuditResult.DEGRADED))
+            fallback_record = replace(record, delivery=AuditDelivery.FALLBACK)
+            try:
+                self._fallback.append(fallback_record)
+            except Exception:
+                return AuditDelivery.LOST
+            return AuditDelivery.FALLBACK
+
+    async def _primary_available(self) -> bool:
+        try:
+            return await self._audit_sink.is_available()
+        except AuditUnavailable:
             return False
+        except Exception as exc:
+            raise AuditUnavailable("Audit availability check failed.") from exc
+
+    async def _append_primary(self, record: AuditRecord) -> None:
+        try:
+            await self._audit_sink.append(record)
+        except AuditUnavailable:
+            raise
+        except Exception as exc:
+            raise AuditUnavailable("Primary audit append failed.") from exc
+
+    @staticmethod
+    def _note_lost_delivery(exc: Exception, delivery: AuditDelivery) -> None:
+        if delivery is AuditDelivery.LOST:
+            exc.add_note("The command outcome could not be written to primary or fallback audit.")

@@ -1,0 +1,87 @@
+{
+    "sessionId":  "762041e1-7cb2-4382-90e7-98a9b8407e77",
+    "revision":  6,
+    "timestamp":  "2026-08-08T05:06:45.790757Z",
+    "theme":  "night",
+    "systemMode":  "normal",
+    "activeFlow":  "navigation_handoff",
+    "dataHealth":  {
+                       "vehicle":  {
+                                       "status":  "fresh",
+                                       "updatedAt":  "2026-08-08T05:06:41.590974Z"
+                                   },
+                       "navigation":  {
+                                          "status":  "offline",
+                                          "updatedAt":  "2026-08-08T05:06:41.590974Z"
+                                      },
+                       "vision":  {
+                                      "status":  "offline",
+                                      "updatedAt":  "2026-08-08T05:06:41.590974Z"
+                                  }
+                   },
+    "vehicle":  {
+                    "speedKph":  0.0,
+                    "gear":  "P",
+                    "batteryPercent":  82.0,
+                    "rangeKm":  436.0,
+                    "driveMode":  "comfort",
+                    "seatbeltFastened":  true
+                },
+    "navigation":  {
+                       "provider":  "none",
+                       "serviceStatus":  "unavailable",
+                       "status":  "idle",
+                       "destinationName":  null,
+                       "remainingDistanceMeters":  0.0,
+                       "etaSeconds":  0,
+                       "currentStep":  null,
+                       "steps":  [
+
+                                 ],
+                       "polyline":  [
+
+                                    ],
+                       "updatedAt":  "2026-08-08T05:06:41.590974Z"
+                   },
+    "risks":  [
+
+              ],
+    "passenger":  {
+                      "mediaState":  "paused",
+                      "privacyEnabled":  true,
+                      "tripSuggestions":  [
+
+                                          ]
+                  },
+    "endpointConnectivity":  {
+                                 "cluster":  {
+                                                 "status":  "fresh",
+                                                 "lastSeenAt":  "2026-08-08T05:06:41.824834Z"
+                                             },
+                                 "hud":  {
+                                             "status":  "fresh",
+                                             "lastSeenAt":  "2026-08-08T05:06:41.837953Z"
+                                         },
+                                 "center":  {
+                                                "status":  "fresh",
+                                                "lastSeenAt":  "2026-08-08T05:06:45.790757Z"
+                                            },
+                                 "passenger":  {
+                                                   "status":  "fresh",
+                                                   "lastSeenAt":  "2026-08-08T05:06:41.812563Z"
+                                               },
+                                 "overview":  {
+                                                  "status":  "fresh",
+                                                  "lastSeenAt":  "2026-08-08T05:06:41.853767Z"
+                                              },
+                                 "control":  {
+                                                 "status":  "fresh",
+                                                 "lastSeenAt":  "2026-08-08T05:06:43.740972Z"
+                                             }
+                             },
+    "capabilities":  [
+                         "set_theme",
+                         "set_system_mode",
+                         "reset_session"
+                     ]
+}

@@ -7,9 +7,12 @@ from typing import Protocol
 
 from .errors import AuditUnavailable
 from .models import AuditRecord
+from .sanitization import sanitize_parameters
 
 
 class AuditSink(Protocol):
+    """Primary audit port. Adapter failures should be raised as AuditUnavailable."""
+
     async def is_available(self) -> bool: ...
 
     async def append(self, record: AuditRecord) -> None: ...
@@ -20,9 +23,11 @@ class AuditFallback(Protocol):
 
 
 class AuditBuffer:
-    """Bounded local fallback for safety-critical records during database outage."""
+    """Bounded in-memory fallback for records that miss the primary sink."""
 
     def __init__(self, *, max_records: int = 256) -> None:
+        if max_records < 1:
+            raise ValueError("max_records must be at least 1")
         self._max_records = max_records
         self._records: list[AuditRecord] = []
 
@@ -42,18 +47,16 @@ class AuditBuffer:
 
 
 class JsonlAuditBuffer:
-    """Durable, bounded local fallback for a later PostgreSQL reconciliation pass."""
+    """Durable bounded fallback for a later PostgreSQL reconciliation pass."""
 
     def __init__(self, path: Path, *, max_bytes: int = 1_048_576) -> None:
+        if max_bytes < 1:
+            raise ValueError("max_bytes must be at least 1")
         self._path = path
         self._max_bytes = max_bytes
 
     def append(self, record: AuditRecord) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        if self._path.is_file() and self._path.stat().st_size >= self._max_bytes:
-            rotated = self._path.with_suffix(self._path.suffix + ".1")
-            rotated.unlink(missing_ok=True)
-            self._path.replace(rotated)
         payload = {
             "auditId": record.audit_id,
             "occurredAt": record.occurred_at.isoformat(),
@@ -64,18 +67,25 @@ class JsonlAuditBuffer:
             "commandName": record.command_name,
             "correlationId": record.correlation_id,
             "result": record.result.value,
-            "parameters": record.parameters,
+            "delivery": record.delivery.value,
+            "parameters": sanitize_parameters(record.parameters),
             "errorCode": record.error_code,
             "sourceType": record.source_type,
         }
+        line = json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n"
+        incoming_size = len(line.encode("utf-8"))
+        current_size = self._path.stat().st_size if self._path.is_file() else 0
+        if current_size and current_size + incoming_size > self._max_bytes:
+            rotated = self._path.with_suffix(self._path.suffix + ".1")
+            rotated.unlink(missing_ok=True)
+            self._path.replace(rotated)
         with self._path.open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
-            handle.write("\n")
+            handle.write(line)
 
-    def read_payloads(self) -> list[dict]:
+    def read_payloads(self) -> list[dict[str, object]]:
         if not self._path.is_file():
             return []
-        payloads: list[dict] = []
+        payloads: list[dict[str, object]] = []
         for line in self._path.read_text(encoding="utf-8").splitlines():
             try:
                 value = json.loads(line)

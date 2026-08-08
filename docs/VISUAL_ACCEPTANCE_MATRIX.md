@@ -1,18 +1,12 @@
 # Supersonic Windows 六端点视觉验收矩阵
 
-- 资产包：Supersonic Next-Phase Quality Pack v3
-- 基线：`main@e8610d8712f2fc878525ee2e62cd88693dbc7396`
-- 任务 change：`mzwouxuy` / bookmark `codex/task-quality-pack-v3`（合并后以 main 上的 squash commit 为准）
-- 执行日期：2026-08-06（Windows）
-- 执行方式：真实 `pnpm dev` 前后端进程 + Chromium（playwright-cli，headless），命令驱动后端状态机
-- 截图集：`deliverables/visual-acceptance/v3/<状态>/<端点>.png`（54 张）
-- 快照证据：`deliverables/visual-acceptance/v3/evidence.jsonl`（每个状态的权威 session/revision/theme/mode/dataHealth/risks/endpointConnectivity）
+- 候选 PR：#45
+- 候选基线：`c5a5851831448dfcd1c3d5086d978a5016ad0e80`
+- 执行日期：2026-08-06、2026-08-08（Windows）
+- 已有资产：72 张截图、权威快照与 `deliverables/visual-acceptance/v3/evidence.jsonl`
+- 当前结论：`LOCAL_VISUAL_EVIDENCE_COMPLETE`；G1 仍等待 PR #45 GitHub Actions 独立通过
 
-## 截图记录字段
-
-每张截图对应：任务 change `mzwouxuy`、URL（`http://127.0.0.1:5173/<endpoint>`）、viewport、theme、session ID、revision、system mode、数据来源、与 GP22 Figma 的偏差、结论。session/revision/theme/mode 等运行时事实见 `evidence.jsonl`，全部六端点共享同一权威快照。
-
-## 状态矩阵
+## 已验证状态
 
 | 状态 | Cluster | HUD | Center | Passenger | Overview | Control |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -23,41 +17,52 @@
 | Takeover | pass | pass | pass | pass | pass | pass |
 | Acknowledged | pass | pass | pass | pass | pass | pass |
 | Recovery | pass | pass | pass | pass | pass | pass |
-| Offline（默认无路线/无视觉） | pass | — | pass | — | pass | — |
+| 数据域离线：默认无路线/无视觉 | pass | — | pass | — | pass | — |
+| `systemMode=stale` | pass | pass | pass | pass | pass | pass |
+| `systemMode=offline` | pass | pass | pass | pass | pass | pass |
+| 后端/WebSocket 连接中断 | pass | pass | pass | pass | pass | pass |
 | Control disabled | — | — | — | — | — | pass |
 | 1366×768 Night normal | conditional | conditional | conditional | conditional | conditional | conditional |
 | 2560×1440 Night normal | pass | pass | pass | pass | pass | pass |
-| 1920×1080 200% 浏览器缩放 | 未执行 | 未执行 | 未执行 | 未执行 | 未执行 | 未执行 |
 
-## 状态链证据（同一 session）
+## 尚未验证，不能由现有截图替代
 
-| 状态 | session 前缀 | revision | theme | system mode | vehicle | navigation | vision | risk |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| night-normal | 793ddaf2 | 12 | night | normal | fresh | offline | offline | — |
-| navigation-preview | 793ddaf2 | 13 | night | normal | fresh | stale | offline | — |
-| navigation-active | 793ddaf2 | 14 | night | normal | fresh | stale | offline | — |
-| takeover | 793ddaf2 | 15 | night | takeover | fresh | stale | fresh | active/critical |
-| acknowledged | 793ddaf2 | 16 | night | takeover | fresh | stale | fresh | acknowledged/critical |
-| recovery | 793ddaf2 | 17 | night | recovery | fresh | stale | offline | resolved/critical |
-| offline-default | f2f4a8c7 | 18 | night | normal | fresh | offline | offline | — |
-| day-normal | f2f4a8c7 | 19 | day | normal | fresh | offline | offline | — |
+| 状态 | 当前证据 | 需要补充 |
+| --- | --- | --- |
+| 1920×1080、200% 浏览器缩放 | 未执行 | 人工浏览器验证 |
+| GP22 Figma 逐屏对照 | 未执行 | 节点映射、偏差和批准记录 |
+| Day/Night 对比度实测 | 未执行 | 自动或人工对比度报告 |
 
-全部状态下六个端点连接均为 `fresh`（6/6）。Overview 只读预览，无命令控件；Control 在 `CONTROL_ENABLED=true` 下可发命令，默认配置下为禁用态。
+## 证据解释
 
-## 分辨率与滚动检查
+`offline-default` 快照证明的是：
 
-1920×1080 与 2560×1440：六个端点 `scrollWidth == clientWidth` 且 `scrollHeight == clientHeight`，无横向或纵向溢出。
+- `systemMode=normal`；
+- 传输连接保持 `fresh`；
+- `navigation` 与 `vision` 数据域为 `offline`。
 
-1366×768：`scrollWidth == clientWidth`（无横向滚动），但全部六个端点存在纵向滚动（scrollHeight 789–989 vs clientHeight 768）。驾驶关键内容不被折叠或遮挡，控件可操作；判定为 conditional，建议后续评估是否压缩 768p 高度下的垂直密度。
+它不能证明服务离线、WebSocket 中断或 `systemMode=offline`。PR 描述、进度文档和
+答辩材料必须使用“数据域离线”这一准确名称。
 
-## 已知偏差与未覆盖项
+2026-08-08 新增证据分别证明：
 
-- GP22 Figma 逐屏像素对照未执行：当前执行环境无 Figma 访问（未安装 Figma MCP / 无会话），`docs/APPLE_HIG_INSPIRED_DESIGN_SPEC.md` 的通用原则已由静态规则与截图核验覆盖。
-- 1920×1080 200% 浏览器缩放未执行：playwright-cli 无浏览器 zoom API，未用 deviceScaleFactor 冒充缩放。
-- Day/Night 对比度实测（无障碍仪器测量）未执行。
-- 开发服务器 favicon 404：`/favicon.ico` 未提供，属于 dev 环境噪音，不影响六端点功能。
-- WebSocket 首次连接偶发“closed before established”警告：前端 500ms 起指数退避自动重连，HTTP bootstrap 快照兜底，最终全部端点 `fresh`。
+- `system-stale/`：权威快照为 `systemMode=stale`，六端点连接均为 `fresh`；
+- `system-offline/`：权威快照为 `systemMode=offline`，六端点连接均为 `fresh`；
+- `connection-interrupted/`：后端不可达时六端点均显示连接中断提示，并保留最后一次
+  权威快照；后端恢复后六端点自动连接到新的权威会话。
 
-## 结论
+## 分辨率
 
-核心状态矩阵通过：六端点 Night/Day normal、navigation、takeover、acknowledged、recovery、offline、Control disabled/enabled 均渲染正常，同一 session/revision，数据来源与降级标签明确，无横向溢出，Overview 无业务命令，destructive 重置具备二次确认（`ControlScreen`）。1366×768 为 conditional（纵向滚动）。Figma 对照与 200% 缩放列入后续待办。
+1920×1080 与 2560×1440 未发现横向或纵向溢出。1366×768 无横向滚动，但六端点
+存在纵向滚动，判定为 conditional；后续只修有截图证据的密度问题。
+
+## G1 退出条件
+
+本地视觉证据已完成以下事项：
+
+1. `systemMode=offline` 六端点证据；
+2. `systemMode=stale` 六端点证据；
+3. 实际连接中断和恢复证据；
+4. 截图、快照与 evidence.jsonl 的状态名称一致。
+
+PR #45 GitHub Actions 独立通过前，G1 仍不得标记为最终通过。

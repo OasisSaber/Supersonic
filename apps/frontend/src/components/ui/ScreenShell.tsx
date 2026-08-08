@@ -29,6 +29,12 @@ interface ScreenShellProps {
 
 export function ScreenShell({ children, connection, endpoint, snapshot }: ScreenShellProps) {
   const connected = connection === 'connected'
+  const ConnectionIcon = connected ? Radio : connection === 'connecting' ? RefreshCcw : WifiOff
+  const connectionLabel = connected
+    ? `REV ${snapshot?.revision ?? '—'}`
+    : connection === 'connecting'
+      ? snapshot ? '正在重连' : '正在连接'
+      : '连接中断'
   const notice = serviceNotice(connection, snapshot?.systemMode)
 
   return (
@@ -45,10 +51,10 @@ export function ScreenShell({ children, connection, endpoint, snapshot }: Screen
 
         <div className="sp-screen-header__status">
           <StatusBadge
-            icon={connected ? <Radio size={15} strokeWidth={1.5} /> : <WifiOff size={15} strokeWidth={1.5} />}
+            icon={<ConnectionIcon size={15} strokeWidth={1.5} />}
             tone={connected ? 'success' : 'warning'}
           >
-            {connected ? `REV ${snapshot?.revision ?? '—'}` : '连接中断'}
+            {connectionLabel}
           </StatusBadge>
           <StatusBadge
             icon={<ShieldCheck size={15} strokeWidth={1.5} />}
@@ -77,6 +83,15 @@ export function ScreenShell({ children, connection, endpoint, snapshot }: Screen
 }
 
 function serviceNotice(connection: ConnectionState, mode?: SystemMode) {
+  if (connection === 'connecting') {
+    return {
+      Icon: RefreshCcw,
+      tone: 'recovery',
+      message: mode
+        ? '正在重连：保留最后一次权威快照，不生成伪实时数据。'
+        : '正在连接：等待第一份权威快照，不生成推测数据。',
+    } as const
+  }
   if (connection !== 'connected') {
     return {
       Icon: WifiOff,
