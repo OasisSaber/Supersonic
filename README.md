@@ -65,10 +65,10 @@ GitHub Actions 必须独立通过。PR 描述中的本地验证记录不能替�
 
 ## 当前推进顺序
 
-1. PR #45 已完成 Review 修复、本地验证、最终 Code Review 与 GitHub Actions 独立验证；
-2. PR 保持 Draft，由人类决定是否标记 Ready、Squash Merge 并冻结 GP22 第一轮 UI；
-3. 合并后同步新的 `main` squash commit，再评审 PostgreSQL / RBAC / Audit 最小纵向切片；
-4. G3 通过后实施登录、会话、审计、撤销和备份恢复；
+1. PR #45 已由人类 Squash Merge 到 `main`，GP22 第一轮 UI、Review 修复与视觉证据已进入主线；
+2. 创建独立 G3 Issue，只评审 PostgreSQL / server session / RBAC / Audit 最小纵向切片；
+3. 人类批准 G3 决策并指定首个 Slice 后，才进入 G4 实现；
+4. G4 小步实施登录、会话、审计、撤销和备份恢复，每个 Slice 独立验证与评审；
 5. 再分别立项真实地图、VehicleVision、AI 语音、多显示部署和 Web3D。
 
 ## 项目入口

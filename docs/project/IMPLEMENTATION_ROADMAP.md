@@ -1,13 +1,13 @@
 # 实施路线与验收门
 
 - 状态：`CURRENT_EXECUTION_ROADMAP`
-- 主线基线：`main@e8610d8712f2fc878525ee2e62cd88693dbc7396`
-- 当前任务：Issue #44 / Draft PR #45
+- 主线基线：`main@71b4c46ee3816b4c8e0834f25ef4eb363be034f1`
+- 当前任务：PR #45 合并后同步；下一任务为独立 G3 架构评审 Issue
 
 ## G0：文档事实同步
 
-PR #45 已提供候选文档，但合并前必须保留环境配置、项目入口和许可说明，并准确
-记录 CI 与视觉证据边界。
+PR #45 已合并；README、Progress 与 Roadmap 记录新的主线、验证结果和 G3 门禁，
+同时保留环境配置、项目入口、许可说明与视觉证据边界。
 
 退出条件：README、Progress、Roadmap、PR body 和 GitHub 状态一致。
 
@@ -27,10 +27,13 @@ PR #45 已提供候选文档，但合并前必须保留环境配置、项目入�
 
 退出条件：PR #45 Review 无 Critical/High，CI、Smoke 与视觉矩阵通过。
 
+状态：已由 PR #45 完成并进入 `main`。
+
 ## G3：平台纵向切片架构评审
 
-G2 完成且 PR #45 合并后，评审 ER 图、migration、服务端会话、角色矩阵、审计字段、
-失败语义、回滚和测试计划。
+G2 已完成且 PR #45 已合并。下一步创建独立 Issue，评审 ER 图、migration、服务端
+会话、角色矩阵、审计字段、失败语义、回滚和测试计划；本门只产出架构决策，
+未经人类批准不得开始 G4 或接入公开 Router。
 
 硬约束：
 
@@ -42,8 +45,9 @@ G2 完成且 PR #45 合并后，评审 ER 图、migration、服务端会话、�
 
 ## G4：平台纵向切片实现
 
-数据库配置 → migration → 用户/角色/会话/审计 → 登录 → 服务端身份上下文 →
-RBAC → 一个现有 command → audit 查询 → session revoke → 备份恢复。
+前提：G3 已由人类批准并指定首个 Slice。候选顺序为数据库配置 → migration →
+用户/角色/会话/审计 → 登录 → 服务端身份上下文 → RBAC → 一个现有 command →
+audit 查询 → session revoke → 备份恢复；每次只实施被批准的一个 Slice。
 
 ## G5：最终 Code Review 与冻结
 
