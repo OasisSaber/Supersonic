@@ -37,10 +37,32 @@ pnpm smoke
 | --- | --- | --- |
 | 前端 lint / 测试 / 构建 | `pnpm --filter @supersonic/frontend lint`；`test --run`；`build` | 前端静态、行为和生产构建验证 |
 | 后端 lint / 测试 | `pnpm lint:backend`；`pnpm test:backend` | Ruff 与 pytest |
+| PostgreSQL 集成测试 | `pnpm test:backend:integration` | 需要显式提供安全的 `TEST_DATABASE_URL`，验证 migration、约束与仓储实现 |
 | 全量检查 | `pnpm check` | Lint、单元测试与前端构建 |
 | 仓库验证 | `bash scripts/validate.sh` | Markdown、YAML、Shell/mode 与 `pnpm check` |
 | GP05 运行态冒烟 | `pnpm smoke` 或 `pnpm smoke:gp05` | 启动真实 FastAPI 进程并验证四客户端、命令收敛、reset 与 reconnect |
 | 旧 Mock 冒烟 | `pnpm smoke:legacy` | 要求端口 8000 已有服务，仅覆盖旧 Mock HTTP 和 `/ws/simulation` |
+
+### PostgreSQL 集成测试边界
+
+`DATABASE_URL` 是供未来 composition 使用的可选运行配置；本 Slice 不把 PostgreSQL
+adapter 接入 Router，缺失该变量时现有 Mock HMI 继续无数据库运行。
+
+`TEST_DATABASE_URL` 只供显式 PostgreSQL 集成测试使用。目标数据库名必须以 `_test`
+结尾；测试会重建该数据库的 `public` schema，因此不得指向开发、演示或生产数据。
+本地开发不要求 Docker，开发者可以使用自行提供的 PostgreSQL，并显式运行：
+
+```powershell
+$env:TEST_DATABASE_URL='postgresql+psycopg://supersonic:replace-me@127.0.0.1:5432/supersonic_test'
+pnpm test:backend:integration
+```
+
+`pnpm check` 与 `scripts/validate.sh` 保持无数据库；`pnpm test:backend:integration`
+才需要数据库。CI 使用临时 PostgreSQL 18.4，并在仓库验证后强制运行集成测试，随后
+才运行 GP05 smoke。
+
+Migration 与 CI 通过只证明当前持久化基础的相应自动化检查通过，不代表登录、RBAC、
+审计运行时、UI、LAN HTTPS、备份恢复或部署已经完成。
 
 ### GP05 Smoke 的边界
 

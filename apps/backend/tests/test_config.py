@@ -14,6 +14,55 @@ def test_missing_root_env_uses_mock_default(tmp_path: Path) -> None:
     assert settings.app_mode is AppMode.MOCK
 
 
+def test_database_url_is_optional(tmp_path: Path) -> None:
+    settings = load_settings(env_file=tmp_path / ".env", environ={})
+
+    assert settings.database_url is None
+
+
+def test_process_database_url_overrides_root_env(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "DATABASE_URL=postgresql+psycopg://file_user:file_pass@db/file_db\n",
+        encoding="utf-8",
+    )
+
+    settings = load_settings(
+        env_file=env_file,
+        environ={
+            "DATABASE_URL": "postgresql+psycopg://process_user:process_pass@db/process_db"
+        },
+    )
+
+    assert settings.database_url == (
+        "postgresql+psycopg://process_user:process_pass@db/process_db"
+    )
+
+
+def test_blank_database_url_is_treated_as_unconfigured(tmp_path: Path) -> None:
+    settings = load_settings(
+        env_file=tmp_path / ".env",
+        environ={"DATABASE_URL": "   "},
+    )
+
+    assert settings.database_url is None
+
+
+def test_blank_process_database_url_still_overrides_root_env(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "DATABASE_URL=postgresql+psycopg://file_user:file_pass@db/file_db\n",
+        encoding="utf-8",
+    )
+
+    settings = load_settings(
+        env_file=env_file,
+        environ={"DATABASE_URL": "   "},
+    )
+
+    assert settings.database_url is None
+
+
 def test_root_env_rejects_reserved_mode(tmp_path: Path) -> None:
     env_file = tmp_path / ".env"
     env_file.write_text("APP_MODE=api\n", encoding="utf-8")
@@ -40,7 +89,11 @@ def test_unsupported_or_invalid_modes_fail_clearly(tmp_path: Path, mode: str) ->
 async def test_health_uses_validated_mode_without_exposing_secrets(tmp_path: Path) -> None:
     env_file = tmp_path / ".env"
     env_file.write_text(
-        "APP_MODE=mock\nLLM_API_KEY=do-not-return-this\n",
+        (
+            "APP_MODE=mock\n"
+            "LLM_API_KEY=do-not-return-this\n"
+            "DATABASE_URL=postgresql+psycopg://file_user:file_pass@db/file_db\n"
+        ),
         encoding="utf-8",
     )
     settings = load_settings(env_file=env_file, environ={})

@@ -28,6 +28,51 @@ class AuditDelivery(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class User:
+    id: str
+    username_norm: str
+    display_name: str
+    password_hash: str
+    role: Role
+    disabled_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class PlatformSession:
+    id: str
+    user_id: str
+    token_digest: str
+    created_at: datetime
+    expires_at: datetime
+    last_seen_at: datetime | None = None
+    revoked_at: datetime | None = None
+    revoke_reason: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AuditEvent:
+    id: str
+    occurred_at: datetime
+    action: str
+    result: AuditResult
+    delivery: AuditDelivery
+    actor_user_id: str | None = None
+    actor_platform_session_id: str | None = None
+    actor_role: Role | None = None
+    endpoint: str | None = None
+    cockpit_session_id: str | None = None
+    command_name: str | None = None
+    correlation_id: str | None = None
+    target_type: str | None = None
+    target_id: str | None = None
+    parameters: dict[str, Any] = field(default_factory=dict)
+    error_code: str | None = None
+    source_type: str = "local_hmi"
+
+
+@dataclass(frozen=True, slots=True)
 class Principal:
     """Server-resolved identity. Never construct this from client role claims."""
 
