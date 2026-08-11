@@ -1,3 +1,9 @@
+from io import StringIO
+from pathlib import Path
+
+import pytest
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import CHAR, CheckConstraint, DateTime, ForeignKeyConstraint, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -64,6 +70,19 @@ EXPECTED_STRING_LENGTHS = {
         "correlation_id": 64,
         "target_id": 128,
     },
+}
+
+EXPECTED_CHECK_NAMES = {
+    "ck_users_username_norm_length",
+    "ck_users_display_name_length",
+    "ck_users_role_allowed",
+    "ck_platform_sessions_token_digest_format",
+    "ck_platform_sessions_expires_after_created",
+    "ck_platform_sessions_revoke_reason_length",
+    "ck_audit_events_result_allowed",
+    "ck_audit_events_delivery_allowed",
+    "ck_audit_events_actor_role_allowed",
+    "ck_audit_events_source_type_nonempty",
 }
 
 
@@ -225,6 +244,25 @@ def test_named_checks_enforce_platform_domain_constraints() -> None:
         ),
         "ck_audit_events_source_type_nonempty": "char_length(source_type) >= 1",
     }
+
+
+def test_offline_migration_emits_final_check_constraint_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend_root = Path(__file__).resolve().parents[1]
+    config = Config(str(backend_root / "alembic.ini"))
+    output = StringIO()
+    config.output_buffer = output
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://supersonic:test-only@127.0.0.1/supersonic_test",
+    )
+
+    command.upgrade(config, "head", sql=True)
+
+    migration_sql = output.getvalue()
+    for constraint_name in EXPECTED_CHECK_NAMES:
+        assert f"CONSTRAINT {constraint_name} CHECK" in migration_sql
 
 
 def test_audit_index_is_named_and_descending_on_time_then_id() -> None:

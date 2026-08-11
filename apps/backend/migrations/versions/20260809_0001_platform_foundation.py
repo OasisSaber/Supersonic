@@ -30,15 +30,15 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint(
             "char_length(username_norm) BETWEEN 1 AND 128",
-            name="ck_users_username_norm_length",
+            name=op.f("ck_users_username_norm_length"),
         ),
         sa.CheckConstraint(
             "char_length(display_name) BETWEEN 1 AND 128",
-            name="ck_users_display_name_length",
+            name=op.f("ck_users_display_name_length"),
         ),
         sa.CheckConstraint(
             "role IN ('admin', 'operator', 'viewer')",
-            name="ck_users_role_allowed",
+            name=op.f("ck_users_role_allowed"),
         ),
         sa.PrimaryKeyConstraint("id", name="pk_users"),
         sa.UniqueConstraint("username_norm", name="uq_users_username_norm"),
@@ -56,15 +56,15 @@ def upgrade() -> None:
         sa.Column("revoke_reason", sa.String(length=128), nullable=True),
         sa.CheckConstraint(
             "token_digest ~ '^[0-9a-f]{64}$'",
-            name="ck_platform_sessions_token_digest_format",
+            name=op.f("ck_platform_sessions_token_digest_format"),
         ),
         sa.CheckConstraint(
             "expires_at > created_at",
-            name="ck_platform_sessions_expires_after_created",
+            name=op.f("ck_platform_sessions_expires_after_created"),
         ),
         sa.CheckConstraint(
             "revoke_reason IS NULL OR char_length(revoke_reason) <= 128",
-            name="ck_platform_sessions_revoke_reason_length",
+            name=op.f("ck_platform_sessions_revoke_reason_length"),
         ),
         sa.ForeignKeyConstraint(
             ["user_id"],
@@ -104,19 +104,19 @@ def upgrade() -> None:
         sa.Column("parameters", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.CheckConstraint(
             "result IN ('attempted', 'succeeded', 'rejected', 'error')",
-            name="ck_audit_events_result_allowed",
+            name=op.f("ck_audit_events_result_allowed"),
         ),
         sa.CheckConstraint(
             "delivery IN ('primary', 'fallback')",
-            name="ck_audit_events_delivery_allowed",
+            name=op.f("ck_audit_events_delivery_allowed"),
         ),
         sa.CheckConstraint(
             "actor_role IS NULL OR actor_role IN ('admin', 'operator', 'viewer')",
-            name="ck_audit_events_actor_role_allowed",
+            name=op.f("ck_audit_events_actor_role_allowed"),
         ),
         sa.CheckConstraint(
             "char_length(source_type) >= 1",
-            name="ck_audit_events_source_type_nonempty",
+            name=op.f("ck_audit_events_source_type_nonempty"),
         ),
         sa.ForeignKeyConstraint(
             ["actor_user_id"],

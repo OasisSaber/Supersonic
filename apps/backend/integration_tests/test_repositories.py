@@ -96,6 +96,20 @@ def sample_audit_event(
     )
 
 
+async def _commit_platform_session_prerequisites(
+    session_factory: async_sessionmaker[AsyncSession],
+    sample_user: User,
+    sample_platform_session: PlatformSession,
+) -> None:
+    async with SqlAlchemyPlatformUnitOfWork(session_factory) as uow:
+        await uow.users.add(sample_user)
+        await uow.commit()
+
+    async with SqlAlchemyPlatformUnitOfWork(session_factory) as uow:
+        await uow.platform_sessions.add(sample_platform_session)
+        await uow.commit()
+
+
 async def test_user_add_persists_all_fields(
     session_factory: async_sessionmaker[AsyncSession],
     sample_user: User,
@@ -183,6 +197,7 @@ async def test_platform_session_add_persists_all_fields(
         user_repository = SqlAlchemyUserRepository(session)
         repository = SqlAlchemyPlatformSessionRepository(session)
         await user_repository.add(sample_user)
+        await session.flush()
         await repository.add(sample_platform_session)
         await session.flush()
         row = (
@@ -236,10 +251,11 @@ async def test_platform_session_lookup_accepts_digest_only(
     sample_user: User,
     sample_platform_session: PlatformSession,
 ) -> None:
-    async with SqlAlchemyPlatformUnitOfWork(session_factory) as uow:
-        await uow.users.add(sample_user)
-        await uow.platform_sessions.add(sample_platform_session)
-        await uow.commit()
+    await _commit_platform_session_prerequisites(
+        session_factory,
+        sample_user,
+        sample_platform_session,
+    )
 
     async with SqlAlchemyPlatformUnitOfWork(session_factory) as verification:
         stored_session = await verification.platform_sessions.get_by_token_digest(
@@ -290,9 +306,13 @@ async def test_audit_append_is_idempotent(
     sample_platform_session: PlatformSession,
     sample_audit_event: AuditEvent,
 ) -> None:
+    await _commit_platform_session_prerequisites(
+        session_factory,
+        sample_user,
+        sample_platform_session,
+    )
+
     async with SqlAlchemyPlatformUnitOfWork(session_factory) as uow:
-        await uow.users.add(sample_user)
-        await uow.platform_sessions.add(sample_platform_session)
         assert await uow.audit_events.append(sample_audit_event) is True
         await uow.commit()
 
@@ -307,9 +327,13 @@ async def test_audit_append_persists_all_fields(
     sample_platform_session: PlatformSession,
     sample_audit_event: AuditEvent,
 ) -> None:
+    await _commit_platform_session_prerequisites(
+        session_factory,
+        sample_user,
+        sample_platform_session,
+    )
+
     async with SqlAlchemyPlatformUnitOfWork(session_factory) as uow:
-        await uow.users.add(sample_user)
-        await uow.platform_sessions.add(sample_platform_session)
         assert await uow.audit_events.append(sample_audit_event) is True
         await uow.commit()
 
