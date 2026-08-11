@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+import pytest
 from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
@@ -230,15 +231,20 @@ def test_empty_schema_upgrades_to_the_only_head(
 
 def test_downgrade_removes_business_tables_and_upgrade_restores_them(
     migrated_database_url: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = make_alembic_config()
-    command.downgrade(config, "base")
+    with monkeypatch.context() as migration_environment:
+        migration_environment.setenv("DATABASE_URL", migrated_database_url)
+        command.downgrade(config, "base")
 
     engine = create_engine(migrated_database_url)
     try:
         with engine.connect() as connection:
             assert _database_tables(inspect(connection)).isdisjoint(BUSINESS_TABLES)
-        command.upgrade(config, "head")
+        with monkeypatch.context() as migration_environment:
+            migration_environment.setenv("DATABASE_URL", migrated_database_url)
+            command.upgrade(config, "head")
         with engine.connect() as connection:
             assert _database_tables(inspect(connection)) == MIGRATED_TABLES
     finally:
