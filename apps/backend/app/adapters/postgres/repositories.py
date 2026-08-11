@@ -281,6 +281,7 @@ class SqlAlchemyAuditEventRepository(AuditEventRepository):
             insert(AuditEventRow)
             .values(values)
             .on_conflict_do_nothing(index_elements=[AuditEventRow.id])
+            .execution_options(preserve_rowcount=True)
         )
         result = cast(CursorResult[Any], await self._session.execute(statement))
         return result.rowcount == 1
