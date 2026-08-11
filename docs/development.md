@@ -49,11 +49,13 @@ pnpm smoke
 adapter 接入 Router，缺失该变量时现有 Mock HMI 继续无数据库运行。
 
 `TEST_DATABASE_URL` 只供显式 PostgreSQL 集成测试使用。目标数据库名必须以 `_test`
-结尾；测试会重建该数据库的 `public` schema，因此不得指向开发、演示或生产数据。
-本地开发不要求 Docker，开发者可以使用自行提供的 PostgreSQL，并显式运行：
+结尾，且不能与进程级 `DATABASE_URL` 相同；测试会重建该数据库的 `public` schema，
+因此不得指向开发、演示或生产数据。重建还要求 `SUPERSONIC_ALLOW_TEST_DB_RESET` 精确
+设为 `1`。本地开发不要求 Docker，开发者可以使用自行提供的 PostgreSQL，并显式运行：
 
 ```powershell
 $env:TEST_DATABASE_URL='postgresql+psycopg://supersonic:replace-me@127.0.0.1:5432/supersonic_test'
+$env:SUPERSONIC_ALLOW_TEST_DB_RESET='1'
 pnpm test:backend:integration
 ```
 

@@ -276,6 +276,43 @@ async def test_uow_requires_explicit_commit(
         assert await verification.users.get_by_id(sample_user.id) is None
 
 
+async def test_uow_keeps_committed_write_and_rolls_back_write_started_after_commit(
+    session_factory: async_sessionmaker[AsyncSession],
+    sample_user: User,
+) -> None:
+    second_user = User(
+        id=str(uuid4()),
+        username_norm=f"driver-{uuid4().hex}",
+        display_name="Second Test Driver",
+        password_hash="$argon2id$test-only-hash",
+        role=Role.OPERATOR,
+        disabled_at=sample_user.disabled_at,
+        created_at=sample_user.created_at,
+        updated_at=sample_user.updated_at,
+    )
+
+    async with SqlAlchemyPlatformUnitOfWork(session_factory) as uow:
+        await uow.users.add(sample_user)
+        await uow.commit()
+        await uow.users.add(second_user)
+
+    async with SqlAlchemyPlatformUnitOfWork(session_factory) as verification:
+        assert await verification.users.get_by_id(sample_user.id) == sample_user
+        assert await verification.users.get_by_id(second_user.id) is None
+
+
+async def test_uow_explicit_rollback_leaves_no_committed_write(
+    session_factory: async_sessionmaker[AsyncSession],
+    sample_user: User,
+) -> None:
+    async with SqlAlchemyPlatformUnitOfWork(session_factory) as uow:
+        await uow.users.add(sample_user)
+        await uow.rollback()
+
+    async with SqlAlchemyPlatformUnitOfWork(session_factory) as verification:
+        assert await verification.users.get_by_id(sample_user.id) is None
+
+
 async def test_uow_rolls_back_on_exception(
     session_factory: async_sessionmaker[AsyncSession],
     sample_user: User,

@@ -46,7 +46,7 @@ class SqlAlchemyPlatformUnitOfWork(PlatformUnitOfWork):
     ) -> None:
         session = self._require_session()
         try:
-            if exc_type is not None or not self._committed:
+            if session.in_transaction():
                 await session.rollback()
         finally:
             await session.close()

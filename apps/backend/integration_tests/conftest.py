@@ -31,6 +31,12 @@ def require_test_database_url() -> str:
         raise pytest.UsageError("TEST_DATABASE_URL must use postgresql+psycopg")
     if not url.database or not url.database.endswith("_test"):
         raise pytest.UsageError("TEST_DATABASE_URL database name must end with _test")
+    if os.environ.get("SUPERSONIC_ALLOW_TEST_DB_RESET") != "1":
+        raise pytest.UsageError(
+            "SUPERSONIC_ALLOW_TEST_DB_RESET must be exactly 1 for PostgreSQL integration tests"
+        )
+    if raw_url == os.environ.get("DATABASE_URL", "").strip():
+        raise pytest.UsageError("TEST_DATABASE_URL must not equal DATABASE_URL")
     return raw_url
 
 
@@ -41,8 +47,17 @@ def make_alembic_config() -> Config:
     return Config(str(BACKEND_ROOT / "alembic.ini"))
 
 
+def require_matching_test_database_url(database_url: str) -> str:
+    validated_database_url = require_test_database_url()
+    if database_url != validated_database_url:
+        raise pytest.UsageError("database URL must match TEST_DATABASE_URL")
+    return validated_database_url
+
+
 def reset_public_schema(database_url: str) -> None:
-    engine = create_engine(database_url)
+    validated_database_url = require_matching_test_database_url(database_url)
+
+    engine = create_engine(validated_database_url)
     try:
         with engine.begin() as connection:
             connection.execute(text("DROP SCHEMA public CASCADE"))
@@ -52,7 +67,9 @@ def reset_public_schema(database_url: str) -> None:
 
 
 def clear_committed_rows(database_url: str) -> None:
-    engine = create_engine(database_url)
+    validated_database_url = require_matching_test_database_url(database_url)
+
+    engine = create_engine(validated_database_url)
     try:
         with engine.begin() as connection:
             existing_tables = set(
@@ -69,16 +86,18 @@ def clear_committed_rows(database_url: str) -> None:
 def migrated_database_url() -> Iterator[str]:
     reset_public_schema(TEST_DATABASE_URL)
     previous_database_url = os.environ.get("DATABASE_URL")
-    os.environ["DATABASE_URL"] = TEST_DATABASE_URL
     try:
-        command.upgrade(make_alembic_config(), "head")
+        os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+        try:
+            command.upgrade(make_alembic_config(), "head")
+        finally:
+            if previous_database_url is None:
+                os.environ.pop("DATABASE_URL", None)
+            else:
+                os.environ["DATABASE_URL"] = previous_database_url
         yield TEST_DATABASE_URL
     finally:
         reset_public_schema(TEST_DATABASE_URL)
-        if previous_database_url is None:
-            os.environ.pop("DATABASE_URL", None)
-        else:
-            os.environ["DATABASE_URL"] = previous_database_url
 
 
 @pytest.fixture(autouse=True)

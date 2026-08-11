@@ -5,9 +5,10 @@ from dataclasses import FrozenInstanceError, fields, replace
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import get_type_hints
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import app.platform as platform
@@ -89,6 +90,114 @@ def _adapter_audit_event() -> AuditEvent:
         result=AuditResult.SUCCEEDED,
         delivery=AuditDelivery.PRIMARY,
     )
+
+
+class _NoSqlSession:
+    async def flush(self) -> None:
+        raise AssertionError("audit persistence must reject this event before flush")
+
+    async def execute(self, statement: object) -> object:
+        raise AssertionError("audit persistence must reject this event before execute")
+
+
+class _AuditInsertResult:
+    def __init__(self, rowcount: int) -> None:
+        self.rowcount = rowcount
+
+
+class _RecordingAuditSession:
+    def __init__(self, rowcount: int) -> None:
+        self.calls: list[str] = []
+        self.statements: list[object] = []
+        self._rowcount = rowcount
+
+    async def flush(self) -> None:
+        self.calls.append("flush")
+
+    async def execute(self, statement: object) -> _AuditInsertResult:
+        self.calls.append("execute")
+        self.statements.append(statement)
+        return _AuditInsertResult(rowcount=self._rowcount)
+
+
+class _IdempotentAuditSession:
+    def __init__(self) -> None:
+        self._event_ids: set[UUID] = set()
+
+    async def flush(self) -> None:
+        return None
+
+    async def execute(self, statement: object) -> _AuditInsertResult:
+        event_id = next(
+            value
+            for key, value in statement.compile().params.items()  # type: ignore[union-attr]
+            if key.startswith("id")
+        )
+        if event_id in self._event_ids:
+            return _AuditInsertResult(rowcount=0)
+        self._event_ids.add(event_id)
+        return _AuditInsertResult(rowcount=1)
+
+
+async def test_degraded_audit_result_is_rejected_before_sql() -> None:
+    event = replace(_adapter_audit_event(), result=AuditResult.DEGRADED)
+    repository = SqlAlchemyAuditEventRepository(_NoSqlSession())
+
+    with pytest.raises(
+        ValueError,
+        match="AuditResult.DEGRADED is not persistable",
+    ):
+        await repository.append(event)
+
+
+async def test_lost_audit_delivery_is_rejected_before_sql() -> None:
+    event = replace(_adapter_audit_event(), delivery=AuditDelivery.LOST)
+    repository = SqlAlchemyAuditEventRepository(_NoSqlSession())
+
+    with pytest.raises(
+        ValueError,
+        match="AuditDelivery.LOST has no persistence medium",
+    ):
+        await repository.append(event)
+
+
+@pytest.mark.parametrize(
+    ("result", "delivery", "expected_result", "expected_delivery"),
+    [
+        (AuditResult.ATTEMPTED, AuditDelivery.PRIMARY, "attempted", "primary"),
+        (AuditResult.SUCCEEDED, AuditDelivery.PRIMARY, "succeeded", "primary"),
+        (AuditResult.REJECTED, AuditDelivery.FALLBACK, "rejected", "fallback"),
+        (AuditResult.ERROR, AuditDelivery.FALLBACK, "error", "fallback"),
+    ],
+)
+async def test_persistable_audit_result_delivery_pairs_emit_postgresql_insert_values(
+    result: AuditResult,
+    delivery: AuditDelivery,
+    expected_result: str,
+    expected_delivery: str,
+) -> None:
+    session = _RecordingAuditSession(rowcount=1)
+    repository = SqlAlchemyAuditEventRepository(session)
+
+    inserted = await repository.append(
+        replace(_adapter_audit_event(), result=result, delivery=delivery)
+    )
+    statement = session.statements[0]
+    compiled = statement.compile(dialect=postgresql.dialect())  # type: ignore[union-attr]
+
+    assert inserted is True
+    assert session.calls == ["flush", "execute"]
+    assert str(compiled).startswith("INSERT INTO audit_events")
+    assert compiled.params["result"] == expected_result
+    assert compiled.params["delivery"] == expected_delivery
+
+
+async def test_audit_append_returns_false_for_an_existing_event_id() -> None:
+    repository = SqlAlchemyAuditEventRepository(_IdempotentAuditSession())
+    event = replace(_adapter_audit_event(), id=str(uuid4()))
+
+    assert await repository.append(event) is True
+    assert await repository.append(event) is False
 
 
 def test_user_record_has_the_persistence_contract_shape() -> None:

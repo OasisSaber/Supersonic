@@ -272,6 +272,8 @@ class SqlAlchemyAuditEventRepository(AuditEventRepository):
         self._session = session
 
     async def append(self, event: AuditEvent) -> bool:
+        if event.result is AuditResult.DEGRADED:
+            raise ValueError("AuditResult.DEGRADED is not persistable")
         if event.delivery is AuditDelivery.LOST:
             raise ValueError("AuditDelivery.LOST has no persistence medium")
 
