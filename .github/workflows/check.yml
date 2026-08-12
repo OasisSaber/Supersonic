@@ -20,6 +20,20 @@ jobs:
     name: check
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18.4-alpine
+        env:
+          POSTGRES_USER: supersonic
+          POSTGRES_PASSWORD: supersonic_test
+          POSTGRES_DB: supersonic_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U supersonic -d supersonic_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -59,6 +73,12 @@ jobs:
 
       - name: Validate
         run: bash scripts/validate.sh
+
+      - name: Run PostgreSQL integration tests
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://supersonic:supersonic_test@127.0.0.1:5432/supersonic_test
+          SUPERSONIC_ALLOW_TEST_DB_RESET: '1'
+        run: pnpm test:backend:integration
 
       - name: Run GP05 runtime smoke
         run: pnpm smoke:gp05

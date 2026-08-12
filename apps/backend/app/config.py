@@ -24,6 +24,7 @@ class ConfigurationError(ValueError):
 class RuntimeSettings:
     app_mode: AppMode = AppMode.MOCK
     control_enabled: bool = False
+    database_url: str | None = None
 
 
 def parse_app_mode(raw_mode: str | None) -> AppMode:
@@ -50,6 +51,13 @@ def parse_bool_flag(raw_value: str | None, *, name: str) -> bool:
     raise ConfigurationError(f"{name}={raw_value!r} is not a valid boolean flag")
 
 
+def normalize_optional_value(raw_value: str | None) -> str | None:
+    if raw_value is None:
+        return None
+    value = raw_value.strip()
+    return value or None
+
+
 def load_settings(
     *,
     env_file: Path = ROOT_ENV_FILE,
@@ -63,7 +71,11 @@ def load_settings(
     raw_control = source.get("CONTROL_ENABLED")
     if raw_control is None:
         raw_control = file_values.get("CONTROL_ENABLED")
+    raw_database_url = source.get("DATABASE_URL")
+    if raw_database_url is None:
+        raw_database_url = file_values.get("DATABASE_URL")
     return RuntimeSettings(
         app_mode=parse_app_mode(raw_mode),
         control_enabled=parse_bool_flag(raw_control, name="CONTROL_ENABLED"),
+        database_url=normalize_optional_value(raw_database_url),
     )
