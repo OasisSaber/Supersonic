@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +25,7 @@ from app.platform.persistence import (
 )
 from app.platform.sanitization import sanitize_parameters
 
+from .failures import KNOWN_DATABASE_FAILURES, database_unavailable
 from .orm import AuditEventRow, PlatformSessionRow, UserRow
 
 _TOKEN_DIGEST_PATTERN = re.compile(r"[0-9a-f]{64}")
@@ -242,13 +243,40 @@ class SqlAlchemyUserRepository(UserRepository):
 
     async def get_by_id(self, user_id: str) -> User | None:
         statement = select(UserRow).where(UserRow.id == _uuid(user_id, "user_id"))
-        row = (await self._session.execute(statement)).scalar_one_or_none()
+        try:
+            row = (await self._session.execute(statement)).scalar_one_or_none()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
         return _user_from_row(row) if row is not None else None
 
     async def get_by_username_norm(self, username_norm: str) -> User | None:
         statement = select(UserRow).where(UserRow.username_norm == username_norm)
-        row = (await self._session.execute(statement)).scalar_one_or_none()
+        try:
+            row = (await self._session.execute(statement)).scalar_one_or_none()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
         return _user_from_row(row) if row is not None else None
+
+    async def update_password_hash(
+        self,
+        user_id: str,
+        password_hash: str,
+        updated_at: datetime,
+    ) -> bool:
+        statement = (
+            update(UserRow)
+            .where(UserRow.id == _uuid(user_id, "user_id"))
+            .values(
+                password_hash=password_hash,
+                updated_at=_utc_datetime(updated_at, "updated_at"),
+            )
+            .execution_options(preserve_rowcount=True)
+        )
+        try:
+            result = cast(CursorResult[Any], await self._session.execute(statement))
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return result.rowcount == 1
 
 
 class SqlAlchemyPlatformSessionRepository(PlatformSessionRepository):
@@ -263,8 +291,50 @@ class SqlAlchemyPlatformSessionRepository(PlatformSessionRepository):
         statement = select(PlatformSessionRow).where(
             PlatformSessionRow.token_digest == token_digest
         )
-        row = (await self._session.execute(statement)).scalar_one_or_none()
+        try:
+            row = (await self._session.execute(statement)).scalar_one_or_none()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
         return _platform_session_from_row(row) if row is not None else None
+
+    async def get_by_id(self, platform_session_id: str) -> PlatformSession | None:
+        statement = select(PlatformSessionRow).where(
+            PlatformSessionRow.id == _uuid(platform_session_id, "platform_session_id")
+        )
+        try:
+            row = (await self._session.execute(statement)).scalar_one_or_none()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return _platform_session_from_row(row) if row is not None else None
+
+    async def revoke(
+        self,
+        platform_session_id: str,
+        revoked_at: datetime,
+        reason: str | None,
+    ) -> bool:
+        if reason is not None and (
+            not isinstance(reason, str) or not reason.strip() or len(reason) > 128
+        ):
+            raise ValueError("reason must be a non-empty string of at most 128 characters")
+        statement = (
+            update(PlatformSessionRow)
+            .where(
+                PlatformSessionRow.id
+                == _uuid(platform_session_id, "platform_session_id"),
+                PlatformSessionRow.revoked_at.is_(None),
+            )
+            .values(
+                revoked_at=_utc_datetime(revoked_at, "revoked_at"),
+                revoke_reason=reason,
+            )
+            .execution_options(preserve_rowcount=True)
+        )
+        try:
+            result = cast(CursorResult[Any], await self._session.execute(statement))
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return result.rowcount == 1
 
 
 class SqlAlchemyAuditEventRepository(AuditEventRepository):
@@ -278,12 +348,15 @@ class SqlAlchemyAuditEventRepository(AuditEventRepository):
             raise ValueError("AuditDelivery.LOST has no persistence medium")
 
         values = _audit_event_values(event)
-        await self._session.flush()
-        statement = (
-            insert(AuditEventRow)
-            .values(values)
-            .on_conflict_do_nothing(index_elements=[AuditEventRow.id])
-            .execution_options(preserve_rowcount=True)
-        )
-        result = cast(CursorResult[Any], await self._session.execute(statement))
+        try:
+            await self._session.flush()
+            statement = (
+                insert(AuditEventRow)
+                .values(values)
+                .on_conflict_do_nothing(index_elements=[AuditEventRow.id])
+                .execution_options(preserve_rowcount=True)
+            )
+            result = cast(CursorResult[Any], await self._session.execute(statement))
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
         return result.rowcount == 1
