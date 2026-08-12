@@ -5,8 +5,9 @@ from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.platform.persistence import PlatformUnitOfWork
+from app.platform.persistence import DatabaseUnavailable, PlatformUnitOfWork
 
+from .failures import KNOWN_DATABASE_FAILURES, database_unavailable
 from .repositories import (
     SqlAlchemyAuditEventRepository,
     SqlAlchemyPlatformSessionRepository,
@@ -31,7 +32,10 @@ class SqlAlchemyPlatformUnitOfWork(PlatformUnitOfWork):
         if self._session is not None:
             raise RuntimeError("unit of work is already active")
 
-        self._session = self._session_factory()
+        try:
+            self._session = self._session_factory()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
         self._committed = False
         self.users = SqlAlchemyUserRepository(self._session)
         self.platform_sessions = SqlAlchemyPlatformSessionRepository(self._session)
@@ -45,22 +49,41 @@ class SqlAlchemyPlatformUnitOfWork(PlatformUnitOfWork):
         traceback: TracebackType | None,
     ) -> None:
         session = self._require_session()
+        rollback_failure: tuple[DatabaseUnavailable, BaseException] | None = None
         try:
             if session.in_transaction():
-                await session.rollback()
+                try:
+                    await session.rollback()
+                except KNOWN_DATABASE_FAILURES as exc:
+                    rollback_failure = (database_unavailable(exc), exc)
         finally:
-            await session.close()
-            self._session = None
-            self._committed = False
+            try:
+                try:
+                    await session.close()
+                except KNOWN_DATABASE_FAILURES as exc:
+                    if rollback_failure is None:
+                        raise database_unavailable(exc) from exc
+            finally:
+                self._session = None
+                self._committed = False
+        if rollback_failure is not None:
+            translated, cause = rollback_failure
+            raise translated from cause
 
     async def commit(self) -> None:
         session = self._require_session()
-        await session.commit()
+        try:
+            await session.commit()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
         self._committed = True
 
     async def rollback(self) -> None:
         session = self._require_session()
-        await session.rollback()
+        try:
+            await session.rollback()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
         self._committed = False
 
     def _require_session(self) -> AsyncSession:

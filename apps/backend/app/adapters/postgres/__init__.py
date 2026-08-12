@@ -1,5 +1,6 @@
 """PostgreSQL persistence adapter."""
 
+from .readiness import SqlAlchemyPlatformReadiness
 from .repositories import (
     SqlAlchemyAuditEventRepository,
     SqlAlchemyPlatformSessionRepository,
@@ -11,5 +12,6 @@ __all__ = [
     "SqlAlchemyAuditEventRepository",
     "SqlAlchemyPlatformSessionRepository",
     "SqlAlchemyPlatformUnitOfWork",
+    "SqlAlchemyPlatformReadiness",
     "SqlAlchemyUserRepository",
 ]
