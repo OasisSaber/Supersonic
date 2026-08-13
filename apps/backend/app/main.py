@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -7,6 +8,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.types import ASGIApp
 
 from .adapters.postgres.database import create_database_engine, create_session_factory
 from .adapters.postgres.readiness import SqlAlchemyPlatformReadiness
@@ -46,6 +48,41 @@ LOCAL_UI_ORIGINS = (
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 )
+
+
+class StrictCORSMiddleware(CORSMiddleware):
+    """Keep the configured CORS request-header contract exact."""
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        allow_origins: Sequence[str] = (),
+        allow_methods: Sequence[str] = ("GET",),
+        allow_headers: Sequence[str] = (),
+        allow_credentials: bool = False,
+        allow_origin_regex: str | None = None,
+        allow_private_network: bool = False,
+        expose_headers: Sequence[str] = (),
+        max_age: int = 600,
+    ) -> None:
+        super().__init__(
+            app=app,
+            allow_origins=allow_origins,
+            allow_methods=allow_methods,
+            allow_headers=allow_headers,
+            allow_credentials=allow_credentials,
+            allow_origin_regex=allow_origin_regex,
+            allow_private_network=allow_private_network,
+            expose_headers=expose_headers,
+            max_age=max_age,
+        )
+        # Starlette adds browser-safelisted headers. This platform contract permits only
+        # the supplied preflight request headers, so restore that exact set.
+        self.allow_headers = [header.lower() for header in allow_headers]
+        if self.allow_headers and not self.allow_all_headers:
+            self.preflight_headers["Access-Control-Allow-Headers"] = ", ".join(allow_headers)
+        elif not self.allow_all_headers:
+            self.preflight_headers.pop("Access-Control-Allow-Headers", None)
 
 
 class _UnavailablePlatformSessionService:
@@ -102,11 +139,11 @@ def create_app(
     api.state.settings = runtime_settings
 
     api.add_middleware(
-        CORSMiddleware,
+        StrictCORSMiddleware,
         allow_origins=list(dict.fromkeys((*LOCAL_UI_ORIGINS, runtime_settings.platform_ui_origin))),
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"],
     )
 
     @api.exception_handler(CommandRejected)

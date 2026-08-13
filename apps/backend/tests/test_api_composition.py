@@ -66,7 +66,7 @@ def test_database_engine_is_lazy_and_disposed_by_owning_app_lifespan(monkeypatch
     engine.dispose.assert_awaited_once_with()
 
 
-def test_cors_allows_gp05_and_configured_platform_origins() -> None:
+def test_cors_allows_only_configured_origins_contract_methods_and_headers() -> None:
     app = create_app(
         settings=RuntimeSettings(platform_ui_origin="https://platform.example.test")
     )
@@ -88,3 +88,32 @@ def test_cors_allows_gp05_and_configured_platform_origins() -> None:
             assert response.status_code == 200
             assert response.headers["access-control-allow-origin"] == origin
             assert response.headers["access-control-allow-credentials"] == "true"
+            assert response.headers["access-control-allow-methods"] == "GET, POST"
+            assert response.headers["access-control-allow-headers"] == "Content-Type"
+
+        for method, requested_headers in (
+            ("PUT", "content-type"),
+            ("POST", "accept"),
+            ("POST", "accept-language"),
+            ("POST", "content-language"),
+            ("POST", "x-uncontracted-header"),
+        ):
+            response = client.options(
+                "/api/platform/session/login",
+                headers={
+                    "Origin": "https://platform.example.test",
+                    "Access-Control-Request-Method": method,
+                    "Access-Control-Request-Headers": requested_headers,
+                },
+            )
+            assert response.status_code == 400
+
+        response = client.options(
+            "/api/platform/session/login",
+            headers={
+                "Origin": "https://untrusted.example.test",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        assert response.status_code == 400

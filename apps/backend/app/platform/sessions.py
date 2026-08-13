@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
@@ -22,6 +23,13 @@ from .security import (
     issue_session_token,
 )
 from .throttle import LoginThrottle
+
+CREDENTIAL_REJECTION_DELAY_SECONDS = 0.25
+CredentialFailureDelay = Callable[[], Awaitable[None]]
+
+
+async def _default_credential_failure_delay() -> None:
+    await asyncio.sleep(CREDENTIAL_REJECTION_DELAY_SECONDS)
 
 
 class SessionServiceError(RuntimeError):
@@ -103,6 +111,7 @@ class SessionService:
         clock: Callable[[], datetime],
         uuid_factory: Callable[[], str],
         token_factory: Callable[[], str] = issue_session_token,
+        failure_delay: CredentialFailureDelay = _default_credential_failure_delay,
     ) -> None:
         if session_ttl <= timedelta(0):
             raise ValueError("session_ttl must be positive")
@@ -114,6 +123,7 @@ class SessionService:
         self._clock = clock
         self._uuid_factory = uuid_factory
         self._token_factory = token_factory
+        self._failure_delay = failure_delay
 
     async def resolve(self, raw_secret: str) -> SessionIdentity:
         """Read a current identity without extending or otherwise writing the session."""
@@ -257,60 +267,64 @@ class SessionService:
 
         await self._readiness.check()
         now = self._now()
-        async with self._uow_factory() as uow:
-            user = await uow.users.get_by_username_norm(username_norm)
-            if user is None:
-                self._password_hasher.dummy_verify(password)
-                await self._reject(uow, now, username_norm, remote_client_key)
+        try:
+            async with self._uow_factory() as uow:
+                user = await uow.users.get_by_username_norm(username_norm)
+                if user is None:
+                    self._password_hasher.dummy_verify(password)
+                    await self._reject(uow, now, username_norm, remote_client_key)
 
-            try:
-                verification = self._password_hasher.verify_and_update(
-                    password,
-                    user.password_hash,
-                )
-            except CredentialStoreError:
-                raise CredentialStoreInvalid() from None
+                try:
+                    verification = self._password_hasher.verify_and_update(
+                        password,
+                        user.password_hash,
+                    )
+                except CredentialStoreError:
+                    raise CredentialStoreInvalid() from None
 
-            if not verification.verified or user.disabled_at is not None:
-                await self._reject(uow, now, username_norm, remote_client_key)
+                if not verification.verified or user.disabled_at is not None:
+                    await self._reject(uow, now, username_norm, remote_client_key)
 
-            if verification.updated_hash is not None:
-                updated = await uow.users.update_password_hash(
-                    user.id,
-                    verification.updated_hash,
-                    now,
-                )
-                if not updated:
-                    raise CredentialStoreInvalid()
+                if verification.updated_hash is not None:
+                    updated = await uow.users.update_password_hash(
+                        user.id,
+                        verification.updated_hash,
+                        now,
+                    )
+                    if not updated:
+                        raise CredentialStoreInvalid()
 
-            raw_token = self._token_factory()
-            platform_session_id = self._uuid_factory()
-            expires_at = now + self._session_ttl
-            await uow.platform_sessions.add(
-                PlatformSession(
-                    id=platform_session_id,
-                    user_id=user.id,
-                    token_digest=digest_session_token(raw_token),
-                    created_at=now,
-                    expires_at=expires_at,
+                raw_token = self._token_factory()
+                platform_session_id = self._uuid_factory()
+                expires_at = now + self._session_ttl
+                await uow.platform_sessions.add(
+                    PlatformSession(
+                        id=platform_session_id,
+                        user_id=user.id,
+                        token_digest=digest_session_token(raw_token),
+                        created_at=now,
+                        expires_at=expires_at,
+                    )
                 )
-            )
-            inserted = await uow.audit_events.append(
-                AuditEvent(
-                    id=self._uuid_factory(),
-                    occurred_at=now,
-                    action="auth.login",
-                    result=AuditResult.SUCCEEDED,
-                    delivery=AuditDelivery.PRIMARY,
-                    actor_user_id=user.id,
-                    actor_platform_session_id=platform_session_id,
-                    actor_role=user.role,
-                    parameters={},
+                inserted = await uow.audit_events.append(
+                    AuditEvent(
+                        id=self._uuid_factory(),
+                        occurred_at=now,
+                        action="auth.login",
+                        result=AuditResult.SUCCEEDED,
+                        delivery=AuditDelivery.PRIMARY,
+                        actor_user_id=user.id,
+                        actor_platform_session_id=platform_session_id,
+                        actor_role=user.role,
+                        parameters={},
+                    )
                 )
-            )
-            if not inserted:
-                raise AuditPersistenceFailure()
-            await uow.commit()
+                if not inserted:
+                    raise AuditPersistenceFailure()
+                await uow.commit()
+        except InvalidCredentials:
+            await self._failure_delay()
+            raise
 
         self._throttle.record_success(username_norm, remote_client_key)
         return IssuedSession(

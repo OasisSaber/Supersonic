@@ -47,7 +47,9 @@ def test_https_profile_uses_host_cookie_and_exact_origin_policy(tmp_path) -> Non
     assert settings.platform_cookie.name == "__Host-supersonic_platform_session"
     assert settings.platform_cookie.secure is True
     assert ExactOriginPolicy(settings.platform_ui_origin).allows("https://platform.example.test")
-    assert not ExactOriginPolicy(settings.platform_ui_origin).allows("https://platform.example.test/")
+    assert not ExactOriginPolicy(settings.platform_ui_origin).allows(
+        "https://platform.example.test/"
+    )
     assert not ExactOriginPolicy(settings.platform_ui_origin).allows("https://evil.example.test")
     assert not ExactOriginPolicy(settings.platform_ui_origin).allows(None)
 
