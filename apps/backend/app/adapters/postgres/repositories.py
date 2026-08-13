@@ -5,14 +5,19 @@ from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.platform.audit_validation import validate_audit_event_runtime_types
 from app.platform.models import (
+    AuditCursor,
     AuditDelivery,
     AuditEvent,
+    AuditPage,
+    AuditQuery,
+    AuditQueryScope,
     AuditResult,
     PlatformSession,
     Role,
@@ -23,17 +28,12 @@ from app.platform.persistence import (
     PlatformSessionRepository,
     UserRepository,
 )
-from app.platform.sanitization import sanitize_parameters
+from app.platform.sanitization import sanitize_audit_event
 
 from .failures import KNOWN_DATABASE_FAILURES, database_unavailable
 from .orm import AuditEventRow, PlatformSessionRow, UserRow
 
 _TOKEN_DIGEST_PATTERN = re.compile(r"[0-9a-f]{64}")
-_PERSISTENCE_SENSITIVE_PARAMETER_KEYS = frozenset(
-    {"rawsecret", "rawtoken", "sessionsecret", "privatetext"}
-)
-
-
 def _uuid(value: str, field_name: str) -> UUID:
     try:
         return UUID(value)
@@ -57,7 +57,7 @@ def _token_digest(value: str) -> str:
 
 def _utc_datetime(value: datetime, field_name: str) -> datetime:
     if (
-        not isinstance(value, datetime)
+        type(value) is not datetime
         or value.tzinfo is None
         or value.utcoffset() is None
     ):
@@ -72,25 +72,6 @@ def _optional_utc_datetime(
     if value is None:
         return None
     return _utc_datetime(value, field_name)
-
-
-def _redact_persistence_sensitive_parameters(value: Any) -> Any:
-    if isinstance(value, list):
-        return [_redact_persistence_sensitive_parameters(item) for item in value]
-    if isinstance(value, dict):
-        redacted: dict[str, Any] = {}
-        for key, item in value.items():
-            rendered_key = str(key)
-            normalized_key = "".join(
-                character for character in rendered_key.lower() if character.isalnum()
-            )
-            redacted[rendered_key] = (
-                "[redacted]"
-                if normalized_key in _PERSISTENCE_SENSITIVE_PARAMETER_KEYS
-                else _redact_persistence_sensitive_parameters(item)
-            )
-        return redacted
-    return value
 
 
 def _user_to_row(user: User) -> UserRow:
@@ -172,34 +153,35 @@ def _platform_session_from_row(row: PlatformSessionRow) -> PlatformSession:
 
 
 def _audit_event_to_row(event: AuditEvent) -> AuditEventRow:
-    sanitized_parameters = cast(
-        dict[str, Any],
-        _redact_persistence_sensitive_parameters(
-            sanitize_parameters(event.parameters)
-        ),
-    )
-    occurred_at = _utc_datetime(event.occurred_at, "audit_event.occurred_at")
+    validate_audit_event_runtime_types(event)
+    sanitized_event = sanitize_audit_event(event)
+    occurred_at = _utc_datetime(sanitized_event.occurred_at, "audit_event.occurred_at")
     return AuditEventRow(
-        id=_uuid(event.id, "audit_event.id"),
+        id=_uuid(sanitized_event.id, "audit_event.id"),
         occurred_at=occurred_at,
-        action=event.action,
-        result=event.result.value,
-        delivery=event.delivery.value,
-        actor_role=event.actor_role.value if event.actor_role is not None else None,
-        actor_user_id=_optional_uuid(event.actor_user_id, "audit_event.actor_user_id"),
+        action=sanitized_event.action,
+        result=sanitized_event.result.value,
+        delivery=sanitized_event.delivery.value,
+        actor_role=(
+            sanitized_event.actor_role.value if sanitized_event.actor_role is not None else None
+        ),
+        actor_user_id=_optional_uuid(
+            sanitized_event.actor_user_id,
+            "audit_event.actor_user_id",
+        ),
         actor_platform_session_id=_optional_uuid(
-            event.actor_platform_session_id,
+            sanitized_event.actor_platform_session_id,
             "audit_event.actor_platform_session_id",
         ),
-        endpoint=event.endpoint,
-        source_type=event.source_type,
-        cockpit_session_id=event.cockpit_session_id,
-        command_name=event.command_name,
-        error_code=event.error_code,
-        target_type=event.target_type,
-        correlation_id=event.correlation_id,
-        target_id=event.target_id,
-        parameters=sanitized_parameters,
+        endpoint=sanitized_event.endpoint,
+        source_type=sanitized_event.source_type,
+        cockpit_session_id=sanitized_event.cockpit_session_id,
+        command_name=sanitized_event.command_name,
+        error_code=sanitized_event.error_code,
+        target_type=sanitized_event.target_type,
+        correlation_id=sanitized_event.correlation_id,
+        target_id=sanitized_event.target_id,
+        parameters=cast(dict[str, Any], sanitized_event.parameters),
     )
 
 
@@ -342,6 +324,7 @@ class SqlAlchemyAuditEventRepository(AuditEventRepository):
         self._session = session
 
     async def append(self, event: AuditEvent) -> bool:
+        validate_audit_event_runtime_types(event)
         if event.result is AuditResult.DEGRADED:
             raise ValueError("AuditResult.DEGRADED is not persistable")
         if event.delivery is AuditDelivery.LOST:
@@ -360,3 +343,66 @@ class SqlAlchemyAuditEventRepository(AuditEventRepository):
         except KNOWN_DATABASE_FAILURES as exc:
             raise database_unavailable(exc) from exc
         return result.rowcount == 1
+
+    async def get_by_id(self, event_id: str) -> AuditEvent | None:
+        statement = select(AuditEventRow).where(
+            AuditEventRow.id == _uuid(event_id, "audit_event.id")
+        )
+        try:
+            row = (await self._session.execute(statement)).scalar_one_or_none()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return _audit_event_from_row(row) if row is not None else None
+
+    async def list_page(self, query: AuditQuery) -> AuditPage:
+        statement = select(AuditEventRow).order_by(
+            AuditEventRow.occurred_at.desc(),
+            AuditEventRow.id.desc(),
+        )
+        statement = _apply_audit_scope(statement, query.scope)
+        if query.cursor is not None:
+            statement = statement.where(_audit_keyset_before(query.cursor))
+        statement = statement.limit(query.limit + 1)
+        try:
+            rows = (await self._session.execute(statement)).scalars().all()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        events = tuple(_audit_event_from_row(row) for row in rows[: query.limit])
+        next_cursor = None
+        if len(rows) > query.limit and events:
+            final_event = events[-1]
+            next_cursor = AuditCursor(
+                occurred_at=final_event.occurred_at,
+                event_id=final_event.id,
+            )
+        return AuditPage(events=events, next_cursor=next_cursor)
+
+
+def _apply_audit_scope(
+    statement: Any,
+    scope: AuditQueryScope,
+) -> Any:
+    if scope is AuditQueryScope.ALL:
+        return statement
+    if scope is AuditQueryScope.OPERATIONAL:
+        return statement.where(
+            or_(
+                AuditEventRow.action == "cockpit.command",
+                AuditEventRow.action.like("cockpit.command.%"),
+                AuditEventRow.action.like("risk.%"),
+                AuditEventRow.action.like("recovery.%"),
+            )
+        )
+    raise ValueError("audit query scope is not supported")
+
+
+def _audit_keyset_before(cursor: AuditCursor) -> Any:
+    cursor_id = _uuid(cursor.event_id, "cursor.event_id")
+    cursor_time = _utc_datetime(cursor.occurred_at, "cursor.occurred_at")
+    return or_(
+        AuditEventRow.occurred_at < cursor_time,
+        and_(
+            AuditEventRow.occurred_at == cursor_time,
+            AuditEventRow.id < cursor_id,
+        ),
+    )

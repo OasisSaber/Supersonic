@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import FrozenInstanceError, fields, replace
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
-from typing import get_type_hints
+from typing import cast, get_type_hints
 from uuid import UUID, uuid4
 
 import pytest
@@ -50,7 +50,7 @@ def _audit_event_with_parameters(parameters: dict[str, object]) -> AuditEvent:
     return AuditEvent(
         id="11111111-1111-4111-8111-111111111111",
         occurred_at=datetime(2026, 8, 9, 12, tzinfo=UTC),
-        action="audit.boundary.test",
+        action="cockpit.command",
         result=AuditResult.SUCCEEDED,
         delivery=AuditDelivery.PRIMARY,
         parameters=parameters,
@@ -86,7 +86,7 @@ def _adapter_audit_event() -> AuditEvent:
     return AuditEvent(
         id="55555555-5555-4555-8555-555555555555",
         occurred_at=datetime(2026, 8, 9, 12, tzinfo=UTC),
-        action="audit.datetime.test",
+        action="cockpit.command",
         result=AuditResult.SUCCEEDED,
         delivery=AuditDelivery.PRIMARY,
     )
@@ -98,6 +98,33 @@ class _NoSqlSession:
 
     async def execute(self, statement: object) -> object:
         raise AssertionError("audit persistence must reject this event before execute")
+
+
+class _PrivateDatetime(datetime):
+    def isoformat(self, sep: str = "T", timespec: str = "auto") -> str:
+        return "PRIVATE-occurred-at-value"
+
+
+class _PrivateEnumLike:
+    def __init__(self, value: str) -> None:
+        self.value = value
+
+
+class _Masquerade(str):
+    def __new__(
+        cls,
+        private_value: str,
+        allowed_value: str,
+    ) -> "_Masquerade":
+        instance = super().__new__(cls, private_value)
+        instance._allowed_value = allowed_value
+        return instance
+
+    def __hash__(self) -> int:
+        return hash(self._allowed_value)
+
+    def __eq__(self, other: object) -> bool:
+        return other == self._allowed_value
 
 
 class _AuditInsertResult:
@@ -159,6 +186,109 @@ async def test_lost_audit_delivery_is_rejected_before_sql() -> None:
         match="AuditDelivery.LOST has no persistence medium",
     ):
         await repository.append(event)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "unsafe_value", "message"),
+    [
+        (
+            "occurred_at",
+            cast(datetime, _PrivateDatetime(2026, 8, 9, 12, tzinfo=UTC)),
+            "occurred_at must be a datetime",
+        ),
+        (
+            "result",
+            cast(AuditResult, _PrivateEnumLike("PRIVATE-result-value")),
+            "result must be an AuditResult",
+        ),
+        (
+            "delivery",
+            cast(AuditDelivery, _PrivateEnumLike("PRIVATE-delivery-value")),
+            "delivery must be an AuditDelivery",
+        ),
+        (
+            "actor_role",
+            cast(Role, _PrivateEnumLike("PRIVATE-role-value")),
+            "actor_role must be a Role or None",
+        ),
+    ],
+)
+async def test_audit_adapter_rejects_custom_runtime_values_before_sql(
+    field_name: str,
+    unsafe_value: object,
+    message: str,
+) -> None:
+    repository = SqlAlchemyAuditEventRepository(_NoSqlSession())
+
+    with pytest.raises(ValueError, match=message):
+        await repository.append(
+            replace(_adapter_audit_event(), **{field_name: unsafe_value})
+        )
+
+
+@pytest.mark.parametrize(
+    ("field_name", "allowed_value"),
+    [
+        ("action", "cockpit.command"),
+        ("endpoint", "center"),
+        ("command_name", "set_theme"),
+        ("target_type", "risk_event"),
+        ("error_code", "risk_not_found"),
+        ("source_type", "local_hmi"),
+    ],
+)
+def test_audit_adapter_redacts_masquerading_metadata_before_row_construction(
+    field_name: str,
+    allowed_value: str,
+) -> None:
+    private_value = f"PRIVATE-{field_name}-value"
+
+    row = _audit_event_to_row(
+        replace(
+            _adapter_audit_event(),
+            **{field_name: _Masquerade(private_value, allowed_value)},
+        )
+    )
+
+    assert getattr(row, field_name) == "[redacted]"
+    assert private_value not in str(_audit_event_values(
+        replace(
+            _adapter_audit_event(),
+            **{field_name: _Masquerade(private_value, allowed_value)},
+        )
+    ))
+
+
+def test_audit_adapter_redacts_a_masquerading_safe_parameter_value() -> None:
+    private_value = "PRIVATE-parameter-value"
+    event = _audit_event_with_parameters(
+        {"command": _Masquerade(private_value, "set_theme")}
+    )
+
+    row = _audit_event_to_row(event)
+
+    assert row.parameters == {"command": "[redacted]"}
+    assert private_value not in str(_audit_event_values(event))
+
+
+def test_audit_adapter_drops_a_masquerading_safe_parameter_key() -> None:
+    private_key = "PRIVATE-parameter-key"
+    private_value = "PRIVATE-parameter-value"
+    event = _audit_event_with_parameters(
+        {
+            _Masquerade(private_key, "command"): _Masquerade(
+                private_value,
+                "set_theme",
+            )
+        }
+    )
+
+    row = _audit_event_to_row(event)
+
+    assert row.parameters == {}
+    persisted = str(_audit_event_values(event))
+    assert private_key not in persisted
+    assert private_value not in persisted
 
 
 @pytest.mark.parametrize(
@@ -645,50 +775,110 @@ def test_audit_event_record_has_the_persistence_contract_shape() -> None:
     assert not hasattr(event, "__dict__")
 
 
-def test_audit_adapter_redacts_nested_secrets_before_row_construction() -> None:
+def test_audit_adapter_drops_unknown_nested_parameter_structure_before_row_construction() -> None:
     event = _audit_event_with_parameters(
         {"request": {"credentials": {"session_token": "raw-session-secret"}}}
     )
 
     row = _audit_event_to_row(event)
 
-    assert row.parameters == {
-        "request": {"credentials": {"session_token": "[redacted]"}}
-    }
+    assert row.parameters == {}
 
 
-def test_audit_adapter_redacts_nested_private_text_before_row_construction() -> None:
+def test_audit_adapter_drops_unknown_nested_private_text_before_row_construction() -> None:
     event = _audit_event_with_parameters(
         {"request": {"payload": {"message": "meet me at the private address"}}}
     )
 
     row = _audit_event_to_row(event)
 
-    assert row.parameters == {"request": {"payload": {"message": "[redacted]"}}}
+    assert row.parameters == {}
 
 
-def test_audit_adapter_redacts_nested_private_paths_before_row_construction() -> None:
+def test_audit_adapter_drops_unknown_nested_private_paths_before_row_construction() -> None:
     event = _audit_event_with_parameters(
         {"request": {"payload": {"material_path": "C:/private/student/photo.png"}}}
     )
 
     row = _audit_event_to_row(event)
 
-    assert row.parameters == {
-        "request": {"payload": {"material_path": "[redacted]"}}
-    }
+    assert row.parameters == {}
 
 
-def test_audit_adapter_truncates_nested_text_before_row_construction() -> None:
-    event = _audit_event_with_parameters(
-        {"request": {"payload": {"label": "x" * 161}}}
+def test_audit_adapter_redacts_uncontrolled_metadata_before_row_construction() -> None:
+    private_text = "meet-alice-at-home"
+    event = replace(
+        _adapter_audit_event(),
+        action=private_text,
+        endpoint=private_text,
+        cockpit_session_id=private_text,
+        command_name=private_text,
+        correlation_id=private_text,
+        target_type=private_text,
+        target_id=private_text,
+        error_code=private_text,
+        source_type=private_text,
     )
 
     row = _audit_event_to_row(event)
 
-    assert row.parameters == {
-        "request": {"payload": {"label": ("x" * 160) + "…"}}
-    }
+    assert row.action == "[redacted]"
+    assert row.endpoint == "[redacted]"
+    assert row.cockpit_session_id == "[redacted]"
+    assert row.command_name == "[redacted]"
+    assert row.correlation_id == "[redacted]"
+    assert row.target_type == "[redacted]"
+    assert row.target_id == "[redacted]"
+    assert row.error_code == "[redacted]"
+    assert row.source_type == "[redacted]"
+    assert private_text not in str(_audit_event_values(event))
+
+
+def test_audit_adapter_keeps_typed_safe_metadata_before_row_construction() -> None:
+    event = replace(
+        _adapter_audit_event(),
+        action="risk.detected",
+        endpoint="center",
+        cockpit_session_id="22222222-2222-4222-8222-222222222222",
+        command_name="acknowledge_risk",
+        correlation_id="33333333-3333-4333-8333-333333333333",
+        target_type="risk_event",
+        target_id="simulated-takeover-11111111-1111-4111-8111-111111111111",
+        error_code="risk_not_found",
+        source_type="local_hmi",
+    )
+
+    row = _audit_event_to_row(event)
+
+    assert row.action == event.action
+    assert row.endpoint == event.endpoint
+    assert row.cockpit_session_id == event.cockpit_session_id
+    assert row.command_name == event.command_name
+    assert row.correlation_id == event.correlation_id
+    assert row.target_type == event.target_type
+    assert row.target_id == event.target_id
+    assert row.error_code == event.error_code
+    assert row.source_type == event.source_type
+
+
+def test_audit_adapter_redacts_sensitive_parameter_values_before_row_construction() -> None:
+    raw_dsn = "postgresql+psycopg://audit:secret@db.example.test/audit"
+    raw_sql = "SELECT * FROM private_audit_events"
+    event = _audit_event_with_parameters({"database_dsn": raw_dsn, "sql_error": raw_sql})
+
+    row = _audit_event_to_row(event)
+
+    assert row.parameters == {"database_dsn": "[redacted]", "sql_error": "[redacted]"}
+    assert raw_dsn not in str(_audit_event_values(event))
+    assert raw_sql not in str(_audit_event_values(event))
+
+
+def test_audit_adapter_drops_unknown_nested_text_before_row_construction() -> None:
+    event = _audit_event_with_parameters({"request": {"payload": {"label": "x" * 161}}})
+
+    row = _audit_event_to_row(event)
+
+    assert row.parameters == {}
 
 
 def test_audit_adapter_sanitization_does_not_mutate_the_domain_event() -> None:
@@ -705,14 +895,14 @@ def test_audit_adapter_sanitization_does_not_mutate_the_domain_event() -> None:
 
     assert event.parameters == original_parameters
     assert row.parameters is not event.parameters
-    assert row.parameters["request"] is not event.parameters["request"]
+    assert row.parameters == {}
 
 
 @pytest.mark.parametrize(
     "sensitive_key",
     ["raw_secret", "raw_token", "session_secret", "private_text"],
 )
-def test_audit_adapter_redacts_additional_nested_keys_before_row_and_sql(
+def test_audit_adapter_drops_unknown_nested_keys_before_row_and_sql(
     sensitive_key: str,
 ) -> None:
     parameters = {
@@ -725,14 +915,7 @@ def test_audit_adapter_redacts_additional_nested_keys_before_row_and_sql(
     }
     original_parameters = deepcopy(parameters)
     event = _audit_event_with_parameters(parameters)
-    expected_parameters = {
-        "request": {
-            "nested": {
-                sensitive_key: "[redacted]",
-                "safe_label": "visible",
-            }
-        }
-    }
+    expected_parameters: dict[str, object] = {}
 
     row = _audit_event_to_row(event)
     insert_values = _audit_event_values(event)
@@ -741,6 +924,27 @@ def test_audit_adapter_redacts_additional_nested_keys_before_row_and_sql(
     assert insert_values["parameters"] == expected_parameters
     assert event.parameters == original_parameters
     assert row.parameters is not event.parameters
+
+
+def test_audit_adapter_drops_unknown_keys_and_free_form_text_before_row_and_sql() -> None:
+    private_key = "C:/private/student/photo.png"
+    private_text = "meet me behind the red building after class"
+    event = _audit_event_with_parameters(
+        {
+            "command": "set_theme",
+            "request": {"label": "visible", "detail": private_text},
+            private_key: "visible",
+        }
+    )
+
+    row = _audit_event_to_row(event)
+    insert_values = _audit_event_values(event)
+
+    expected = {"command": "set_theme"}
+    assert row.parameters == expected
+    assert insert_values["parameters"] == expected
+    assert private_key not in str(insert_values)
+    assert private_text not in str(insert_values)
 
 
 @pytest.mark.parametrize("module_name", ["models.py", "persistence.py"])

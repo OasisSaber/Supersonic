@@ -78,20 +78,20 @@ def sample_audit_event(
     return AuditEvent(
         id=str(uuid4()),
         occurred_at=datetime.now(UTC),
-        action="platform.session.revoke",
+        action="session.revoke",
         result=AuditResult.SUCCEEDED,
         delivery=AuditDelivery.FALLBACK,
         actor_user_id=sample_user.id,
         actor_platform_session_id=sample_platform_session.id,
         actor_role=Role.ADMIN,
         endpoint="center",
-        cockpit_session_id="cockpit-demo-01",
+        cockpit_session_id="66666666-6666-4666-8666-666666666666",
         command_name="revoke_platform_session",
-        correlation_id="correlation-demo-01",
+        correlation_id="77777777-7777-4777-8777-777777777777",
         target_type="platform_session",
-        target_id="target-demo-01",
-        parameters={"reason": "operator sign-out", "attempt": 1},
-        error_code="operator_sign_out",
+        target_id=sample_platform_session.id,
+        parameters={"command": "revoke_platform_session", "attempt": 1},
+        error_code="role_forbidden",
         source_type="local_hmi",
     )
 
@@ -396,7 +396,7 @@ async def test_audit_append_persists_all_fields(
     assert row.target_type == sample_audit_event.target_type
     assert row.target_id == sample_audit_event.target_id
     assert row.parameters == sample_audit_event.parameters
-    assert row.error_code == "operator_sign_out"
+    assert row.error_code == "role_forbidden"
     assert row.source_type == sample_audit_event.source_type
 
 
@@ -407,40 +407,40 @@ def test_audit_row_maps_all_fields_to_domain() -> None:
     row = AuditEventRow(
         id=UUID("33333333-3333-4333-8333-333333333333"),
         occurred_at=occurred_at,
-        action="platform.command.execute",
+        action="cockpit.command",
         result="rejected",
         delivery="primary",
         actor_user_id=actor_user_id,
         actor_platform_session_id=actor_platform_session_id,
         actor_role="viewer",
         endpoint="passenger",
-        cockpit_session_id="cockpit-literal-01",
-        command_name="set_climate",
-        correlation_id="correlation-literal-01",
+        cockpit_session_id="66666666-6666-4666-8666-666666666666",
+        command_name="set_cabin_control",
+        correlation_id="77777777-7777-4777-8777-777777777777",
         target_type="climate_zone",
         target_id="passenger-front",
-        parameters={"temperature_c": 22},
-        error_code="role_denied",
+        parameters={"temperatureC": 22},
+        error_code="role_forbidden",
         source_type="local_hmi",
     )
 
     assert _audit_event_from_row(row) == AuditEvent(
         id="33333333-3333-4333-8333-333333333333",
         occurred_at=occurred_at,
-        action="platform.command.execute",
+        action="cockpit.command",
         result=AuditResult.REJECTED,
         delivery=AuditDelivery.PRIMARY,
         actor_user_id="11111111-1111-4111-8111-111111111111",
         actor_platform_session_id="22222222-2222-4222-8222-222222222222",
         actor_role=Role.VIEWER,
         endpoint="passenger",
-        cockpit_session_id="cockpit-literal-01",
-        command_name="set_climate",
-        correlation_id="correlation-literal-01",
+        cockpit_session_id="66666666-6666-4666-8666-666666666666",
+        command_name="set_cabin_control",
+        correlation_id="77777777-7777-4777-8777-777777777777",
         target_type="climate_zone",
         target_id="passenger-front",
-        parameters={"temperature_c": 22},
-        error_code="role_denied",
+        parameters={"temperatureC": 22},
+        error_code="role_forbidden",
         source_type="local_hmi",
     )
 
@@ -449,7 +449,7 @@ async def test_lost_audit_delivery_is_rejected_before_sql() -> None:
     event = AuditEvent(
         id=str(uuid4()),
         occurred_at=datetime.now(UTC),
-        action="audit.delivery",
+        action="auth.login",
         result=AuditResult.ERROR,
         delivery=AuditDelivery.LOST,
     )
