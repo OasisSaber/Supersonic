@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from types import TracebackType
@@ -7,6 +8,7 @@ from typing import Self
 
 import pytest
 
+import app.platform.sessions as sessions_module
 from app.platform.models import AuditResult, PlatformSession, Role, User
 from app.platform.persistence import DatabaseUnavailable, PlatformReadiness
 from app.platform.security import CredentialStoreError, PasswordVerification, digest_session_token
@@ -206,11 +208,16 @@ def user(*, disabled: bool = False) -> User:
     )
 
 
+async def no_failure_delay() -> None:
+    return None
+
+
 def service(
     uow: FakeUow,
     hasher: FakeHasher,
     readiness: FakeReadiness,
     throttle: LoginThrottle | None = None,
+    failure_delay: Callable[[], Awaitable[None]] = no_failure_delay,
 ) -> SessionService:
     return SessionService(
         readiness=readiness,
@@ -221,6 +228,7 @@ def service(
         clock=lambda: NOW,
         uuid_factory=lambda: "11111111-1111-4111-8111-111111111111",
         token_factory=lambda: "raw-session-secret",
+        failure_delay=failure_delay,
     )
 
 
@@ -274,6 +282,62 @@ async def test_unknown_and_disabled_users_use_generic_rejection_with_empty_actor
     assert uow.calls[-2:] == ["commit", "exit"]
 
 
+@pytest.mark.parametrize(
+    ("stored_user", "verification"),
+    [
+        (None, PasswordVerification(False)),
+        (user(), PasswordVerification(False)),
+        (user(disabled=True), PasswordVerification(True)),
+    ],
+)
+async def test_credential_rejections_delay_once_after_audited_transaction(
+    stored_user: User | None,
+    verification: PasswordVerification,
+) -> None:
+    uow = FakeUow(stored_user)
+    observed_delay_states: list[tuple[str, ...]] = []
+
+    async def record_delay() -> None:
+        observed_delay_states.append(tuple(uow.calls))
+
+    with pytest.raises(InvalidCredentials):
+        await service(
+            uow,
+            FakeHasher(verification),
+            FakeReadiness(),
+            failure_delay=record_delay,
+        ).login("alice", "bad-password", "client")
+
+    assert observed_delay_states == [("enter", "audit.append", "commit", "exit")]
+
+
+async def test_default_credential_rejection_delay_is_250_ms_after_audited_transaction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    uow = FakeUow(None)
+    observed_sleep_calls: list[tuple[float, tuple[str, ...]]] = []
+
+    async def capture_sleep(seconds: float) -> None:
+        observed_sleep_calls.append((seconds, tuple(uow.calls)))
+
+    monkeypatch.setattr(sessions_module.asyncio, "sleep", capture_sleep)
+    subject = SessionService(
+        readiness=FakeReadiness(),
+        uow_factory=lambda: uow,
+        password_hasher=FakeHasher(PasswordVerification(False)),
+        throttle=LoginThrottle(),
+        session_ttl=timedelta(hours=8),
+        clock=lambda: NOW,
+        uuid_factory=lambda: "11111111-1111-4111-8111-111111111111",
+        token_factory=lambda: "raw-session-secret",
+    )
+
+    with pytest.raises(InvalidCredentials):
+        await subject.login("alice", "bad-password", "client")
+
+    assert observed_sleep_calls == [(0.25, ("enter", "audit.append", "commit", "exit"))]
+
+
 async def test_wrong_password_rehashes_only_on_verified_success() -> None:
     rejected_uow = FakeUow(user())
     with pytest.raises(InvalidCredentials):
@@ -292,9 +356,17 @@ async def test_wrong_password_rehashes_only_on_verified_success() -> None:
 async def test_malformed_hash_maps_to_typed_store_failure_without_secrets() -> None:
     hasher = FakeHasher()
     hasher.error = CredentialStoreError()
+    delay_calls: list[tuple[str, ...]] = []
+
+    async def record_delay() -> None:
+        delay_calls.append(())
+
     with pytest.raises(CredentialStoreInvalid) as caught:
-        await service(FakeUow(user()), hasher, FakeReadiness()).login("alice", "secret", "client")
+        await service(
+            FakeUow(user()), hasher, FakeReadiness(), failure_delay=record_delay
+        ).login("alice", "secret", "client")
     assert "secret" not in str(caught.value)
+    assert delay_calls == []
 
 
 @pytest.mark.parametrize(
@@ -315,7 +387,12 @@ async def test_login_readiness_failure_does_not_open_a_uow() -> None:
     uow = FakeUow(user())
     readiness = FakeReadiness()
     readiness.error = DatabaseUnavailable()
-    subject = service(uow, FakeHasher(), readiness)
+    delay_calls: list[tuple[str, ...]] = []
+
+    async def record_delay() -> None:
+        delay_calls.append(())
+
+    subject = service(uow, FakeHasher(), readiness, failure_delay=record_delay)
     factory_calls = 0
 
     def factory() -> FakeUow:
@@ -328,6 +405,7 @@ async def test_login_readiness_failure_does_not_open_a_uow() -> None:
         await subject.login("alice", "good", "client")
     assert factory_calls == 0
     assert uow.calls == []
+    assert delay_calls == []
 
 
 @pytest.mark.parametrize("stored_user", [None, user()])
@@ -339,30 +417,52 @@ async def test_rejected_login_audit_failures_are_truthful_and_not_persisted(
 ) -> None:
     uow = FakeUow(stored_user, audit_inserted=audit_inserted, commit_error=commit_error)
     hasher = FakeHasher(PasswordVerification(False))
+    delay_calls: list[tuple[str, ...]] = []
+
+    async def record_delay() -> None:
+        delay_calls.append(())
+
     expected = DatabaseUnavailable if commit_error else AuditPersistenceFailure
     with pytest.raises(expected):
-        await service(uow, hasher, FakeReadiness()).login("unknown", "bad", "client")
+        await service(uow, hasher, FakeReadiness(), failure_delay=record_delay).login(
+            "unknown", "bad", "client"
+        )
     assert uow.audit_events.persisted_events == []
     assert uow.platform_sessions.persisted_session is None
+    assert delay_calls == []
 
 
 async def test_throttle_blocks_before_readiness_and_resets_after_success() -> None:
     throttle = LoginThrottle(max_failures=1)
     throttle.record_failure("alice", "client")
     readiness = FakeReadiness()
+    delay_calls: list[tuple[str, ...]] = []
+
+    async def record_delay() -> None:
+        delay_calls.append(())
+
     with pytest.raises(LoginThrottled) as caught:
-        await service(FakeUow(user()), FakeHasher(), readiness, throttle).login(
-            " ALICE ", "secret", "client"
-        )
+        await service(
+            FakeUow(user()),
+            FakeHasher(),
+            readiness,
+            throttle,
+            failure_delay=record_delay,
+        ).login(" ALICE ", "secret", "client")
     assert caught.value.retry_after == 30
     assert readiness.calls == 0
 
     fresh = LoginThrottle(max_failures=2)
     fresh.record_failure("alice", "client")
-    await service(FakeUow(user()), FakeHasher(), FakeReadiness(), fresh).login(
-        "alice", "good", "client"
-    )
+    await service(
+        FakeUow(user()),
+        FakeHasher(),
+        FakeReadiness(),
+        fresh,
+        failure_delay=record_delay,
+    ).login("alice", "good", "client")
     assert fresh.entry_count == 0
+    assert delay_calls == []
 
 
 async def test_resolve_uses_current_server_identity_without_writes() -> None:

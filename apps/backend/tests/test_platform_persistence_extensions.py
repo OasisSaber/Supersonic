@@ -145,7 +145,9 @@ async def test_platform_session_get_by_id_translates_known_database_failure() ->
 
 async def test_narrow_updates_report_no_changed_row_honestly() -> None:
     updated_at = datetime(2026, 8, 12, 5, tzinfo=UTC)
-    user = SqlAlchemyUserRepository(_RecordingSession(_Result(rowcount=0)))  # type: ignore[arg-type]
+    user = SqlAlchemyUserRepository(
+        _RecordingSession(_Result(rowcount=0))  # type: ignore[arg-type]
+    )
     platform_session = SqlAlchemyPlatformSessionRepository(
         _RecordingSession(_Result(rowcount=0))  # type: ignore[arg-type]
     )

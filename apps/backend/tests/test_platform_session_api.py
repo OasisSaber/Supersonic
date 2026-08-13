@@ -78,7 +78,9 @@ def client_for(
     service: FakeSessionService, profile: PlatformAccessProfile = PlatformAccessProfile.LOOPBACK
 ) -> TestClient:
     settings = RuntimeSettings(
-        platform_ui_origin=(ORIGIN if profile is PlatformAccessProfile.LOOPBACK else "https://ui.test"),
+        platform_ui_origin=(
+            ORIGIN if profile is PlatformAccessProfile.LOOPBACK else "https://ui.test"
+        ),
         platform_access_profile=profile,
         platform_cookie=platform_cookie_settings(profile),
     )
