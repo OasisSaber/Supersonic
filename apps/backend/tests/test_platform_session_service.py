@@ -221,6 +221,7 @@ def service(
     readiness: FakeReadiness,
     throttle: LoginThrottle | None = None,
     failure_delay: Callable[[], Awaitable[None]] = no_failure_delay,
+    on_revoke: Callable[[str], Awaitable[None]] | None = None,
 ) -> SessionService:
     return SessionService(
         readiness=readiness,
@@ -232,6 +233,7 @@ def service(
         uuid_factory=lambda: "11111111-1111-4111-8111-111111111111",
         token_factory=lambda: "raw-session-secret",
         failure_delay=failure_delay,
+        on_revoke=on_revoke,
     )
 
 
@@ -650,3 +652,57 @@ async def test_repeated_logout_is_invalid_and_internal_revoke_is_idempotent() ->
     assert revoke_uow.platform_sessions.persisted_revokes == []
     assert revoke_uow.audit_events.attempted_events == []
     assert "commit" not in revoke_uow.calls
+
+
+async def test_logout_notifies_revoke_hook_after_commit() -> None:
+    revoked_ids: list[str] = []
+
+    async def on_revoke(session_id: str) -> None:
+        revoked_ids.append(session_id)
+
+    uow = FakeUow(user(), session=active_session())
+    result = await service(
+        uow,
+        FakeHasher(),
+        FakeReadiness(),
+        on_revoke=on_revoke,
+    ).logout("raw-session-secret")
+
+    assert result is True
+    assert revoked_ids == ["session-1"]
+
+
+async def test_internal_revoke_notifies_hook_after_commit() -> None:
+    revoked_ids: list[str] = []
+
+    async def on_revoke(session_id: str) -> None:
+        revoked_ids.append(session_id)
+
+    uow = FakeUow(user(), session=active_session())
+    result = await service(
+        uow,
+        FakeHasher(),
+        FakeReadiness(),
+        on_revoke=on_revoke,
+    ).revoke("session-1", "operator_request")
+
+    assert result is True
+    assert revoked_ids == ["session-1"]
+
+
+async def test_revoke_hook_not_called_on_failed_revoke() -> None:
+    revoked_ids: list[str] = []
+
+    async def on_revoke(session_id: str) -> None:
+        revoked_ids.append(session_id)
+
+    uow = FakeUow(user(), session=active_session(revoked=True))
+    result = await service(
+        uow,
+        FakeHasher(),
+        FakeReadiness(),
+        on_revoke=on_revoke,
+    ).revoke("session-1", "operator_request")
+
+    assert result is False
+    assert revoked_ids == []

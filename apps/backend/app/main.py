@@ -10,11 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp
 
+from .adapters.postgres.audit_sink import PostgresAuditSink
 from .adapters.postgres.database import create_database_engine, create_session_factory
 from .adapters.postgres.readiness import SqlAlchemyPlatformReadiness
 from .adapters.postgres.unit_of_work import SqlAlchemyPlatformUnitOfWork
 from .adapters.security import PwdlibPasswordHasher
 from .api import create_cockpit_router, create_legacy_router
+from .api.cockpit_router import PlatformCommandWire
 from .api.legacy_router import (
     build_demo_trip,
     demo_trip,
@@ -30,9 +32,13 @@ from .api.platform_session_router import (
 from .cockpit.errors import CommandRejected
 from .cockpit.service import CockpitService
 from .config import RuntimeSettings, load_settings
+from .contracts.v1 import CommandEnvelopeV1, EndpointId
 from .data import load_mock_frames
-from .platform.sessions import SessionService
+from .platform.command_gateway import GatewayResult, PlatformCommandGateway
+from .platform.errors import AuthenticationRequired, RoleForbidden
+from .platform.sessions import SessionIdentity, SessionService
 from .platform.throttle import LoginThrottle
+from .platform.websocket_registry import WebSocketSessionRegistry
 
 __all__ = [
     "app",
@@ -111,6 +117,7 @@ def create_app(
             runtime_settings.database_url,
             engine=database_engine,
         )
+        ws_registry = WebSocketSessionRegistry()
         platform_service = SessionService(
             readiness=readiness,
             uow_factory=lambda: SqlAlchemyPlatformUnitOfWork(session_factory),
@@ -119,7 +126,41 @@ def create_app(
             session_ttl=timedelta(seconds=runtime_settings.platform_session_ttl_seconds),
             clock=lambda: datetime.now(UTC),
             uuid_factory=lambda: str(uuid4()),
+            on_revoke=ws_registry.close_all,
         )
+        audit_sink = PostgresAuditSink(
+            readiness=readiness,
+            uow_factory=lambda: SqlAlchemyPlatformUnitOfWork(session_factory),
+        )
+        platform_gateway = PlatformCommandGateway(
+            authority=cockpit_authority,
+            audit=audit_sink,
+        )
+
+        class _PlatformCommandWire:
+            def cookie_name(self) -> str:
+                return runtime_settings.platform_cookie.name
+
+            async def resolve(self, raw_secret: str) -> SessionIdentity:
+                return await platform_service.resolve(raw_secret)
+
+            async def apply(
+                self,
+                identity: SessionIdentity,
+                command: CommandEnvelopeV1,
+                *,
+                server_endpoint: EndpointId,
+            ) -> GatewayResult:
+                return await platform_gateway.apply_command(
+                    identity.principal,
+                    command,
+                    server_endpoint=server_endpoint,
+                )
+
+        platform_wire: PlatformCommandWire | None = _PlatformCommandWire()
+    else:
+        ws_registry = None
+        platform_wire = None
 
     @asynccontextmanager
     async def app_lifespan(_: FastAPI):
@@ -153,12 +194,33 @@ def create_app(
             content={"error": {"code": exc.code, "message": exc.message}},
         )
 
+    @api.exception_handler(AuthenticationRequired)
+    async def authentication_required(_: Request, exc: AuthenticationRequired) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": {"code": exc.code, "message": exc.message}},
+        )
+
+    @api.exception_handler(RoleForbidden)
+    async def role_forbidden(_: Request, exc: RoleForbidden) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": {"code": exc.code, "message": exc.message}},
+        )
+
     @api.get("/api/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "mode": runtime_settings.app_mode.value}
 
     api.include_router(create_legacy_router())
-    api.include_router(create_cockpit_router(cockpit_authority, runtime_settings))
+    api.include_router(
+        create_cockpit_router(
+            cockpit_authority,
+            runtime_settings,
+            platform=platform_wire,
+            ws_registry=ws_registry,
+        )
+    )
     api.include_router(create_platform_session_router(platform_service, runtime_settings))
     return api
 
