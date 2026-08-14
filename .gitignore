@@ -44,6 +44,9 @@ tmp/
 .tmp/
 *.log
 
+# External asset drop-offs (never commit)
+.drops/
+
 # Project-local developer tools
 .tools/
 

@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import os
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+
+if sys.platform == "win32":
+    # psycopg async connections reject the default ProactorEventLoop on Windows.
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
+from uuid import UUID
 
 
 class Role(StrEnum):
@@ -25,6 +26,13 @@ class AuditDelivery(StrEnum):
     PRIMARY = "primary"
     FALLBACK = "fallback"
     LOST = "lost"
+
+
+class AuditQueryScope(StrEnum):
+    """The fixed audit visibility sets supported by the persistence port."""
+
+    ALL = "all"
+    OPERATIONAL = "operational"
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +78,40 @@ class AuditEvent:
     parameters: dict[str, Any] = field(default_factory=dict)
     error_code: str | None = None
     source_type: str = "local_hmi"
+
+
+@dataclass(frozen=True, slots=True)
+class AuditCursor:
+    """Stable descending keyset position for audit-history reads."""
+
+    occurred_at: datetime
+    event_id: str
+
+    def __post_init__(self) -> None:
+        if self.occurred_at.tzinfo is None or self.occurred_at.utcoffset() is None:
+            raise ValueError("cursor.occurred_at must be timezone-aware")
+        try:
+            UUID(self.event_id)
+        except (AttributeError, TypeError, ValueError) as error:
+            raise ValueError("cursor.event_id must be a valid UUID") from error
+        object.__setattr__(self, "occurred_at", self.occurred_at.astimezone(UTC))
+
+
+@dataclass(frozen=True, slots=True)
+class AuditQuery:
+    scope: AuditQueryScope
+    cursor: AuditCursor | None
+    limit: int
+
+    def __post_init__(self) -> None:
+        if not 1 <= self.limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+
+
+@dataclass(frozen=True, slots=True)
+class AuditPage:
+    events: tuple[AuditEvent, ...]
+    next_cursor: AuditCursor | None
 
 
 @dataclass(frozen=True, slots=True)

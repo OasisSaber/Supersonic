@@ -9,7 +9,7 @@ from typing import Self
 import pytest
 
 import app.platform.sessions as sessions_module
-from app.platform.models import AuditResult, PlatformSession, Role, User
+from app.platform.models import AuditEvent, AuditResult, PlatformSession, Role, User
 from app.platform.persistence import DatabaseUnavailable, PlatformReadiness
 from app.platform.security import CredentialStoreError, PasswordVerification, digest_session_token
 from app.platform.sessions import (
@@ -112,6 +112,9 @@ class FakeAudits:
         if self.inserted:
             self.staged_events.append(event)
         return self.inserted
+
+    async def get_by_id(self, event_id: str) -> AuditEvent | None:
+        raise AssertionError("session service must not read audit facts by id")
 
     def commit(self) -> None:
         self.persisted_events.extend(self.staged_events)

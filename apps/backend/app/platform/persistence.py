@@ -5,7 +5,7 @@ from enum import StrEnum
 from types import TracebackType
 from typing import Protocol, Self
 
-from .models import AuditEvent, PlatformSession, User
+from .models import AuditEvent, AuditPage, AuditQuery, PlatformSession, User
 
 
 class PlatformPersistenceError(RuntimeError):
@@ -62,6 +62,10 @@ class PlatformSessionRepository(Protocol):
 
 class AuditEventRepository(Protocol):
     async def append(self, event: AuditEvent) -> bool: ...
+
+    async def get_by_id(self, event_id: str) -> AuditEvent | None: ...
+
+    async def list_page(self, query: AuditQuery) -> AuditPage: ...
 
 
 class PlatformUnitOfWork(Protocol):
