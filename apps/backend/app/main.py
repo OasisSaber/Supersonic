@@ -35,7 +35,7 @@ from .config import RuntimeSettings, load_settings
 from .contracts.v1 import CommandEnvelopeV1, EndpointId
 from .data import load_mock_frames
 from .platform.command_gateway import GatewayResult, PlatformCommandGateway
-from .platform.errors import AuthenticationRequired, RoleForbidden
+from .platform.errors import AuditUnavailable, AuthenticationRequired, RoleForbidden
 from .platform.sessions import SessionIdentity, SessionService
 from .platform.throttle import LoginThrottle
 from .platform.websocket_registry import WebSocketSessionRegistry
@@ -206,6 +206,18 @@ def create_app(
         return JSONResponse(
             status_code=exc.status_code,
             content={"error": {"code": exc.code, "message": exc.message}},
+        )
+
+    @api.exception_handler(AuditUnavailable)
+    async def audit_unavailable(_: Request, exc: AuditUnavailable) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": {
+                    "code": "audit_unavailable",
+                    "message": "The audit boundary is unavailable.",
+                }
+            },
         )
 
     @api.get("/api/health")

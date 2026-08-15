@@ -190,7 +190,7 @@ class PlatformCommandGateway:
 
     def _append_fallback(self, event: AuditEvent) -> AuditDelivery:
         if self._fallback is None:
-            raise AuditUnavailable("No audit fallback is configured.")
+            return AuditDelivery.LOST
         try:
             self._fallback.append(event)
             return AuditDelivery.FALLBACK

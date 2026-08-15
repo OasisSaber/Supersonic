@@ -139,4 +139,28 @@ Semantics (must match legacy gateway behavior exactly):
 
 ## Verification record (2026-08-15)
 
-PENDING — fill after execution.
+- WebSocket registry unit suite: 7 passed (register/close_all/disconnect/active sessions).
+- Platform command gateway unit suite: 10 passed (role-forbidden, attempted-before-mutation,
+  endpoint rejection, primary outage fallback, management-command hard failure, lost delivery
+  with and without a configured fallback, conflict propagation).
+- Router wiring tests: 7 passed (401 missing cookie, 401 invalid session, 503 database outage
+  during resolve, 403 role forbidden, 200 success, control-disabled 403, WS dual-flag gate).
+- Session service suite with on_revoke hook: 38 passed (logout/revoke notify hook after commit;
+  failed revoke does not notify).
+- Full backend unit suite: 448 passed, 2 skipped.
+- pnpm check: passed - backend 448 passed / 2 skipped; frontend 46 passed; production build OK;
+  ruff + eslint clean.
+- bash scripts/validate.sh: passed (exit 0).
+- PostgreSQL integration (real PostgreSQL test database, TEST_DATABASE_URL ending _test,
+  SUPERSONIC_ALLOW_TEST_DB_RESET=1): 53 passed, including Slice D command-audit persistence
+  (attempted+succeeded, rejected) and registry close-on-revoke semantics.
+- pnpm smoke:gp05: passed (real-process gp05.v1 runtime chain).
+- git diff --check: passed. Sensitive-data scan: no secrets, paths, or artifacts added.
+- Adversarial code review findings addressed in head: HIGH (production composition now degrades
+  to LOST without a configured fallback and maps AuditUnavailable to a structured 503), MEDIUM
+  (resolve DB/migration outages surface as 503 not 401 with preserved chain; WS platform/registry
+  dual-flag gate moved to router construction), LOW (dead code removed; management-command
+  attempted remains durable while outcomes are best-effort, documented).
+- Scope: no Router re-composition outside cockpit_router, no protocol change, no legacy router
+  removal, no UI, no deployment. Degraded no-database path unchanged and covered by existing tests.
+- No push or Draft PR was attempted, per the current authorization boundary.

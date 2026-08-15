@@ -21,6 +21,7 @@ from app.contracts.v1 import (
 from app.platform.command_gateway import GatewayResult
 from app.platform.errors import AuthenticationRequired, RoleForbidden
 from app.platform.models import AuditDelivery, Principal, Role
+from app.platform.persistence import DatabaseUnavailable
 from app.platform.sessions import SessionIdentity
 from app.platform.websocket_registry import WebSocketSessionRegistry
 
@@ -42,16 +43,20 @@ class FakeWire:
         identity: SessionIdentity | None = None,
         forbidden: bool = False,
         authority: CockpitService | None = None,
+        resolve_error: Exception | None = None,
     ) -> None:
         self.identity = identity
         self.forbidden = forbidden
         self.authority = authority or CockpitService()
+        self.resolve_error = resolve_error
         self.applied: list[tuple] = []
 
     def cookie_name(self) -> str:
         return "supersonic_platform_session_dev"
 
     async def resolve(self, raw_secret: str) -> SessionIdentity:
+        if self.resolve_error is not None:
+            raise self.resolve_error
         if self.identity is None:
             raise AuthenticationRequired()
         return self.identity
@@ -109,6 +114,13 @@ def make_client(wire: FakeWire) -> TestClient:
             content={"error": {"code": exc.code, "message": exc.message}},
         )
 
+    @app.exception_handler(DatabaseUnavailable)
+    async def database_unavailable(_: object, exc: DatabaseUnavailable) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={"error": {"code": "database_unavailable", "message": str(exc)}},
+        )
+
     app.include_router(
         create_cockpit_router(
             wire.authority,
@@ -118,6 +130,25 @@ def make_client(wire: FakeWire) -> TestClient:
         )
     )
     return TestClient(app)
+
+
+def test_platform_command_resolve_database_outage_is_503_not_401() -> None:
+    client = make_client(
+        FakeWire(identity=identity(), resolve_error=DatabaseUnavailable())
+    )
+
+    response = client.post(
+        "/api/v1/commands/control",
+        cookies={"supersonic_platform_session_dev": "valid-secret"},
+        json=command(
+            CommandName.SET_THEME,
+            endpoint=EndpointId.CONTROL,
+            parameters={"theme": "day"},
+        ).model_dump(mode="json", by_alias=True),
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "database_unavailable"
 
 
 def test_platform_command_without_cookie_is_401() -> None:
@@ -167,6 +198,19 @@ def test_platform_command_role_forbidden_is_403() -> None:
 
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "role_forbidden"
+
+
+def test_websocket_gate_rejects_platform_without_registry() -> None:
+    import pytest
+
+    settings = RuntimeSettings(control_enabled=True, platform_ui_origin="http://127.0.0.1:5173")
+    with pytest.raises(RuntimeError, match="must be configured together"):
+        create_cockpit_router(
+            CockpitService(),
+            settings,
+            platform=FakeWire(identity=identity()),
+            ws_registry=None,
+        )
 
 
 def test_platform_command_success_returns_envelope() -> None:

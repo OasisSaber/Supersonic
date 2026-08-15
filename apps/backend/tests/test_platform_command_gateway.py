@@ -267,3 +267,21 @@ async def test_audit_conflict_propagates_never_falls_back() -> None:
         )
 
     assert fallback.events == []
+
+
+async def test_primary_outage_without_configured_fallback_degrades_to_lost() -> None:
+    gateway, _, _ = make_gateway(audit=RecordingAudit(available=False))
+
+    result = await gateway.apply_command(
+        principal(),
+        command(
+            CommandName.SET_MEDIA_STATE,
+            endpoint=EndpointId.PASSENGER,
+            parameters={"state": "paused"},
+        ),
+        server_endpoint=EndpointId.PASSENGER,
+    )
+
+    assert result.audit_delivery is AuditDelivery.LOST
+    assert result.audit_recorded is False
+    assert result.envelope is not None

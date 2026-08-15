@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Protocol
 
-from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 
 from ..cockpit.errors import CommandRejected
 from ..cockpit.service import CockpitService
@@ -16,6 +16,7 @@ from ..contracts.v1 import (
 )
 from ..platform.command_gateway import GatewayResult
 from ..platform.errors import AuthenticationRequired, RoleForbidden
+from ..platform.persistence import DatabaseUnavailable, MigrationRequired
 from ..platform.sessions import SessionIdentity
 from ..platform.websocket_registry import WebSocketSessionRegistry
 
@@ -36,20 +37,6 @@ class PlatformCommandWire(Protocol):
     ) -> GatewayResult: ...
 
 
-def _require_platform(platform: PlatformCommandWire | None) -> PlatformCommandWire:
-    if platform is None:
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "error": {
-                    "code": "platform_unavailable",
-                    "message": "The platform command boundary is not configured.",
-                }
-            },
-        )
-    return platform
-
-
 def create_cockpit_router(
     authority: CockpitService,
     settings: RuntimeSettings,
@@ -57,6 +44,8 @@ def create_cockpit_router(
     platform: PlatformCommandWire | None = None,
     ws_registry: WebSocketSessionRegistry | None = None,
 ) -> APIRouter:
+    if (platform is None) != (ws_registry is None):
+        raise RuntimeError("platform wire and WebSocket registry must be configured together")
     router = APIRouter()
 
     @router.get("/api/v1/snapshot", response_model=CockpitSnapshotV1)
@@ -119,8 +108,10 @@ async def _platform_command(
         identity = await platform.resolve(raw_secret)
     except AuthenticationRequired:
         raise
-    except Exception:
-        raise AuthenticationRequired() from None
+    except (DatabaseUnavailable, MigrationRequired):
+        raise
+    except Exception as exc:
+        raise AuthenticationRequired() from exc
     try:
         result = await platform.apply(
             identity,
