@@ -112,6 +112,7 @@ class SessionService:
         uuid_factory: Callable[[], str],
         token_factory: Callable[[], str] = issue_session_token,
         failure_delay: CredentialFailureDelay = _default_credential_failure_delay,
+        on_revoke: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         if session_ttl <= timedelta(0):
             raise ValueError("session_ttl must be positive")
@@ -124,6 +125,7 @@ class SessionService:
         self._uuid_factory = uuid_factory
         self._token_factory = token_factory
         self._failure_delay = failure_delay
+        self._on_revoke = on_revoke
 
     async def resolve(self, raw_secret: str) -> SessionIdentity:
         """Read a current identity without extending or otherwise writing the session."""
@@ -156,6 +158,8 @@ class SessionService:
                 raise InvalidSession()
             await self._append_logout_audit(uow, now, user, platform_session.id)
             await uow.commit()
+        if self._on_revoke is not None:
+            await self._on_revoke(platform_session.id)
         return True
 
     async def revoke(self, platform_session_id: str, reason: str) -> bool:
@@ -178,6 +182,8 @@ class SessionService:
                 return False
             await self._append_revoke_audit(uow, now, user, platform_session.id)
             await uow.commit()
+        if self._on_revoke is not None:
+            await self._on_revoke(platform_session_id)
         return True
 
     def _now(self) -> datetime:
