@@ -1,9 +1,9 @@
 # 项目进度
 
-- 最后更新：2026-08-08
-- 远端主线：`main@71b4c46ee3816b4c8e0834f25ef4eb363be034f1`
-- 已完成任务：Issue #44、PR #45
-- 当前阶段：GP22 第一轮 UI 与 G1 视觉证据已合入，准备独立 G3 架构评审 Issue
+- 最后更新：2026-08-16
+- 远端主线：`main@5308850cefff016a67692c417d590c9ed5882868`
+- 已完成任务：Issue #44、PR #45（GP22 G1/G2）；G3 架构评审 Issue #47 / PR #48；G4 平台切片 A–D（PR #50、#52、#54、#56、#58）
+- 当前阶段：G4 平台纵向切片 A–D 已合入 `main`（PostgreSQL 持久化、identity/Platform Session、认证与 CORS 加固、审计持久化与回填、命令/WebSocket 集成）；剩余 session revoke、备份恢复等切片按 ROADMAP 继续
 
 ## 1. 已合并事实
 
@@ -16,9 +16,17 @@
 | #42 | 远端仓库改名与旧 slug 清理 | 已合并 |
 | #43 | GP22 六端点 UI 和后端事务式服务架构 | 已合并 |
 | #45 | Quality Pack v3、平台领域端口、审计语义修复与 72 张 Windows 视觉证据 | 已合并 |
+| #46 | PR #45 合并后进度同步 | 已合并 |
+| #48 | G3 平台边界架构批准（Issue #47） | 已合并 |
+| #50 | G4 Slice A：PostgreSQL 持久化基础（Issue #49） | 已合并 |
+| #52 | G4：identity 与 Platform Session（Issue #51） | 已合并 |
+| #54 | G4 Slice B：认证与 CORS 加固 | 已合并 |
+| #56 | G4 Slice C：审计持久化（Issue #55） | 已合并 |
+| #58 | G4 Slice D：命令/WebSocket 集成（Issue #57） | 已合并 |
 
 主线最近完整验证来自 PR #45：后端 88 tests、前端 46 tests、构建、
 `bash scripts/validate.sh` 和 `pnpm smoke` 通过；合并后 main CI 也已独立通过。
+G3/G4 各 PR 的本地验证与 CI 结果以各自 PR 记录为准，本文不再逐条重复。
 
 ## 2. PR #45 已合并基线
 
@@ -40,12 +48,12 @@ Issue #44 已关闭，合并后 main CI 已完成 Validate 与 GP05 Smoke。
 | --- | --- | --- |
 | `gp05.v1` 运行时 | `VERIFIED_MAIN_BASELINE` | 主线权威状态、权限、reset/reconnect 与 Smoke 已建立 |
 | GP22 第一轮 UI | `VERIFIED_MAIN_G1` | 系统 offline/stale、连接中断与恢复证据及 CI 已进入主线 |
-| 平台领域端口 | `REVIEW_FIXED_NOT_WIRED` | 不接公开路由；审计结果与故障语义已修复并测试 |
-| PostgreSQL / RBAC / Audit adapter | `G3_REVIEW_PENDING` | 先建独立 Issue 做架构评审，不得直接接线 |
-| 真实地图、Vision、语音、Web3D | `PLANNED` | 不属于当前 G3 范围 |
+| PostgreSQL / Platform 层 | `G4_IMPLEMENTING` | G3 已批准；PostgreSQL adapter（database/ORM/audit sink/unit of work）、identity 与 Platform Session、认证与 CORS、审计持久化与回填、命令网关/WS 集成已合入 `main`；Router 已接线并有 wiring 测试 |
+| G4 剩余切片 | `PLANNED` | session revoke、备份恢复等按 ROADMAP 顺序逐 Slice 实施 |
+| 真实地图、Vision、语音、Web3D | `PLANNED` | 不属于当前 G4 范围 |
 
 ## 4. 下一步
 
-1. 为 PostgreSQL / server session / RBAC / Audit 最小纵向切片创建独立 G3 Issue；
-2. 完成 ERD、身份与权限、审计、故障、migration、恢复和测试策略评审；
-3. 由人类批准 G3 决策并指定首个 G4 Slice，未批准前不接公开 Router。
+1. 按 `IMPLEMENTATION_ROADMAP.md` G4 顺序继续剩余切片：session revoke → 备份恢复等，每个 Slice 独立 Issue/授权、jj change、验证与 PR；
+2. G4 完成后进入 G5 最终 Code Review 与冻结检查（DECISION_BASELINE §10）；
+3. 之后按决策基线分别立项真实地图、VehicleVision、AI 语音、多显示部署与 Web3D。
