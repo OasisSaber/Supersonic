@@ -19,15 +19,14 @@ Those derived materials are provided under the source project's MIT License. Thi
 
 ## Ultralytics / YOLO (reserved optional dependency; not adopted)
 
-The `vision` optional dependency group in `apps/backend/pyproject.toml` retains an
-Ultralytics version range for future evaluation. The current source tree does not import
-or call Ultralytics/YOLO, contains no Ultralytics model weights, and does not distribute a
-runtime or release artifact that includes it. The locked package is therefore a reserved
-dependency record, not evidence of current integration or permission to use it.
+Ultralytics/YOLO has been removed from the `vision` optional dependency group in
+`apps/backend/pyproject.toml` and from `apps/backend/uv.lock`. The current source tree does
+not import or call Ultralytics/YOLO, contains no Ultralytics model weights, and does not
+distribute a runtime or release artifact that includes it.
 
-Before enabling the `vision` extra, adding YOLO code or models, or distributing a build
-that contains them, record the exact package/model versions, provenance, license text and
-permission evidence in `docs/08-data-and-license-log.md`. The official licensing route
+Before adding the dependency, YOLO code or models, or distributing a build that contains
+them, record the exact package/model versions, provenance, license text and permission
+evidence in `docs/08-data-and-license-log.md`. The official licensing route
 must be chosen and documented first: AGPL-3.0 with the corresponding whole-project source
 obligations, or an applicable Ultralytics Enterprise/R&D license. See the
 [Ultralytics licensing page](https://www.ultralytics.com/license). This repository's

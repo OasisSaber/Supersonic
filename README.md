@@ -101,8 +101,9 @@ GitHub Actions 必须独立通过。PR 描述中的本地验证记录不能替�
 ### Vision 许可证门禁
 
 当前版本未采用 Ultralytics/YOLO：运行代码没有导入或调用 Ultralytics，也没有提交
-模型权重或分发包含该组件的发行物。`apps/backend/pyproject.toml` 中的 `vision`
-可选组仅保留未来评估用的依赖声明，未完成许可核验前不得启用、部署或分发。
+模型权重或分发包含该组件的发行物。Ultralytics 已从
+`apps/backend/pyproject.toml` 的 `vision` 可选组和 `apps/backend/uv.lock` 移除；
+未来重新加入前必须完成许可核验。
 
 如果未来启用 Ultralytics/YOLO，必须先在
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) 和

@@ -55,13 +55,13 @@ pnpm --filter @supersonic/frontend dev
 
 - 当前必需：FastAPI、Pydantic、Uvicorn、React、Vite、ECharts、Zustand；
 - 开发测试：pytest、Ruff、Vitest、ESLint；
-- 后续视觉可选：OpenCV、MediaPipe；Ultralytics YOLO 目前仅为未采用的预留依赖；
+- 后续视觉可选：OpenCV、MediaPipe；Ultralytics YOLO 已从当前依赖图移除；
 - 后续语音可选：FFmpeg、ASR、TTS；
 - 后续LLM可选：OpenAI兼容客户端。
 
-视觉依赖已经写入`apps/backend/pyproject.toml`的`vision`可选组。当前不得启用该组；
-只有完成 `THIRD_PARTY_NOTICES.md` 与 `docs/08-data-and-license-log.md` 中的许可门禁后，
-才能执行：
+OpenCV 和 MediaPipe 已写入`apps/backend/pyproject.toml`的`vision`可选组。Ultralytics
+不在当前依赖图中；未来重新加入前必须完成 `THIRD_PARTY_NOTICES.md` 与
+`docs/08-data-and-license-log.md` 中的许可门禁，才能执行视觉安装：
 
 ```bash
 uv --cache-dir .uv-cache sync --project apps/backend --extra vision

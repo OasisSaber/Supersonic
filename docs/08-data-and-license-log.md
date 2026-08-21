@@ -14,7 +14,7 @@
 
 | 模型/权重 | 版本 | 来源 | 许可证 | 商用/展示限制 | 是否修改/训练 | 本地路径 | 引用方式 |
 |---|---|---|---|---|---|---|---|
-| Ultralytics YOLO（预留依赖，当前未采用） | 锁文件记录 `8.4.95`；实际启用版本待定 | [Ultralytics 官方许可页](https://www.ultralytics.com/license) | AGPL-3.0 或 Enterprise/R&D 路线，启用前必须核验 | 当前不适用；未启用、未部署、未分发 | 不适用 | 无；不得提交权重 | 启用前记录准确版本、模型来源、许可文本和授权证据，并更新 `THIRD_PARTY_NOTICES.md` |
+| Ultralytics YOLO（当前未采用） | 已从 `pyproject.toml` 与 `uv.lock` 移除；未来版本待定 | [Ultralytics 官方许可页](https://www.ultralytics.com/license) | AGPL-3.0 或 Enterprise/R&D 路线，重新加入前必须核验 | 当前不适用；未启用、未部署、未分发 | 不适用 | 无；不得提交权重 | 重新加入前记录准确版本、模型来源、许可文本和授权证据，并更新 `THIRD_PARTY_NOTICES.md` |
 | MediaPipe | 【待填写】 | Google官方 | Apache-2.0（采用前再次核验版本） | 保留许可声明 | 不训练 | 依赖环境 | 官方文档 |
 | 【LLM待定】 | 【待填写】 | 【待填写】 | 服务条款 | 不提交密钥和用户敏感信息 | 不训练 | API/本地 | 官方文档 |
 
