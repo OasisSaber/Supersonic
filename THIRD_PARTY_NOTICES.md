@@ -16,3 +16,19 @@ The pull-request-body validator, Markdown-link validator, and their tests in `sc
 The complex-task Issue Form, selected Jujutsu lifecycle guidance, pull-request validation hardening, and CI hardening were selectively synchronized from the same project at commit `794b083e816e84f271e991aed84a5a5f4e9c74fc`. They were adapted to preserve this repository's HMI-specific authority, validation command, and platform evidence. TheMasterplan is the successor brand and version of the same workflow line.
 
 Those derived materials are provided under the source project's MIT License. This notice does not grant a license for the Supersonic project as a whole; see [README.md](README.md) for this repository's license boundary.
+
+## Ultralytics / YOLO (reserved optional dependency; not adopted)
+
+The `vision` optional dependency group in `apps/backend/pyproject.toml` retains an
+Ultralytics version range for future evaluation. The current source tree does not import
+or call Ultralytics/YOLO, contains no Ultralytics model weights, and does not distribute a
+runtime or release artifact that includes it. The locked package is therefore a reserved
+dependency record, not evidence of current integration or permission to use it.
+
+Before enabling the `vision` extra, adding YOLO code or models, or distributing a build
+that contains them, record the exact package/model versions, provenance, license text and
+permission evidence in `docs/08-data-and-license-log.md`. The official licensing route
+must be chosen and documented first: AGPL-3.0 with the corresponding whole-project source
+obligations, or an applicable Ultralytics Enterprise/R&D license. See the
+[Ultralytics licensing page](https://www.ultralytics.com/license). This repository's
+current no-license-grant statement does not resolve that future decision.

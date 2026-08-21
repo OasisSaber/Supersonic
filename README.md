@@ -97,3 +97,15 @@ GitHub Actions 必须独立通过。PR 描述中的本地验证记录不能替�
 
 本仓库用于毕业设计作品展示与技术审查。当前未授予复制、再分发、修改或商业
 使用许可；第三方依赖与引用资料分别适用其原有许可和条款。
+
+### Vision 许可证门禁
+
+当前版本未采用 Ultralytics/YOLO：运行代码没有导入或调用 Ultralytics，也没有提交
+模型权重或分发包含该组件的发行物。`apps/backend/pyproject.toml` 中的 `vision`
+可选组仅保留未来评估用的依赖声明，未完成许可核验前不得启用、部署或分发。
+
+如果未来启用 Ultralytics/YOLO，必须先在
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) 和
+[`docs/08-data-and-license-log.md`](docs/08-data-and-license-log.md) 记录准确版本、
+模型来源和授权证据，并在 AGPL-3.0 全项目开源路线与 Ultralytics Enterprise/R&D
+许可路线之间作出明确选择。
