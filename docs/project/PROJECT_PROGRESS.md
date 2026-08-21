@@ -1,59 +1,81 @@
 # 项目进度
 
-- 最后更新：2026-08-16
-- 远端主线：`main@5308850cefff016a67692c417d590c9ed5882868`
-- 已完成任务：Issue #44、PR #45（GP22 G1/G2）；G3 架构评审 Issue #47 / PR #48；G4 平台切片 A–D（PR #50、#52、#54、#56、#58）
-- 当前阶段：G4 平台纵向切片 A–D 已合入 `main`（PostgreSQL 持久化、identity/Platform Session、认证与 CORS 加固、审计持久化与回填、命令/WebSocket 集成）；剩余 session revoke、备份恢复等切片按 ROADMAP 继续
+- 最后更新：2026-08-22
+- 远端主线：`main@2522c93cf77deb1fcd2a141e97c1b39be26a5752`
+- 当前候选：[Issue #61](https://github.com/OasisSaber/Supersonic/issues/61) / `codex/issue-61-g4-slice-e`
+- 当前阶段：`G4_SLICE_E_CANDIDATE_VALIDATED`；尚未合并，`HUMAN_MERGE_GATE` 保持开启
 
 ## 1. 已合并事实
 
 | PR | 能力 | 状态 |
 | --- | --- | --- |
-| #31–#33 | 导航健康、Control、`gp05.v1` 真实进程 Smoke | 已合并 |
-| #34–#38 | 平台方向、核心 Review 修复、进度与 Apple 资产评估 | 已合并 |
-| #39–#40 | TheMasterplan v3 工作流及采用收尾 | 已合并 |
-| #41 | 更名、风险状态机、HTTP/WS 竞态与合同收紧 | 已合并 |
-| #42 | 远端仓库改名与旧 slug 清理 | 已合并 |
-| #43 | GP22 六端点 UI 和后端事务式服务架构 | 已合并 |
-| #45 | Quality Pack v3、平台领域端口、审计语义修复与 72 张 Windows 视觉证据 | 已合并 |
-| #46 | PR #45 合并后进度同步 | 已合并 |
+| #31–#45 | GP05/GP22、平台方向、工作流和第一轮 UI 冻结 | 已合并 |
 | #48 | G3 平台边界架构批准（Issue #47） | 已合并 |
 | #50 | G4 Slice A：PostgreSQL 持久化基础（Issue #49） | 已合并 |
 | #52 | G4：identity 与 Platform Session（Issue #51） | 已合并 |
 | #54 | G4 Slice B：认证与 CORS 加固 | 已合并 |
 | #56 | G4 Slice C：审计持久化（Issue #55） | 已合并 |
 | #58 | G4 Slice D：命令/WebSocket 集成（Issue #57） | 已合并 |
+| #59 | 合并后同步 G4 Slice A–D 项目进度 | 已合并为 `a56662e` |
+| #60 | 移除未批准的 `ultralytics` 依赖 | 已合并为当前主线 `2522c93c` |
 
-主线最近完整验证来自 PR #45：后端 88 tests、前端 46 tests、构建、
-`bash scripts/validate.sh` 和 `pnpm smoke` 通过；合并后 main CI 也已独立通过。
-G3/G4 各 PR 的本地验证与 CI 结果以各自 PR 记录为准，本文不再逐条重复。
+各历史 PR 的本地验证与 GitHub Actions 结果以对应 PR 记录为准。Issue #61
+基于 `main@2522c93c`，没有把候选状态写成主线事实。
 
-## 2. PR #45 已合并基线
+## 2. Issue #61 候选范围
 
-PR #45 已由人类 Squash Merge 为 `71b4c46ee3816b4c8e0834f25ef4eb363be034f1`。
-合并树与最终候选 `1b484703f5cb5ac9b0ae2d7fc0de5de4ff86dd5f` 完全一致；
-Issue #44 已关闭，合并后 main CI 已完成 Validate 与 GP05 Smoke。
+Slice E 已在一个 jj change 中实现并接线：
 
-已修复的 Code Review 阻断项：
+- Admin 用户、角色和 Session 查询；角色变更、账户禁用/启用和 Admin 归因的
+  Session 撤销；last-admin 与 self-management 保护；数据库提交后才传播 WebSocket
+  关闭；
+- 服务端角色范围 Audit 查询，以及结构上独立的 `/platform` 登录、Users、Sessions、
+  Audit 控制台；
+- 显式交互式用户 seed CLI、受保护的 PostgreSQL custom backup、严格七键 manifest、
+  显式 opt-in 的隔离 `_restore_test` restore；
+- 恢复模板、实际恢复报告、应用验收记录和仅含合成身份的浏览器截图。
 
-- 普通命令可能先修改权威状态，再因审计写入失败向调用者返回错误；
-- fallback 把原始 succeeded/rejected 结果覆盖成 degraded；
-- `app.main` 的兼容导出被移除；
-- offline/stale 视觉矩阵混淆数据域状态与系统/连接状态；
-- PR body 原不符合仓库模板，导致 CI 无法进入真实验证；现已修复并通过。
+共享座舱实时状态仍只有 `CockpitService` 一个权威来源；Slice E 没有把实时车况写入
+PostgreSQL，也没有引入多实例 revoke、OAuth/JWT/SSO、Redis、定时备份或公开部署。
 
-## 3. 当前模块状态
+## 3. Task 11 本机验收证据
+
+- PostgreSQL 集成：`pnpm test:backend:integration` 为 61 passed；其中 Slice E 原子性、
+  rollback、last-admin、归因和角色范围焦点用例为 8 passed。
+- 真实备份/恢复：PostgreSQL / `pg_dump` / `pg_restore` 16.15；源数据为 4 users、
+  6 platform sessions、9 audit events；checksum、仓库/恢复 Alembic revision
+  `20260809_0001`、精确行数和三个恢复 invariant 一致。
+- 恢复后应用验收：Admin 登录、禁用账户拒绝、4 个既有 revoked Session、Admin
+  安全 Audit 可见、Operator/Viewer 安全 Audit 不可见、提交后 WebSocket 关闭、旧身份
+  HTTP 401、旧 WebSocket 1008 均已验证。
+- `pnpm smoke:gp05` 通过 `gp05.v1` 四客户端流程，Cockpit 实时权威边界未改变。
+- 最终候选 `pnpm check` 通过：Ruff/ESLint、后端 682 passed / 4 skipped、前端
+  15 files / 69 tests 和 1675-module production build。
+- `bash scripts/validate.sh` 通过：23 个 validator tests、6 个 Markdown-link tests、
+  tracked Markdown/YAML/Shell 检查以及同一套 project check 全部完成。
+- 恢复证据测试为 11 passed；实际记录见
+  [backup-manifest.json](../../deliverables/platform-recovery/backup-manifest.json)、
+  [restore-report.json](../../deliverables/platform-recovery/restore-report.json) 和
+  [acceptance.json](../../deliverables/platform-recovery/acceptance.json)。
+- 浏览器证据见 [platform recovery evidence](../../deliverables/platform-recovery/README.md)。
+  所有身份均为合成数据；真实 dump、凭据、DSN、token/cookie 和原始运行日志不进入 Git。
+
+以上只证明本机候选验收。完整 diff/敏感信息自审、Draft PR 和 latest-head GitHub
+Actions 仍是发布前门禁；只有产生新证据后才能在 PR 中标记通过。
+
+## 4. 当前模块状态
 
 | 模块 | 状态 | 边界 |
 | --- | --- | --- |
 | `gp05.v1` 运行时 | `VERIFIED_MAIN_BASELINE` | 主线权威状态、权限、reset/reconnect 与 Smoke 已建立 |
-| GP22 第一轮 UI | `VERIFIED_MAIN_G1` | 系统 offline/stale、连接中断与恢复证据及 CI 已进入主线 |
-| PostgreSQL / Platform 层 | `G4_IMPLEMENTING` | G3 已批准；PostgreSQL adapter（database/ORM/audit sink/unit of work）、identity 与 Platform Session、认证与 CORS、审计持久化与回填、命令网关/WS 集成已合入 `main`；Router 已接线并有 wiring 测试 |
-| G4 剩余切片 | `PLANNED` | session revoke、备份恢复等按 ROADMAP 顺序逐 Slice 实施 |
+| GP22 第一轮 UI | `VERIFIED_MAIN_G1_G2` | 六端点正常/降级视觉证据已进入主线 |
+| G4 Slice A–D | `VERIFIED_MAIN` | PostgreSQL、Session、认证/CORS、Audit、命令/WS 已合入 |
+| G4 Slice E | `CANDIDATE_VALIDATED_LOCAL` | Issue #61 候选已完成本机恢复/应用证据，尚未合并 |
 | 真实地图、Vision、语音、Web3D | `PLANNED` | 不属于当前 G4 范围 |
 
-## 4. 下一步
+## 5. 下一步
 
-1. 按 `IMPLEMENTATION_ROADMAP.md` G4 顺序继续剩余切片：session revoke → 备份恢复等，每个 Slice 独立 Issue/授权、jj change、验证与 PR；
-2. G4 完成后进入 G5 最终 Code Review 与冻结检查（DECISION_BASELINE §10）；
-3. 之后按决策基线分别立项真实地图、VehicleVision、AI 语音、多显示部署与 Web3D。
+1. 在 Issue #61 change 上完成最终全量验证、完整 diff 与敏感信息自审；
+2. 普通 push `codex/issue-61-g4-slice-e`，创建或更新关联 Draft PR，并验证 latest-head CI；
+3. 等待人类 Review 与 Squash Merge；Agent 不 merge、release 或关闭人工门；
+4. 只有人类合并后，后续独立同步才可标记 `G4 PLATFORM COMPLETE` 并进入 G5。

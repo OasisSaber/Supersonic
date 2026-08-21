@@ -1,58 +1,76 @@
 # 实施路线与验收门
 
 - 状态：`CURRENT_EXECUTION_ROADMAP`
-- 主线基线：`main@71b4c46ee3816b4c8e0834f25ef4eb363be034f1`
-- 当前任务：PR #45 合并后同步；下一任务为独立 G3 架构评审 Issue
+- 主线基线：`main@2522c93cf77deb1fcd2a141e97c1b39be26a5752`
+- 当前任务：[Issue #61](https://github.com/OasisSaber/Supersonic/issues/61) / `codex/issue-61-g4-slice-e`
+- 当前门：`G4_SLICE_E_CANDIDATE_VALIDATED` / `HUMAN_MERGE_GATE`
 
-## G0：文档事实同步
+## G0–G2：主线基线与第一轮 UI 冻结
 
-PR #45 已合并；README、Progress 与 Roadmap 记录新的主线、验证结果和 G3 门禁，
-同时保留环境配置、项目入口、许可说明与视觉证据边界。
-
-退出条件：README、Progress、Roadmap、PR body 和 GitHub 状态一致。
-
-## G1：Windows 六端点视觉证据
-
-已完成主要正常、导航、接管、确认、恢复、Day/Night、数据域离线、
-`systemMode=offline`、`systemMode=stale`、实际后端/WebSocket 连接中断与恢复截图。
-截图、权威快照、传输证据和矩阵名称一致；GitHub Actions 已独立通过，G1 已完成。
-
-退出条件：无阻塞溢出或不可操作控件，Overview 无命令，六端点状态来源准确，所有
-未覆盖项明确记录。
-
-## G2：GP22 第一轮 UI 冻结
-
-仅允许修复有证据的 Token、字号、间距、对比度、状态表达、可访问性和端点布局。
-禁止更改 `gp05.v1`、端点权限、命令名称、实时权威模型或引入新 UI 框架。
-
-退出条件：PR #45 Review 无 Critical/High，CI、Smoke 与视觉矩阵通过。
-
-状态：已由 PR #45 完成并进入 `main`。
+GP05/GP22、Windows 六端点视觉证据、传输/权威状态合同和第一轮 UI 冻结已由
+PR #31–#45 进入主线。PR #59 同步了 G4 Slice A–D 事实，PR #60 移除了未批准的
+`ultralytics` 依赖，形成当前主线基线 `2522c93c`。
 
 ## G3：平台纵向切片架构评审
 
-G2 已完成且 PR #45 已合并。下一步创建独立 Issue，评审 ER 图、migration、服务端
-会话、角色矩阵、审计字段、失败语义、回滚和测试计划；本门只产出架构决策，
-未经人类批准不得开始 G4 或接入公开 Router。
-
-硬约束：
+G3 已由 Issue #47 / PR #48 批准并合入。持续有效的硬约束：
 
 - PostgreSQL 不保存或决定当前车速、路线、风险、媒体或 WebSocket 快照；
-- 客户端角色声明不可信；
-- 管理命令在缺少主审计 intent 时不得修改状态；
-- 非管理命令的审计故障不能导致“状态已修改但响应失败”的假象；
-- fallback 必须保留 succeeded/rejected/error 结果，单独记录交付状态。
+- 客户端角色声明不可信，角色与 Audit scope 由服务端身份决定；
+- 管理变更、Session revoke 和主审计事实必须处于同一提交边界；
+- WebSocket close 只在数据库 commit 后传播；
+- fallback 保留原始业务结果，交付状态单独表达。
 
 ## G4：平台纵向切片实现
 
-前提：G3 已由人类批准并指定首个 Slice。候选顺序为数据库配置 → migration →
-用户/角色/会话/审计 → 登录 → 服务端身份上下文 → RBAC → 一个现有 command →
-audit 查询 → session revoke → 备份恢复；每次只实施被批准的一个 Slice。
+### 已进入主线
+
+- Slice A / PR #50：PostgreSQL database、ORM、migration、adapter 与 UoW；
+- identity / PR #52：用户与 Platform Session；
+- Slice B / PR #54：登录、服务端身份、认证与 CORS；
+- Slice C / PR #56：Audit 持久化、fallback 与回填；
+- Slice D / PR #58：命令网关和单进程 WebSocket Session registry。
+
+### Slice E 候选（Issue #61，尚未合并）
+
+候选实现 Admin 用户/角色/Session 管理、角色范围 Audit、独立 `/platform` 控制台、
+显式 seed、guarded backup/restore 和 sanitized recovery evidence。Task 11 已完成本机
+真实 PostgreSQL integration、`pg_dump`、隔离 `_restore_test` `pg_restore --clean`、
+恢复后 Admin/API/Audit/WebSocket/browser 验收与 GP05 smoke。
+
+证据入口：
+
+- [恢复操作与证据说明](../../deliverables/platform-recovery/README.md)
+- [恢复验收模板](../../deliverables/platform-recovery/RECOVERY_ACCEPTANCE_TEMPLATE.md)
+- [实际 restore report](../../deliverables/platform-recovery/restore-report.json)
+- [实际 application acceptance](../../deliverables/platform-recovery/acceptance.json)
+
+本机验收没有越过人工门。真实 dump、临时凭据、wrapper 和 raw logs 不提交；Draft PR、
+latest-head CI、人类 Review 与 Squash Merge 尚未发生。
+
+### G4 退出条件
+
+| 门禁 | 当前状态 |
+| --- | --- |
+| 隔离 PostgreSQL integration | 本机通过：61 passed |
+| 真实 backup / isolated restore | 本机通过：4/6/9 行、revision/count/invariant 一致 |
+| 禁用/revoke persistence 与恢复后 Admin/Audit API | 本机通过 |
+| WebSocket revoke 与浏览器证据 | 本机通过，使用合成身份 |
+| `pnpm smoke:gp05` | 本机通过，`gp05.v1` 四客户端 |
+| `pnpm check` | 通过：后端 682/4 skipped、前端 69、production build |
+| `bash scripts/validate.sh` | 通过：validator/link/YAML/Shell/project check |
+| 完整 diff、临时文件与敏感信息自审 | 待执行 |
+| Draft PR 与 latest-head GitHub Actions | 待执行 |
+| 人类 Review 与 Squash Merge | `HUMAN_MERGE_GATE`，待人类决定 |
+
+只有所有前置门禁有真实证据且人类完成合并后，后续独立文档更新才能标记
+`G4 PLATFORM COMPLETE`。当前候选不得提前进入 G5。
 
 ## G5：最终 Code Review 与冻结
 
-检查 UI、外部数据校验、实时状态权威、数据库职责、权限、审计、migration、失败
-恢复、Mock/真实标签、测试有效性和文档准确性。
+G5 尚未开始。进入条件是 Slice E 人类合并以及 G4 关闭事实已由后续同步记录。
+届时检查 UI、外部数据校验、实时状态权威、数据库职责、权限、Audit、migration、
+失败恢复、Mock/真实标签、测试有效性和文档准确性。
 
 ## 当前排除项
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
+from typing import Never
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -15,7 +16,11 @@ from .adapters.postgres.database import create_database_engine, create_session_f
 from .adapters.postgres.readiness import SqlAlchemyPlatformReadiness
 from .adapters.postgres.unit_of_work import SqlAlchemyPlatformUnitOfWork
 from .adapters.security import PwdlibPasswordHasher
-from .api import create_cockpit_router, create_legacy_router
+from .api import (
+    create_cockpit_router,
+    create_legacy_router,
+    create_platform_admin_router,
+)
 from .api.cockpit_router import PlatformCommandWire
 from .api.legacy_router import (
     build_demo_trip,
@@ -34,6 +39,8 @@ from .cockpit.service import CockpitService
 from .config import RuntimeSettings, load_settings
 from .contracts.v1 import CommandEnvelopeV1, EndpointId
 from .data import load_mock_frames
+from .platform.admin import UserAdminService
+from .platform.audit_query import AuditQueryService
 from .platform.command_gateway import GatewayResult, PlatformCommandGateway
 from .platform.errors import AuditUnavailable, AuthenticationRequired, RoleForbidden
 from .platform.sessions import SessionIdentity, SessionService
@@ -102,6 +109,28 @@ class _UnavailablePlatformSessionService:
         raise PlatformUnavailable
 
 
+class _UnavailablePlatformAdminService:
+    async def list_users(self, *_: object, **__: object) -> Never:
+        raise PlatformUnavailable
+
+    async def list_sessions(self, *_: object, **__: object) -> Never:
+        raise PlatformUnavailable
+
+    async def change_role(self, *_: object, **__: object) -> Never:
+        raise PlatformUnavailable
+
+    async def set_disabled(self, *_: object, **__: object) -> Never:
+        raise PlatformUnavailable
+
+    async def revoke_session(self, *_: object, **__: object) -> Never:
+        raise PlatformUnavailable
+
+
+class _UnavailablePlatformAuditService:
+    async def list_for_role(self, *_: object, **__: object) -> Never:
+        raise PlatformUnavailable
+
+
 def create_app(
     authority: CockpitService | None = None,
     settings: RuntimeSettings | None = None,
@@ -110,6 +139,8 @@ def create_app(
     cockpit_authority = authority or CockpitService()
     database_engine = None
     platform_service: PlatformSessionService = _UnavailablePlatformSessionService()
+    platform_admin = _UnavailablePlatformAdminService()
+    platform_audit = _UnavailablePlatformAuditService()
     if runtime_settings.database_url is not None:
         database_engine = create_database_engine(runtime_settings.database_url)
         session_factory = create_session_factory(database_engine)
@@ -118,9 +149,13 @@ def create_app(
             engine=database_engine,
         )
         ws_registry = WebSocketSessionRegistry()
+
+        def uow_factory() -> SqlAlchemyPlatformUnitOfWork:
+            return SqlAlchemyPlatformUnitOfWork(session_factory)
+
         platform_service = SessionService(
             readiness=readiness,
-            uow_factory=lambda: SqlAlchemyPlatformUnitOfWork(session_factory),
+            uow_factory=uow_factory,
             password_hasher=PwdlibPasswordHasher(),
             throttle=LoginThrottle(),
             session_ttl=timedelta(seconds=runtime_settings.platform_session_ttl_seconds),
@@ -128,9 +163,20 @@ def create_app(
             uuid_factory=lambda: str(uuid4()),
             on_revoke=ws_registry.close_all,
         )
+        platform_admin = UserAdminService(
+            readiness=readiness,
+            uow_factory=uow_factory,
+            clock=lambda: datetime.now(UTC),
+            uuid_factory=lambda: str(uuid4()),
+            on_revoke=ws_registry.close_all,
+        )
+        platform_audit = AuditQueryService(
+            readiness=readiness,
+            uow_factory=uow_factory,
+        )
         audit_sink = PostgresAuditSink(
             readiness=readiness,
-            uow_factory=lambda: SqlAlchemyPlatformUnitOfWork(session_factory),
+            uow_factory=uow_factory,
         )
         platform_gateway = PlatformCommandGateway(
             authority=cockpit_authority,
@@ -234,6 +280,14 @@ def create_app(
         )
     )
     api.include_router(create_platform_session_router(platform_service, runtime_settings))
+    api.include_router(
+        create_platform_admin_router(
+            sessions=platform_service,
+            admin=platform_admin,
+            audit=platform_audit,
+            settings=runtime_settings,
+        )
+    )
     return api
 
 
