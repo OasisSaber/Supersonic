@@ -1327,7 +1327,7 @@ def test_owned_temp_closes_descriptor_and_removes_path_when_initial_fstat_fails(
     assert not created_path.exists()
 
 
-def test_owned_temp_removes_created_path_when_close_fails(
+def test_owned_temp_removes_created_path_when_descriptor_close_fails(
     modules,
     monkeypatch,
     tmp_path: Path,
@@ -1356,8 +1356,15 @@ def test_owned_temp_removes_created_path_when_close_fails(
     monkeypatch.setattr(backup.tempfile, "mkstemp", capture_mkstemp)
     monkeypatch.setattr(backup.os, "close", close_then_fail)
 
-    with pytest.raises(OSError):
-        backup._create_owned_temp(destination)
+    if os.name == "posix":
+        owned = backup._create_owned_temp(destination)
+        assert owned.anchor is not None
+        backup._remove_owned(owned)
+        assert owned.anchor.descriptor is None
+        assert close_calls == 1
+    else:
+        with pytest.raises(OSError):
+            backup._create_owned_temp(destination)
 
     assert created_path is not None
     assert not created_path.exists()
