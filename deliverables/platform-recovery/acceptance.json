@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "candidateCommitSha": "618b10271fd0c30bf7c53b6bb098e2df448bf27c",
+  "sourceCommitSha": "2522c93cf77deb1fcd2a141e97c1b39be26a5752",
+  "backupManifest": "deliverables/platform-recovery/backup-manifest.json",
+  "restoreReport": "deliverables/platform-recovery/restore-report.json",
+  "targetKind": "isolated_restore_test",
+  "dumpCommitted": false,
+  "persistence": {
+    "disabledAccountPersistence": {
+      "status": "passed",
+      "evidenceReference": "deliverables/platform-recovery/screenshots/restored-admin-users.png"
+    },
+    "sessionRevocationPersistence": {
+      "status": "passed",
+      "evidenceReference": "deliverables/platform-recovery/screenshots/restored-revoked-sessions.png"
+    }
+  },
+  "applicationAcceptance": {
+    "restoredAdminLogin": {
+      "status": "passed",
+      "evidenceReference": "deliverables/platform-recovery/screenshots/restored-admin-users.png"
+    },
+    "auditVisibility": {
+      "status": "passed",
+      "evidenceReference": "deliverables/platform-recovery/screenshots/restored-admin-audit.png"
+    },
+    "webSocketRevoke": {
+      "status": "passed",
+      "evidenceReference": "deliverables/platform-recovery/acceptance.json"
+    },
+    "gp05Smoke": {
+      "status": "passed",
+      "evidenceReference": "deliverables/platform-recovery/acceptance.json"
+    }
+  },
+  "observations": {
+    "syntheticUserCount": 4,
+    "sourceInvalidatedSessionCount": 4,
+    "persistedRevokedSessionCount": 4,
+    "revokedIdentityHttpStatus": 401,
+    "oldWebSocketCloseCode": 1008,
+    "gp05Protocol": "gp05.v1",
+    "gp05ClientCount": 4
+  },
+  "evidence": {
+    "reportReference": "deliverables/platform-recovery/acceptance.json",
+    "screenshotDirectory": "deliverables/platform-recovery/screenshots",
+    "screenshotReferences": [
+      "deliverables/platform-recovery/screenshots/restored-admin-users.png",
+      "deliverables/platform-recovery/screenshots/restored-revoked-sessions.png",
+      "deliverables/platform-recovery/screenshots/restored-admin-audit.png"
+    ],
+    "logReferences": []
+  },
+  "humanGate": {
+    "status": "pending",
+    "requirement": "human_review_and_merge_required"
+  }
+}

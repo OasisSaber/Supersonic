@@ -1,13 +1,18 @@
-import { act, cleanup, render } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import snapshotFixture from '../../../contracts/gp05/v1/example.snapshot.json'
 import App from './App'
 import type { CockpitSnapshotV1 } from './contracts/gp05-v1'
+import { useCockpitSnapshot } from './lib/useCockpitSnapshot'
 import mainSource from './main.tsx?raw'
 import { useCockpitStore } from './stores/cockpit'
 
 vi.mock('./lib/useCockpitSnapshot', () => ({
   useCockpitSnapshot: vi.fn(),
+}))
+
+vi.mock('./platform/PlatformConsole', () => ({
+  PlatformConsole: () => <main>Platform evidence ledger</main>,
 }))
 
 const authoritativeSnapshot = snapshotFixture as CockpitSnapshotV1
@@ -35,6 +40,23 @@ describe('authoritative cockpit theme', () => {
       connection: 'connecting',
       lastError: null,
     })
+  })
+
+  it('keeps platform routes outside cockpit snapshot authority', () => {
+    window.history.replaceState({}, '', '/platform/audit')
+
+    render(<App />)
+
+    expect(screen.getByText('Platform evidence ledger')).toBeInTheDocument()
+    expect(useCockpitSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('keeps existing routes on the cockpit snapshot authority', () => {
+    window.history.replaceState({}, '', '/cluster')
+
+    render(<App />)
+
+    expect(useCockpitSnapshot).toHaveBeenCalledWith('cluster')
   })
 
   it('loads the design tokens exactly once before the consuming stylesheet', () => {

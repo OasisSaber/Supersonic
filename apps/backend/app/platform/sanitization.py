@@ -47,9 +47,7 @@ _PRIVATE_TEXT_KEYS = frozenset(
 _MAX_TEXT_LENGTH = 160
 _MAX_LIST_ITEMS = 8
 _MAX_DEPTH = 4
-_UUID_TEXT = re.compile(
-    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z"
-)
+_UUID_TEXT = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
 _AUDIT_SAFE_PARAMETER_KEYS = frozenset(
     {
         "attempt",
@@ -57,9 +55,14 @@ _AUDIT_SAFE_PARAMETER_KEYS = frozenset(
         "count",
         "eventId",
         "mode",
+        "newRole",
+        "oldRole",
         "privacyEnabled",
+        "reason",
+        "revokedSessionCount",
         "state",
         "status",
+        "targetUserId",
         "temperatureC",
         "theme",
     }
@@ -82,7 +85,12 @@ _AUDIT_PARAMETER_KEY_ORDER = (
     "count",
     "eventId",
     "mode",
+    "oldRole",
+    "newRole",
     "privacyEnabled",
+    "revokedSessionCount",
+    "targetUserId",
+    "reason",
     "state",
     "status",
     "temperatureC",
@@ -113,6 +121,17 @@ _AUDIT_COMMAND_VALUES = frozenset(
 )
 _AUDIT_ENUM_VALUES: dict[str, frozenset[str]] = {
     "mode": frozenset({"normal", "warning", "takeover", "stale", "offline", "recovery"}),
+    "newRole": frozenset({"admin", "operator", "viewer"}),
+    "oldRole": frozenset({"admin", "operator", "viewer"}),
+    "reason": frozenset(
+        {
+            "admin_revoke",
+            "operator_request",
+            "role_changed",
+            "security_review",
+            "user_disabled",
+        }
+    ),
     "state": frozenset({"playing", "paused", "suppressed"}),
     "status": frozenset(
         {"attempted", "succeeded", "rejected", "error", "ready", "degraded", "unavailable"}
@@ -131,10 +150,13 @@ _AUDIT_ACTIONS = frozenset(
         "recovery.completed",
         "risk.detected",
         "session.revoke",
+        "user.disable",
+        "user.enable",
+        "user.role_change",
     }
 )
 _AUDIT_ENDPOINTS = frozenset({"center", "cluster", "control", "hud", "overview", "passenger"})
-_AUDIT_TARGET_TYPES = frozenset({"climate_zone", "platform_session", "risk_event"})
+_AUDIT_TARGET_TYPES = frozenset({"climate_zone", "platform_session", "risk_event", "user"})
 _AUDIT_ERROR_CODES = frozenset(
     {
         "command_forbidden",
@@ -199,9 +221,7 @@ def sanitize_audit_parameters(value: object) -> dict[str, Any]:
     """Keep only defined, non-sensitive AuditEvent parameter facts."""
     if type(value) is not dict:
         return {}
-    exact_string_items = {
-        key: item for key, item in value.items() if type(key) is str
-    }
+    exact_string_items = {key: item for key, item in value.items() if type(key) is str}
     sanitized: dict[str, Any] = {}
     for key in _AUDIT_PARAMETER_KEY_ORDER:
         if key not in exact_string_items:
@@ -220,7 +240,7 @@ def sanitize_audit_parameters(value: object) -> dict[str, Any]:
 def _sanitize_audit_parameter_value(key: str, value: object) -> Any | None:
     if key == "privacyEnabled":
         return value if type(value) is bool else None
-    if key in {"attempt", "count"}:
+    if key in {"attempt", "count", "revokedSessionCount"}:
         return value if type(value) is int and 0 <= value <= 1_000_000 else None
     if key == "temperatureC":
         if type(value) not in {int, float}:
@@ -231,6 +251,8 @@ def _sanitize_audit_parameter_value(key: str, value: object) -> Any | None:
     if key == "command":
         return value if value in _AUDIT_COMMAND_VALUES else None
     if key == "eventId":
+        return _canonical_audit_identifier(value)
+    if key == "targetUserId":
         return _canonical_audit_identifier(value)
     allowed = _AUDIT_ENUM_VALUES[key]
     return value if value in allowed else None
@@ -308,10 +330,7 @@ def _contains_private_parameter_text(value: str) -> bool:
 
 
 def _safe_parameter_text(value: str) -> bool:
-    return (
-        not _contains_private_parameter_text(value)
-        and not _looks_like_opaque_token(value)
-    )
+    return not _contains_private_parameter_text(value) and not _looks_like_opaque_token(value)
 
 
 def _normalize_key(value: str) -> str:

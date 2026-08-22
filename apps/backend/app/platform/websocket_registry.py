@@ -40,11 +40,12 @@ class WebSocketSessionRegistry:
         self._connections[session_id].add(connection)
 
     async def close_all(self, session_id: str) -> None:
-        connections = self._connections.pop(session_id, None)
+        connections = self._connections.get(session_id)
         if connections is None:
             return
-        for connection in connections:
+        for connection in tuple(connections):
             await self._close(connection)
+            self.disconnect(session_id, connection)
 
     def disconnect(self, session_id: str, connection: object) -> None:
         connections = self._connections.get(session_id)

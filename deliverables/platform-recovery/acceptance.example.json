@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "status": "not_run",
+  "candidateCommitSha": "0000000000000000000000000000000000000000",
+  "sourceCommitSha": "0000000000000000000000000000000000000000",
+  "backupManifest": "deliverables/platform-recovery/backup-manifest.example.json",
+  "restoreReport": "deliverables/platform-recovery/restore-report.example.json",
+  "targetKind": "isolated_restore_test",
+  "dumpCommitted": false,
+  "persistence": {
+    "disabledAccountPersistence": {
+      "status": "not_run",
+      "evidenceReference": null
+    },
+    "sessionRevocationPersistence": {
+      "status": "not_run",
+      "evidenceReference": null
+    }
+  },
+  "applicationAcceptance": {
+    "restoredAdminLogin": {
+      "status": "not_run",
+      "evidenceReference": null
+    },
+    "auditVisibility": {
+      "status": "not_run",
+      "evidenceReference": null
+    },
+    "webSocketRevoke": {
+      "status": "not_run",
+      "evidenceReference": null
+    },
+    "gp05Smoke": {
+      "status": "not_run",
+      "evidenceReference": null
+    }
+  },
+  "evidence": {
+    "reportReference": "deliverables/platform-recovery/acceptance.example.json",
+    "screenshotDirectory": "deliverables/platform-recovery/screenshots",
+    "screenshotReferences": [],
+    "logReferences": []
+  },
+  "humanGate": {
+    "status": "pending",
+    "requirement": "human_review_and_merge_required"
+  }
+}

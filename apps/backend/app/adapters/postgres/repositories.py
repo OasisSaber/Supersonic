@@ -223,6 +223,71 @@ class SqlAlchemyUserRepository(UserRepository):
     async def add(self, user: User) -> None:
         self._session.add(_user_to_row(user))
 
+    async def list_all(self, limit: int) -> tuple[User, ...]:
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        statement = select(UserRow).order_by(UserRow.username_norm.asc()).limit(limit)
+        try:
+            rows = (await self._session.execute(statement)).scalars().all()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return tuple(_user_from_row(row) for row in rows)
+
+    async def set_role(
+        self,
+        user_id: str,
+        role: Role,
+        updated_at: datetime,
+    ) -> bool:
+        statement = (
+            update(UserRow)
+            .where(UserRow.id == _uuid(user_id, "user_id"))
+            .values(role=role.value, updated_at=_utc_datetime(updated_at, "updated_at"))
+            .execution_options(preserve_rowcount=True)
+        )
+        try:
+            result = cast(CursorResult[Any], await self._session.execute(statement))
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return result.rowcount == 1
+
+    async def set_disabled(
+        self,
+        user_id: str,
+        disabled_at: datetime | None,
+        updated_at: datetime,
+    ) -> bool:
+        statement = (
+            update(UserRow)
+            .where(UserRow.id == _uuid(user_id, "user_id"))
+            .values(
+                disabled_at=_optional_utc_datetime(disabled_at, "disabled_at"),
+                updated_at=_utc_datetime(updated_at, "updated_at"),
+            )
+            .execution_options(preserve_rowcount=True)
+        )
+        try:
+            result = cast(CursorResult[Any], await self._session.execute(statement))
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return result.rowcount == 1
+
+    async def lock_enabled_role_holder_ids(self, role: Role) -> tuple[str, ...]:
+        statement = (
+            select(UserRow.id)
+            .where(
+                UserRow.role == role.value,
+                UserRow.disabled_at.is_(None),
+            )
+            .order_by(UserRow.id.asc())
+            .with_for_update()
+        )
+        try:
+            rows = (await self._session.execute(statement)).scalars().all()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return tuple(str(value) for value in rows)
+
     async def get_by_id(self, user_id: str) -> User | None:
         statement = select(UserRow).where(UserRow.id == _uuid(user_id, "user_id"))
         try:
@@ -267,6 +332,54 @@ class SqlAlchemyPlatformSessionRepository(PlatformSessionRepository):
 
     async def add(self, platform_session: PlatformSession) -> None:
         self._session.add(_platform_session_to_row(platform_session))
+
+    async def list_for_user(
+        self,
+        user_id: str,
+        limit: int,
+    ) -> tuple[PlatformSession, ...]:
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        statement = (
+            select(PlatformSessionRow)
+            .where(PlatformSessionRow.user_id == _uuid(user_id, "user_id"))
+            .order_by(
+                PlatformSessionRow.created_at.desc(),
+                PlatformSessionRow.id.desc(),
+            )
+            .limit(limit)
+        )
+        try:
+            rows = (await self._session.execute(statement)).scalars().all()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return tuple(_platform_session_from_row(row) for row in rows)
+
+    async def revoke_all_for_user(
+        self,
+        user_id: str,
+        revoked_at: datetime,
+        reason: str,
+    ) -> tuple[str, ...]:
+        if not isinstance(reason, str) or not reason.strip() or len(reason) > 128:
+            raise ValueError("reason must be a non-empty string of at most 128 characters")
+        statement = (
+            update(PlatformSessionRow)
+            .where(
+                PlatformSessionRow.user_id == _uuid(user_id, "user_id"),
+                PlatformSessionRow.revoked_at.is_(None),
+            )
+            .values(
+                revoked_at=_utc_datetime(revoked_at, "revoked_at"),
+                revoke_reason=reason,
+            )
+            .returning(PlatformSessionRow.id)
+        )
+        try:
+            rows = (await self._session.execute(statement)).scalars().all()
+        except KNOWN_DATABASE_FAILURES as exc:
+            raise database_unavailable(exc) from exc
+        return tuple(str(value) for value in rows)
 
     async def get_by_token_digest(self, token_digest: str) -> PlatformSession | None:
         token_digest = _token_digest(token_digest)

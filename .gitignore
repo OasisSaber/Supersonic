@@ -42,7 +42,13 @@ outputs/*
 !outputs/.gitkeep
 tmp/
 .tmp/
+.playwright-cli/
 *.log
+
+# Platform database backups
+backups/
+*.dump
+*.dump.manifest.json
 
 # External asset drop-offs (never commit)
 .drops/
