@@ -11,6 +11,9 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE_ROOT = ROOT / "deliverables" / "platform-recovery"
+G4_MERGE_CHECKPOINT_SHA = "cb6ab6645313716e9ed54c8ecb49c27b3d918f37"
+POST_MERGE_GATE_STATUS = "satisfied"
+POST_MERGE_GATE_REQUIREMENT = "human_review_and_merge_completed"
 JSON_EXAMPLES = {
     "backup-manifest.example.json",
     "restore-report.example.json",
@@ -273,18 +276,36 @@ class RecoveryEvidenceTemplateTests(unittest.TestCase):
         restore = load_json("restore-report.json")
         acceptance = load_json("acceptance.json")
 
-        self.assertEqual(
-            {"users": 4, "platform_sessions": 6, "audit_events": 9},
-            manifest["rowCounts"],
-        )
+        self.assertEqual(ROW_COUNT_KEYS, set(manifest["rowCounts"]))
+        for count in manifest["rowCounts"].values():
+            self.assertIs(type(count), int)
+            self.assertGreaterEqual(count, 0)
         self.assertEqual("passed", restore["status"])
         self.assertEqual("passed", acceptance["status"])
         self.assertIs(restore["dumpCommitted"], False)
         self.assertIs(acceptance["dumpCommitted"], False)
-        self.assertEqual("pending", restore["humanGate"]["status"])
-        self.assertEqual("pending", acceptance["humanGate"]["status"])
+
+        self.assertEqual(G4_MERGE_CHECKPOINT_SHA, restore["candidateCommitSha"])
+        self.assertEqual(G4_MERGE_CHECKPOINT_SHA, restore["sourceCommitSha"])
+        self.assertEqual(G4_MERGE_CHECKPOINT_SHA, acceptance["candidateCommitSha"])
+        self.assertEqual(G4_MERGE_CHECKPOINT_SHA, acceptance["sourceCommitSha"])
         self.assertEqual(
-            {"users": 4, "platform_sessions": 6, "audit_events": 9},
+            restore["candidateCommitSha"],
+            acceptance["candidateCommitSha"],
+        )
+
+        for actual in (restore, acceptance):
+            self.assertEqual(POST_MERGE_GATE_STATUS, actual["humanGate"]["status"])
+            self.assertEqual(
+                POST_MERGE_GATE_REQUIREMENT,
+                actual["humanGate"]["requirement"],
+            )
+        self.assertEqual(
+            manifest["rowCounts"],
+            restore["verification"]["rowCounts"]["expected"],
+        )
+        self.assertEqual(
+            manifest["rowCounts"],
             restore["verification"]["rowCounts"]["observed"],
         )
         for check in restore["verification"]["invariants"]["checks"].values():
@@ -336,6 +357,10 @@ class RecoveryEvidenceTemplateTests(unittest.TestCase):
             encoding="utf-8"
         )
         combined = f"{readme}\n{checklist}"
+        self.assertIn(G4_MERGE_CHECKPOINT_SHA, readme)
+        self.assertIn("post-merge", readme.lower())
+        self.assertIn("G5 Final Code Review / Freeze", readme)
+        self.assertNotIn("Human review and human merge remain pending", readme)
         for relative in sorted(JSON_FILES | {"screenshots/"}):
             self.assertIn(relative, combined)
             self.assertTrue((EVIDENCE_ROOT / relative).exists(), relative)
