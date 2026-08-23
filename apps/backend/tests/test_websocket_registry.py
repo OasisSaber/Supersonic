@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from app.platform.websocket_registry import WebSocketSessionRegistry
 
 
@@ -12,7 +14,9 @@ class RecordingCloseHook:
 
 
 def connection(name: str) -> object:
-    return object.__new__(type("FakeConnection", (), {}), )
+    return object.__new__(
+        type("FakeConnection", (), {}),
+    )
 
 
 def test_register_tracks_connections_per_session() -> None:
@@ -67,6 +71,41 @@ async def test_close_all_is_idempotent_for_unknown_session() -> None:
     await registry.close_all("missing-session")
 
     assert hook.closed == []
+
+
+async def test_close_all_keeps_failed_and_unattempted_connections_for_retry() -> None:
+    first = connection("first")
+    failing = connection("failing")
+    last = connection("last")
+    attempts: list[object] = []
+
+    async def hook(candidate: object) -> None:
+        attempts.append(candidate)
+        if candidate is failing:
+            raise RuntimeError("close failed")
+
+    registry = WebSocketSessionRegistry(close_connection=hook)
+    registry.register("session-a", first)
+    registry.register("session-a", failing)
+    registry.register("session-a", last)
+
+    with pytest.raises(RuntimeError, match="close failed"):
+        await registry.close_all("session-a")
+
+    successful_attempts = set(attempts) - {failing}
+    assert registry.connection_count("session-a") == 3 - len(successful_attempts)
+
+    retry_attempts: list[object] = []
+
+    async def retry_hook(candidate: object) -> None:
+        retry_attempts.append(candidate)
+
+    registry._close = retry_hook
+    await registry.close_all("session-a")
+
+    assert set(retry_attempts) == {first, failing, last} - successful_attempts
+    assert registry.connection_count("session-a") == 0
+    assert registry.active_sessions() == set()
 
 
 def test_disconnect_removes_only_the_given_connection() -> None:

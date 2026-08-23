@@ -5,7 +5,7 @@ from enum import StrEnum
 from types import TracebackType
 from typing import Protocol, Self
 
-from .models import AuditEvent, AuditPage, AuditQuery, PlatformSession, User
+from .models import AuditEvent, AuditPage, AuditQuery, PlatformSession, Role, User
 
 
 class PlatformPersistenceError(RuntimeError):
@@ -36,6 +36,19 @@ class PlatformReadinessPort(Protocol):
 class UserRepository(Protocol):
     async def add(self, user: User) -> None: ...
 
+    async def list_all(self, limit: int) -> tuple[User, ...]: ...
+
+    async def set_role(self, user_id: str, role: Role, updated_at: datetime) -> bool: ...
+
+    async def set_disabled(
+        self,
+        user_id: str,
+        disabled_at: datetime | None,
+        updated_at: datetime,
+    ) -> bool: ...
+
+    async def lock_enabled_role_holder_ids(self, role: Role) -> tuple[str, ...]: ...
+
     async def get_by_id(self, user_id: str) -> User | None: ...
 
     async def get_by_username_norm(self, username_norm: str) -> User | None: ...
@@ -47,6 +60,15 @@ class UserRepository(Protocol):
 
 class PlatformSessionRepository(Protocol):
     async def add(self, platform_session: PlatformSession) -> None: ...
+
+    async def list_for_user(self, user_id: str, limit: int) -> tuple[PlatformSession, ...]: ...
+
+    async def revoke_all_for_user(
+        self,
+        user_id: str,
+        revoked_at: datetime,
+        reason: str,
+    ) -> tuple[str, ...]: ...
 
     async def get_by_token_digest(self, token_digest: str) -> PlatformSession | None: ...
 

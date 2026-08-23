@@ -221,9 +221,7 @@ async def test_audit_adapter_rejects_custom_runtime_values_before_sql(
     repository = SqlAlchemyAuditEventRepository(_NoSqlSession())
 
     with pytest.raises(ValueError, match=message):
-        await repository.append(
-            replace(_adapter_audit_event(), **{field_name: unsafe_value})
-        )
+        await repository.append(replace(_adapter_audit_event(), **{field_name: unsafe_value}))
 
 
 @pytest.mark.parametrize(
@@ -251,19 +249,19 @@ def test_audit_adapter_redacts_masquerading_metadata_before_row_construction(
     )
 
     assert getattr(row, field_name) == "[redacted]"
-    assert private_value not in str(_audit_event_values(
-        replace(
-            _adapter_audit_event(),
-            **{field_name: _Masquerade(private_value, allowed_value)},
+    assert private_value not in str(
+        _audit_event_values(
+            replace(
+                _adapter_audit_event(),
+                **{field_name: _Masquerade(private_value, allowed_value)},
+            )
         )
-    ))
+    )
 
 
 def test_audit_adapter_redacts_a_masquerading_safe_parameter_value() -> None:
     private_value = "PRIVATE-parameter-value"
-    event = _audit_event_with_parameters(
-        {"command": _Masquerade(private_value, "set_theme")}
-    )
+    event = _audit_event_with_parameters({"command": _Masquerade(private_value, "set_theme")})
 
     row = _audit_event_to_row(event)
 
@@ -859,6 +857,76 @@ def test_audit_adapter_keeps_typed_safe_metadata_before_row_construction() -> No
     assert row.target_id == event.target_id
     assert row.error_code == event.error_code
     assert row.source_type == event.source_type
+
+
+@pytest.mark.parametrize(
+    ("action", "parameters"),
+    [
+        (
+            "user.role_change",
+            {
+                "oldRole": "operator",
+                "newRole": "viewer",
+                "revokedSessionCount": 2,
+            },
+        ),
+        ("user.disable", {"revokedSessionCount": 2}),
+        ("user.enable", {"revokedSessionCount": 0}),
+        (
+            "session.revoke",
+            {
+                "targetUserId": "11111111-1111-4111-8111-111111111111",
+                "reason": "security_review",
+            },
+        ),
+    ],
+)
+def test_audit_adapter_keeps_slice_e_security_facts(
+    action: str,
+    parameters: dict[str, object],
+) -> None:
+    event = replace(
+        _adapter_audit_event(),
+        action=action,
+        target_type=("platform_session" if action == "session.revoke" else "user"),
+        target_id="22222222-2222-4222-8222-222222222222",
+        parameters=parameters,
+    )
+
+    row = _audit_event_to_row(event)
+
+    assert row.action == action
+    assert row.target_type == event.target_type
+    assert row.target_id == event.target_id
+    assert row.parameters == parameters
+
+
+def test_audit_adapter_redacts_unapproved_slice_e_reason_and_parameter_values() -> None:
+    private_reason = "meet-alice-at-home"
+    event = replace(
+        _adapter_audit_event(),
+        action="session.revoke",
+        target_type="platform_session",
+        target_id="22222222-2222-4222-8222-222222222222",
+        parameters={
+            "targetUserId": "not-a-user-id",
+            "reason": private_reason,
+            "revokedSessionCount": -1,
+            "oldRole": "owner",
+            "newRole": "root",
+        },
+    )
+
+    row = _audit_event_to_row(event)
+
+    assert row.parameters == {
+        "oldRole": "[redacted]",
+        "newRole": "[redacted]",
+        "revokedSessionCount": "[redacted]",
+        "targetUserId": "[redacted]",
+        "reason": "[redacted]",
+    }
+    assert private_reason not in repr(row.parameters)
 
 
 def test_audit_adapter_redacts_sensitive_parameter_values_before_row_construction() -> None:

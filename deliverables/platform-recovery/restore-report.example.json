@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "status": "not_run",
+  "candidateCommitSha": "0000000000000000000000000000000000000000",
+  "sourceCommitSha": "0000000000000000000000000000000000000000",
+  "backupManifest": "deliverables/platform-recovery/backup-manifest.example.json",
+  "targetKind": "isolated_restore_test",
+  "dumpCommitted": false,
+  "preflight": {
+    "checksum": {
+      "status": "not_run",
+      "expected": null,
+      "observed": null
+    },
+    "repositoryAlembicRevision": {
+      "status": "not_run",
+      "expected": null,
+      "observed": null
+    }
+  },
+  "destructiveRestore": {
+    "status": "not_run",
+    "commandProfile": [
+      "--clean",
+      "--if-exists",
+      "--no-owner",
+      "--no-acl",
+      "--single-transaction"
+    ]
+  },
+  "verification": {
+    "restoredAlembicRevision": {
+      "status": "not_run",
+      "expected": null,
+      "observed": null
+    },
+    "rowCounts": {
+      "status": "not_run",
+      "expected": {
+        "users": null,
+        "platform_sessions": null,
+        "audit_events": null
+      },
+      "observed": {
+        "users": null,
+        "platform_sessions": null,
+        "audit_events": null
+      }
+    },
+    "invariants": {
+      "status": "not_run",
+      "checks": {
+        "enabledAdminExists": null,
+        "disabledUsersHaveNoActiveSessions": null,
+        "revokeReasonRequiresRevokedAt": null
+      }
+    }
+  },
+  "evidence": {
+    "reportReference": "deliverables/platform-recovery/restore-report.example.json",
+    "screenshotReferences": [],
+    "logReferences": []
+  },
+  "humanGate": {
+    "status": "pending",
+    "requirement": "human_review_and_merge_required"
+  }
+}

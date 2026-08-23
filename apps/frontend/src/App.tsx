@@ -1,6 +1,7 @@
 import { CockpitScreen } from './components/CockpitScreen'
 import { ENDPOINTS, type EndpointId } from './contracts/gp05-v1'
 import { useCockpitSnapshot } from './lib/useCockpitSnapshot'
+import { PlatformConsole } from './platform/PlatformConsole'
 import { useCockpitStore } from './stores/cockpit'
 
 function endpointFromPath(): EndpointId {
@@ -8,7 +9,7 @@ function endpointFromPath(): EndpointId {
   return ENDPOINTS.includes(candidate as EndpointId) ? (candidate as EndpointId) : 'overview'
 }
 
-export default function App() {
+function CockpitApp() {
   const endpoint = endpointFromPath()
   useCockpitSnapshot(endpoint)
   const { connection, snapshot } = useCockpitStore()
@@ -18,4 +19,8 @@ export default function App() {
       <CockpitScreen endpoint={endpoint} snapshot={snapshot} connection={connection} />
     </div>
   )
+}
+
+export default function App() {
+  return window.location.pathname.startsWith('/platform') ? <PlatformConsole /> : <CockpitApp />
 }
