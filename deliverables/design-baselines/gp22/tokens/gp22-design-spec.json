@@ -1,0 +1,322 @@
+{
+  "schemaVersion": 1,
+  "status": "VERIFIED_GP22_DERIVED_SPEC",
+  "source": {
+    "figmaDesignFileKey": "MIUgoK0YUwDjTCJpGI6W1o",
+    "nodeId": "1:11373",
+    "nodeName": "DesignSpec",
+    "checkedAt": "2026-08-24",
+    "note": "Normalized from visible GP22 design-spec text. This is not a Figma Variables export and does not replace runtime tokens."
+  },
+  "colors": {
+    "night": {
+      "--bg": "#08111a",
+      "--panel": "#0d1822",
+      "--panel-2": "#0a131b",
+      "--raised": "#111f2d",
+      "--hair": "#1a2d40",
+      "--hair-strong": "#243a52",
+      "--text": "#e8f2fa",
+      "--text-2": "#8ba3b8",
+      "--text-3": "#4a677f",
+      "--focus": "#2fd4da",
+      "--focus-soft": "rgba(47,212,218,0.12)",
+      "--critical": "#ff5069",
+      "--critical-soft": "rgba(255,80,105,0.12)",
+      "--warning": "#f2ad38",
+      "--warning-soft": "rgba(242,173,56,0.12)",
+      "--success": "#38d788"
+    },
+    "day": {
+      "--bg": "#f0f4f8",
+      "--panel": "#ffffff",
+      "--panel-2": "#f7fafc",
+      "--raised": "#edf2f7",
+      "--hair": "#d2dde8",
+      "--hair-strong": "#b0c4d6",
+      "--text": "#0d1a26",
+      "--text-2": "#3d5a70",
+      "--text-3": "#7a96aa",
+      "--focus": "#0c9297",
+      "--focus-soft": "rgba(12,146,151,0.10)",
+      "--critical": "#d6243e",
+      "--critical-soft": "rgba(214,36,62,0.10)",
+      "--warning": "#b57a00",
+      "--warning-soft": "rgba(181,122,0,0.10)",
+      "--success": "#1a7d4a"
+    }
+  },
+  "typography": [
+    {
+      "use": "Hero",
+      "sizePx": 48,
+      "weight": 700,
+      "lineHeight": 1,
+      "note": "Instrument speed; DIN Pro / SF Mono intent"
+    },
+    {
+      "use": "Display",
+      "sizePx": 32,
+      "weight": 700,
+      "lineHeight": 1.1,
+      "note": "Cluster central number"
+    },
+    {
+      "use": "Numeral",
+      "sizePx": 24,
+      "weight": 600,
+      "lineHeight": 1.2,
+      "note": "Speed secondary value and remaining distance"
+    },
+    {
+      "use": "Heading-L",
+      "sizePx": 20,
+      "weight": 600,
+      "lineHeight": 1.3,
+      "note": "Section title"
+    },
+    {
+      "use": "Heading-M",
+      "sizePx": 16,
+      "weight": 600,
+      "lineHeight": 1.4,
+      "note": "Card and screen title"
+    },
+    {
+      "use": "Heading-S",
+      "sizePx": 14,
+      "weight": 600,
+      "lineHeight": 1.5,
+      "note": "List title"
+    },
+    {
+      "use": "Body",
+      "sizePx": 13,
+      "weight": 400,
+      "lineHeight": 1.6,
+      "note": "Description"
+    },
+    {
+      "use": "Caption",
+      "sizePx": 11,
+      "weight": 400,
+      "lineHeight": 1.5,
+      "note": "Secondary note and data label"
+    },
+    {
+      "use": "Micro",
+      "sizePx": 9,
+      "weight": 500,
+      "lineHeight": 1.4,
+      "note": "Badge, unit, uppercase English label"
+    },
+    {
+      "use": "CJK Body",
+      "sizePx": 14,
+      "weight": 400,
+      "lineHeight": 1.8,
+      "letterSpacingEm": 0.02,
+      "note": "Chinese explanatory paragraph"
+    },
+    {
+      "use": "CJK Label",
+      "sizePx": 12,
+      "weight": 500,
+      "lineHeight": 1.6,
+      "note": "Chinese button and status label"
+    },
+    {
+      "use": "Tnum",
+      "css": "font-variant-numeric: tabular-nums",
+      "note": "Instrument numeric values"
+    }
+  ],
+  "canvases": {
+    "cluster": {
+      "width": 1920,
+      "height": 720,
+      "ratio": "8:3"
+    },
+    "hud": {
+      "width": 1280,
+      "height": 480,
+      "ratio": "8:3"
+    },
+    "center": {
+      "width": 1920,
+      "height": 1080,
+      "ratio": "16:9"
+    },
+    "passenger": {
+      "width": 1920,
+      "height": 1080,
+      "ratio": "16:9"
+    }
+  },
+  "safeMargins": {
+    "clusterHorizontalPx": 24,
+    "clusterTopPx": 24,
+    "centerMainPx": 16,
+    "passengerMainPx": 20,
+    "hudPx": 16,
+    "sectionPanelPx": 24
+  },
+  "spacingPx": [
+    4,
+    6,
+    8,
+    10,
+    12,
+    16,
+    20,
+    24,
+    32,
+    48
+  ],
+  "radiiPx": {
+    "--r-4": 4,
+    "--r-8": 8,
+    "--r-12": 12,
+    "--r-16": 16,
+    "--r-24": 24,
+    "--r-999": 999
+  },
+  "componentStates": [
+    {
+      "state": "Default",
+      "trigger": "normal",
+      "visual": "full color",
+      "dataSource": "live data"
+    },
+    {
+      "state": "Hover",
+      "trigger": "pointer hover",
+      "visual": "background var(--raised), 180ms"
+    },
+    {
+      "state": "Active/Press",
+      "trigger": "press",
+      "visual": "scale(0.98), opacity 0.85"
+    },
+    {
+      "state": "Focus",
+      "trigger": "keyboard Tab",
+      "visual": "2px solid var(--focus) outline"
+    },
+    {
+      "state": "Disabled",
+      "trigger": "unavailable",
+      "visual": "opacity 0.38; pointer-events none"
+    },
+    {
+      "state": "Loading",
+      "trigger": "isLoading true",
+      "visual": "skeleton shimmer; do not render real values",
+      "dataSource": "makeLoadingData()"
+    },
+    {
+      "state": "Empty",
+      "trigger": "no content or destination",
+      "visual": "em dash placeholder in subdued color",
+      "dataSource": "makeEmptyData()"
+    },
+    {
+      "state": "Error",
+      "trigger": "data fetch failed",
+      "visual": "critical tone and error description",
+      "dataSource": "alert"
+    },
+    {
+      "state": "Read-Only",
+      "trigger": "pointer events none",
+      "visual": "default cursor; no hover",
+      "dataSource": "Overview snapshot"
+    }
+  ],
+  "alertPriorities": [
+    {
+      "level": "P0",
+      "condition": "two or more concurrent critical alerts",
+      "cluster": "full-screen red overlay",
+      "hud": "large red text",
+      "center": "route panel dimmed",
+      "passenger": "media off",
+      "media": "suppressed"
+    },
+    {
+      "level": "P1",
+      "condition": "single active critical alert",
+      "cluster": "right alert bar and flash",
+      "hud": "red alert row",
+      "center": "alert card pinned",
+      "passenger": "media ducking",
+      "media": "suppressed"
+    },
+    {
+      "level": "P2",
+      "condition": "active warning",
+      "cluster": "right yellow alert bar",
+      "hud": "yellow alert row",
+      "center": "small warning chip",
+      "passenger": "unchanged",
+      "media": "playing"
+    },
+    {
+      "level": "P3",
+      "condition": "warning candidate",
+      "cluster": "small right chip",
+      "hud": "unchanged",
+      "center": "route badge update",
+      "passenger": "unchanged",
+      "media": "playing"
+    },
+    {
+      "level": "P4",
+      "condition": "resolved",
+      "cluster": "normal",
+      "hud": "normal",
+      "center": "normal",
+      "passenger": "restore",
+      "media": "restore"
+    }
+  ],
+  "motion": [
+    {
+      "type": "scene transition",
+      "durationMs": 320,
+      "easing": "cubic-bezier(0.25,0,0,1)"
+    },
+    {
+      "type": "alert entrance",
+      "durationMs": 200,
+      "easing": "cubic-bezier(0,0,0.3,1)"
+    },
+    {
+      "type": "state change",
+      "durationMs": 180,
+      "easing": "ease-out"
+    },
+    {
+      "type": "number roll",
+      "durationMs": 400,
+      "easing": "ease-in-out"
+    },
+    {
+      "type": "media progress",
+      "durationMs": 100,
+      "easing": "linear"
+    },
+    {
+      "type": "skeleton",
+      "durationMs": 1200,
+      "easing": "linear",
+      "iteration": "infinite"
+    },
+    {
+      "type": "theme transition",
+      "durationMs": 280,
+      "easing": "ease-in-out"
+    }
+  ],
+  "reducedMotion": "Under prefers-reduced-motion, compress durations to 50ms or less; alerts still communicate through color and icon semantics."
+}
