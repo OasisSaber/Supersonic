@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "status": "passed",
-  "candidateCommitSha": "618b10271fd0c30bf7c53b6bb098e2df448bf27c",
-  "sourceCommitSha": "2522c93cf77deb1fcd2a141e97c1b39be26a5752",
+  "candidateCommitSha": "cb6ab6645313716e9ed54c8ecb49c27b3d918f37",
+  "sourceCommitSha": "cb6ab6645313716e9ed54c8ecb49c27b3d918f37",
   "backupManifest": "deliverables/platform-recovery/backup-manifest.json",
   "restoreReport": "deliverables/platform-recovery/restore-report.json",
   "targetKind": "isolated_restore_test",
@@ -55,7 +55,7 @@
     "logReferences": []
   },
   "humanGate": {
-    "status": "pending",
-    "requirement": "human_review_and_merge_required"
+    "status": "satisfied",
+    "requirement": "human_review_and_merge_completed"
   }
 }

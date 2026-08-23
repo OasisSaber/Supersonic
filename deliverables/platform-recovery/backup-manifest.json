@@ -1,13 +1,13 @@
 {
   "formatVersion": 1,
-  "createdAt": "2026-08-22T05:29:36.111619Z",
-  "databaseName": "supersonic_test",
+  "createdAt": "2026-08-23T11:22:03.102233Z",
+  "databaseName": "supersonic_g4_closure_63_test",
   "alembicRevision": "20260809_0001",
   "rowCounts": {
     "users": 4,
     "platform_sessions": 6,
     "audit_events": 9
   },
-  "dumpSha256": "2f1ae723068dcb4b1286621744cf25ca53412b6a297a1facc68b8ec582b865a5",
+  "dumpSha256": "bd4bf0a2c49f20ce7cc75a77c4411316b0db29530b58c73dced52ebe92914349",
   "pgDumpVersion": "pg_dump (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)"
 }
