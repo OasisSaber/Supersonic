@@ -238,10 +238,15 @@ class SqlAlchemyUserRepository(UserRepository):
         user_id: str,
         role: Role,
         updated_at: datetime,
+        *,
+        expected_role: Role,
     ) -> bool:
         statement = (
             update(UserRow)
-            .where(UserRow.id == _uuid(user_id, "user_id"))
+            .where(
+                UserRow.id == _uuid(user_id, "user_id"),
+                UserRow.role == expected_role.value,
+            )
             .values(role=role.value, updated_at=_utc_datetime(updated_at, "updated_at"))
             .execution_options(preserve_rowcount=True)
         )
@@ -257,9 +262,17 @@ class SqlAlchemyUserRepository(UserRepository):
         disabled_at: datetime | None,
         updated_at: datetime,
     ) -> bool:
+        current_state_predicate = (
+            UserRow.disabled_at.is_not(None)
+            if disabled_at is None
+            else UserRow.disabled_at.is_(None)
+        )
         statement = (
             update(UserRow)
-            .where(UserRow.id == _uuid(user_id, "user_id"))
+            .where(
+                UserRow.id == _uuid(user_id, "user_id"),
+                current_state_predicate,
+            )
             .values(
                 disabled_at=_optional_utc_datetime(disabled_at, "disabled_at"),
                 updated_at=_utc_datetime(updated_at, "updated_at"),

@@ -8,6 +8,7 @@ import pytest
 
 from app.platform.admin import (
     AdminForbidden,
+    AdminMutationFailed,
     AdminMutationResult,
     AdminSessionNotFound,
     AdminUserNotFound,
@@ -18,6 +19,7 @@ from app.platform.admin import (
     UserSummary,
 )
 from app.platform.audit_identity import AuditEventConflict
+from app.platform.errors import AuditUnavailable
 from app.platform.models import (
     AuditDelivery,
     AuditEvent,
@@ -35,6 +37,8 @@ OPERATOR_ID = "22222222-2222-4222-8222-222222222222"
 SESSION_1_ID = "33333333-3333-4333-8333-333333333333"
 SESSION_2_ID = "44444444-4444-4444-8444-444444444444"
 AUDIT_ID = "99999999-9999-4999-8999-999999999999"
+ATTEMPT_AUDIT_ID = "77777777-7777-4777-8777-777777777777"
+FAILURE_AUDIT_ID = "88888888-8888-4888-8888-888888888888"
 
 
 def make_user(
@@ -104,6 +108,8 @@ class UserRepository:
         self.lock_calls: list[Role] = []
         self.set_role_result = True
         self.set_disabled_result = True
+        self.role_after_failed_update: Role | None = None
+        self.disabled_after_failed_update: bool | None = None
 
     async def get_by_id(self, user_id: str) -> User | None:
         self.calls.append("users.get_by_id")
@@ -114,10 +120,23 @@ class UserRepository:
         ordered = sorted(self.values.values(), key=lambda user: user.username_norm)
         return tuple(ordered[:limit])
 
-    async def set_role(self, user_id: str, role: Role, updated_at: datetime) -> bool:
+    async def set_role(
+        self,
+        user_id: str,
+        role: Role,
+        updated_at: datetime,
+        *,
+        expected_role: Role,
+    ) -> bool:
         self.calls.append("users.set_role")
         user = self.values.get(user_id)
-        if user is None or not self.set_role_result:
+        if user is None:
+            return False
+        if user.role is not expected_role:
+            return False
+        if not self.set_role_result:
+            if self.role_after_failed_update is not None:
+                self.values[user_id] = replace(user, role=self.role_after_failed_update)
             return False
         self.values[user_id] = replace(user, role=role, updated_at=updated_at)
         return True
@@ -130,7 +149,14 @@ class UserRepository:
     ) -> bool:
         self.calls.append("users.set_disabled")
         user = self.values.get(user_id)
-        if user is None or not self.set_disabled_result:
+        if user is None:
+            return False
+        if not self.set_disabled_result:
+            if self.disabled_after_failed_update is not None:
+                self.values[user_id] = replace(
+                    user,
+                    disabled_at=NOW if self.disabled_after_failed_update else None,
+                )
             return False
         self.values[user_id] = replace(
             user,
@@ -153,6 +179,8 @@ class SessionRepository:
     def __init__(self, sessions: list[PlatformSession], calls: list[str]) -> None:
         self.values = {session.id: session for session in sessions}
         self.calls = calls
+        self.revoke_result = True
+        self.revoked_after_failed_update = False
 
     async def get_by_id(self, session_id: str) -> PlatformSession | None:
         self.calls.append("sessions.get_by_id")
@@ -177,6 +205,14 @@ class SessionRepository:
         self.calls.append("sessions.revoke")
         session = self.values.get(session_id)
         if session is None or session.revoked_at is not None:
+            return False
+        if not self.revoke_result:
+            if self.revoked_after_failed_update:
+                self.values[session_id] = replace(
+                    session,
+                    revoked_at=NOW,
+                    revoke_reason=reason,
+                )
             return False
         self.values[session_id] = replace(
             session,
@@ -232,6 +268,7 @@ class Uow:
         self.platform_sessions = SessionRepository(sessions or [], self.calls)
         self.audit_events = AuditRepository(self.calls)
         self.commit_error: Exception | None = None
+        self.exit_error: Exception | None = None
 
     async def __aenter__(self) -> Uow:
         self.calls.append("enter")
@@ -239,6 +276,8 @@ class Uow:
 
     async def __aexit__(self, *args: object) -> None:
         self.calls.append("exit")
+        if self.exit_error is not None:
+            raise self.exit_error
 
     async def commit(self) -> None:
         self.calls.append("commit")
@@ -255,13 +294,228 @@ def service(
     readiness: Ready | None = None,
     on_revoke: Any = None,
 ) -> UserAdminService:
+    audit_ids = iter((ATTEMPT_AUDIT_ID, AUDIT_ID, FAILURE_AUDIT_ID))
     return UserAdminService(
         readiness=readiness or Ready(),
         uow_factory=lambda: uow,
         clock=lambda: NOW,
-        uuid_factory=lambda: AUDIT_ID,
+        uuid_factory=lambda: next(audit_ids),
         on_revoke=on_revoke,
     )
+
+
+def service_for_uows(
+    uows: list[Uow],
+    *,
+    audit_ids: tuple[str, ...] = (ATTEMPT_AUDIT_ID, AUDIT_ID, FAILURE_AUDIT_ID),
+    on_revoke: Any = None,
+) -> UserAdminService:
+    remaining_uows = iter(uows)
+    remaining_ids = iter(audit_ids)
+    return UserAdminService(
+        readiness=Ready(),
+        uow_factory=lambda: next(remaining_uows),
+        clock=lambda: NOW,
+        uuid_factory=lambda: next(remaining_ids),
+        on_revoke=on_revoke,
+    )
+
+
+async def test_role_change_commits_attempted_before_business_mutation() -> None:
+    preflight = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+
+    result = await service_for_uows([preflight, attempted, mutation]).change_role(
+        ADMIN_PRINCIPAL,
+        OPERATOR_ID,
+        Role.VIEWER,
+    )
+
+    assert result.changed is True
+    assert preflight.calls == ["enter", "users.get_by_id", "exit"]
+    assert attempted.calls == ["enter", "audit.append", "commit", "exit"]
+    assert [event.result for event in attempted.audit_events.events] == [AuditResult.ATTEMPTED]
+    assert "users.set_role" not in preflight.calls
+    assert mutation.calls == [
+        "enter",
+        "users.get_by_id",
+        "users.set_role",
+        "sessions.revoke_all_for_user",
+        "audit.append",
+        "commit",
+        "exit",
+    ]
+    outcome = mutation.audit_events.events[0]
+    assert outcome.result is AuditResult.SUCCEEDED
+    assert outcome.id == AUDIT_ID
+    assert outcome.correlation_id == ATTEMPT_AUDIT_ID
+
+
+@pytest.mark.parametrize("operation", ["role", "disable", "enable", "revoke"])
+async def test_attempted_commit_failure_stops_before_business_mutation(
+    operation: str,
+) -> None:
+    target = (
+        make_user(OPERATOR_ID, Role.OPERATOR, disabled=True) if operation == "enable" else OPERATOR
+    )
+    preflight = Uow([ADMIN, target], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    attempted.commit_error = DatabaseUnavailable()
+    mutation = Uow([ADMIN, target], [make_session(SESSION_1_ID)])
+    subject = service_for_uows([preflight, attempted, mutation])
+
+    with pytest.raises(AuditUnavailable):
+        if operation == "role":
+            await subject.change_role(ADMIN_PRINCIPAL, OPERATOR_ID, Role.VIEWER)
+        elif operation == "disable":
+            await subject.set_disabled(ADMIN_PRINCIPAL, OPERATOR_ID, disabled=True)
+        elif operation == "enable":
+            await subject.set_disabled(ADMIN_PRINCIPAL, OPERATOR_ID, disabled=False)
+        else:
+            await subject.revoke_session(ADMIN_PRINCIPAL, SESSION_1_ID)
+
+    assert attempted.calls == ["enter", "audit.append", "commit", "exit"]
+    assert mutation.calls == []
+    assert mutation.users.values[OPERATOR_ID] == target
+    assert mutation.platform_sessions.values[SESSION_1_ID].revoked_at is None
+
+
+async def test_mutation_commit_failure_keeps_attempted_and_records_error_outcome() -> None:
+    preflight = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    mutation.commit_error = DatabaseUnavailable()
+    failure = Uow([])
+
+    with pytest.raises(DatabaseUnavailable):
+        await service_for_uows([preflight, attempted, mutation, failure]).change_role(
+            ADMIN_PRINCIPAL,
+            OPERATOR_ID,
+            Role.VIEWER,
+        )
+
+    assert [event.result for event in attempted.audit_events.events] == [AuditResult.ATTEMPTED]
+    assert mutation.audit_events.events[0].result is AuditResult.SUCCEEDED
+    assert failure.calls == ["enter", "audit.append", "commit", "exit"]
+    assert failure.audit_events.events[0].result is AuditResult.ERROR
+    assert failure.audit_events.events[0].correlation_id == ATTEMPT_AUDIT_ID
+    assert failure.audit_events.events[0].error_code == "database_unavailable"
+
+
+@pytest.mark.parametrize("operation", ["role", "disable", "enable", "revoke"])
+async def test_concurrent_same_state_transition_is_audited_as_successful_noop(
+    operation: str,
+) -> None:
+    target = (
+        make_user(OPERATOR_ID, Role.OPERATOR, disabled=True) if operation == "enable" else OPERATOR
+    )
+    preflight = Uow([ADMIN, target], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, target], [make_session(SESSION_1_ID)])
+    subject = service_for_uows([preflight, attempted, mutation])
+    if operation == "role":
+        mutation.users.set_role_result = False
+        mutation.users.role_after_failed_update = Role.VIEWER
+        result = await subject.change_role(ADMIN_PRINCIPAL, OPERATOR_ID, Role.VIEWER)
+    elif operation == "disable":
+        mutation.users.set_disabled_result = False
+        mutation.users.disabled_after_failed_update = True
+        result = await subject.set_disabled(ADMIN_PRINCIPAL, OPERATOR_ID, disabled=True)
+    elif operation == "enable":
+        mutation.users.set_disabled_result = False
+        mutation.users.disabled_after_failed_update = False
+        result = await subject.set_disabled(ADMIN_PRINCIPAL, OPERATOR_ID, disabled=False)
+    else:
+        mutation.platform_sessions.revoke_result = False
+        mutation.platform_sessions.revoked_after_failed_update = True
+        result = await subject.revoke_session(ADMIN_PRINCIPAL, SESSION_1_ID)
+
+    assert result == AdminMutationResult(changed=False)
+    assert mutation.audit_events.events[0].result is AuditResult.SUCCEEDED
+    assert mutation.audit_events.events[0].correlation_id == ATTEMPT_AUDIT_ID
+    assert mutation.calls.count("commit") == 1
+
+
+async def test_concurrent_divergent_role_change_rejects_stale_compare_and_set() -> None:
+    preflight = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    mutation.users.set_role_result = False
+    mutation.users.role_after_failed_update = Role.ADMIN
+    failure = Uow([])
+
+    with pytest.raises(AdminMutationFailed):
+        await service_for_uows([preflight, attempted, mutation, failure]).change_role(
+            ADMIN_PRINCIPAL,
+            OPERATOR_ID,
+            Role.VIEWER,
+        )
+
+    assert mutation.users.values[OPERATOR_ID].role is Role.ADMIN
+    assert "sessions.revoke_all_for_user" not in mutation.calls
+    assert "commit" not in mutation.calls
+    assert failure.audit_events.events[0].result is AuditResult.ERROR
+    assert failure.audit_events.events[0].error_code == "admin_mutation_failed"
+    assert failure.audit_events.events[0].correlation_id == ATTEMPT_AUDIT_ID
+
+
+async def test_committed_mutation_survives_uow_cleanup_failure_and_propagates() -> None:
+    preflight = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    mutation.exit_error = DatabaseUnavailable()
+    callback_ids: list[str] = []
+
+    async def on_revoke(session_id: str) -> None:
+        callback_ids.append(session_id)
+
+    result = await service_for_uows(
+        [preflight, attempted, mutation],
+        on_revoke=on_revoke,
+    ).change_role(ADMIN_PRINCIPAL, OPERATOR_ID, Role.VIEWER)
+
+    assert result.changed is True
+    assert result.revoked_session_ids == (SESSION_1_ID,)
+    assert callback_ids == [SESSION_1_ID]
+    assert [event.result for event in mutation.audit_events.events] == [AuditResult.SUCCEEDED]
+
+
+async def test_failed_outcome_commit_failure_is_explicitly_audit_unavailable() -> None:
+    preflight = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    mutation.commit_error = DatabaseUnavailable()
+    failure = Uow([])
+    failure.commit_error = DatabaseUnavailable()
+
+    with pytest.raises(AuditUnavailable, match="outcome audit commit failed"):
+        await service_for_uows([preflight, attempted, mutation, failure]).change_role(
+            ADMIN_PRINCIPAL,
+            OPERATOR_ID,
+            Role.VIEWER,
+        )
+
+    assert attempted.audit_events.events[0].result is AuditResult.ATTEMPTED
+    assert failure.audit_events.events[0].result is AuditResult.ERROR
+
+
+async def test_failed_outcome_audit_conflict_remains_explicit() -> None:
+    preflight = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    mutation.commit_error = DatabaseUnavailable()
+    failure = Uow([])
+    failure.audit_events.inserted = False
+
+    with pytest.raises(AuditEventConflict) as caught:
+        await service_for_uows([preflight, attempted, mutation, failure]).change_role(
+            ADMIN_PRINCIPAL,
+            OPERATOR_ID,
+            Role.VIEWER,
+        )
+
+    assert caught.value.event_id == FAILURE_AUDIT_ID
 
 
 async def test_non_admin_cannot_list_or_mutate_before_database_work() -> None:
@@ -387,7 +641,15 @@ async def test_last_enabled_admin_mutation_is_rejected_after_row_lock(
             await subject.set_disabled(actor, target.id, disabled=True)
 
     assert uow.users.lock_calls == [Role.ADMIN]
-    assert "commit" not in uow.calls
+    assert "users.set_role" not in uow.calls
+    assert "users.set_disabled" not in uow.calls
+    assert "sessions.revoke_all_for_user" not in uow.calls
+    assert [event.result for event in uow.audit_events.events] == [
+        AuditResult.ATTEMPTED,
+        AuditResult.REJECTED,
+    ]
+    assert uow.audit_events.events[-1].error_code == "last_admin_protected"
+    assert uow.audit_events.events[-1].correlation_id == ATTEMPT_AUDIT_ID
 
 
 async def test_role_change_updates_revokes_audits_and_commits_in_one_uow() -> None:
@@ -412,6 +674,13 @@ async def test_role_change_updates_revokes_audits_and_commits_in_one_uow() -> No
     assert uow.calls == [
         "enter",
         "users.get_by_id",
+        "exit",
+        "enter",
+        "audit.append",
+        "commit",
+        "exit",
+        "enter",
+        "users.get_by_id",
         "users.set_role",
         "sessions.revoke_all_for_user",
         "audit.append",
@@ -420,7 +689,8 @@ async def test_role_change_updates_revokes_audits_and_commits_in_one_uow() -> No
     ]
     assert [item[0] for item in callback_observations] == [SESSION_1_ID, SESSION_2_ID]
     assert all("commit" in calls and calls[-1] == "exit" for _, calls in callback_observations)
-    event = uow.audit_events.events[0]
+    assert uow.audit_events.events[0].result is AuditResult.ATTEMPTED
+    event = uow.audit_events.events[-1]
     assert event.action == "user.role_change"
     assert event.result is AuditResult.SUCCEEDED
     assert event.delivery is AuditDelivery.PRIMARY
@@ -428,6 +698,7 @@ async def test_role_change_updates_revokes_audits_and_commits_in_one_uow() -> No
     assert event.actor_platform_session_id == ADMIN_PRINCIPAL.session_id
     assert event.actor_role is ADMIN_PRINCIPAL.role
     assert event.target_id == OPERATOR_ID
+    assert event.correlation_id == ATTEMPT_AUDIT_ID
 
 
 async def test_disable_and_enable_are_audited_but_only_disable_revokes() -> None:
@@ -439,13 +710,17 @@ async def test_disable_and_enable_are_audited_but_only_disable_revokes() -> None
     )
 
     assert disabled.revoked_session_ids == (SESSION_1_ID,)
-    assert disable_uow.calls[2:6] == [
+    assert [event.result for event in disable_uow.audit_events.events] == [
+        AuditResult.ATTEMPTED,
+        AuditResult.SUCCEEDED,
+    ]
+    assert disable_uow.calls[9:13] == [
         "users.set_disabled",
         "sessions.revoke_all_for_user",
         "audit.append",
         "commit",
     ]
-    assert disable_uow.audit_events.events[0].action == "user.disable"
+    assert {event.action for event in disable_uow.audit_events.events} == {"user.disable"}
 
     disabled_user = make_user(OPERATOR_ID, Role.OPERATOR, disabled=True)
     enable_uow = Uow([ADMIN, disabled_user], [make_session(SESSION_2_ID)])
@@ -458,20 +733,30 @@ async def test_disable_and_enable_are_audited_but_only_disable_revokes() -> None
     assert enabled == AdminMutationResult(changed=True)
     assert "sessions.revoke_all_for_user" not in enable_uow.calls
     assert "sessions.revoke" not in enable_uow.calls
-    assert enable_uow.audit_events.events[0].action == "user.enable"
+    assert [event.result for event in enable_uow.audit_events.events] == [
+        AuditResult.ATTEMPTED,
+        AuditResult.SUCCEEDED,
+    ]
+    assert {event.action for event in enable_uow.audit_events.events} == {"user.enable"}
     assert enable_uow.platform_sessions.values[SESSION_2_ID].revoked_at is None
 
 
 async def test_commit_failure_never_calls_revoke_callback() -> None:
-    uow = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
-    uow.commit_error = DatabaseUnavailable()
+    preflight = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    mutation.commit_error = DatabaseUnavailable()
+    failure = Uow([])
     callback_ids: list[str] = []
 
     async def on_revoke(session_id: str) -> None:
         callback_ids.append(session_id)
 
     with pytest.raises(DatabaseUnavailable):
-        await service(uow, on_revoke=on_revoke).change_role(
+        await service_for_uows(
+            [preflight, attempted, mutation, failure],
+            on_revoke=on_revoke,
+        ).change_role(
             ADMIN_PRINCIPAL,
             OPERATOR_ID,
             Role.VIEWER,
@@ -517,7 +802,7 @@ async def test_audit_event_conflict_propagates_without_commit_or_callback() -> N
             Role.VIEWER,
         )
 
-    assert caught.value.event_id == AUDIT_ID
+    assert caught.value.event_id == ATTEMPT_AUDIT_ID
     assert "audit.get_by_id" in uow.calls
     assert "commit" not in uow.calls
     assert callback_ids == []
@@ -587,13 +872,21 @@ async def test_revoke_session_commits_before_callback_with_complete_attribution(
     assert success_uow.calls == [
         "enter",
         "sessions.get_by_id",
+        "exit",
+        "enter",
+        "audit.append",
+        "commit",
+        "exit",
+        "enter",
+        "sessions.get_by_id",
         "sessions.revoke",
         "audit.append",
         "commit",
         "exit",
         f"callback:{SESSION_1_ID}",
     ]
-    event = success_uow.audit_events.events[0]
+    assert success_uow.audit_events.events[0].result is AuditResult.ATTEMPTED
+    event = success_uow.audit_events.events[-1]
     assert event.action == "session.revoke"
     assert event.result is AuditResult.SUCCEEDED
     assert event.delivery is AuditDelivery.PRIMARY
@@ -606,24 +899,31 @@ async def test_revoke_session_commits_before_callback_with_complete_attribution(
         "targetUserId": OPERATOR_ID,
         "reason": "security_review",
     }
+    assert event.correlation_id == ATTEMPT_AUDIT_ID
 
 
 async def test_revoke_session_commit_failure_does_not_call_callback() -> None:
-    uow = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
-    uow.commit_error = DatabaseUnavailable()
+    preflight = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    attempted = Uow([])
+    mutation = Uow([ADMIN, OPERATOR], [make_session(SESSION_1_ID)])
+    mutation.commit_error = DatabaseUnavailable()
+    failure = Uow([])
     callback_ids: list[str] = []
 
     async def on_revoke(session_id: str) -> None:
         callback_ids.append(session_id)
 
     with pytest.raises(DatabaseUnavailable):
-        await service(uow, on_revoke=on_revoke).revoke_session(
+        await service_for_uows(
+            [preflight, attempted, mutation, failure],
+            on_revoke=on_revoke,
+        ).revoke_session(
             ADMIN_PRINCIPAL,
             SESSION_1_ID,
         )
 
     assert callback_ids == []
-    assert uow.calls == [
+    assert mutation.calls == [
         "enter",
         "sessions.get_by_id",
         "sessions.revoke",

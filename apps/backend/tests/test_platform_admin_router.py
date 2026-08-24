@@ -21,6 +21,7 @@ from app.platform.admin import (
     UserSummary,
 )
 from app.platform.audit_identity import AuditEventConflict
+from app.platform.errors import AuditUnavailable
 from app.platform.models import (
     AuditCursor,
     AuditDelivery,
@@ -456,6 +457,7 @@ def test_complete_mutation_and_audit_conflict_have_stable_payloads() -> None:
         (SelfManagementForbidden(), 409, "self_management_forbidden"),
         (LastAdminProtected(), 409, "last_admin_protected"),
         (AdminMutationFailed(), 503, "admin_mutation_failed"),
+        (AuditUnavailable("attempted audit unavailable"), 503, "audit_unavailable"),
         (DatabaseUnavailable(), 503, "database_unavailable"),
         (MigrationRequired(), 503, "migration_required"),
     ],
