@@ -2,8 +2,9 @@
 
 - 状态：`CURRENT_EXECUTION_ROADMAP`
 - G4 平台合并基线：PR #62 / `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`
-- 当前门：`G4_PLATFORM_COMPLETE`
-- 下一门：`G5_FINAL_REVIEW_FREEZE`
+- G4 状态：`COMPLETE`
+- 当前门：`G5_REVIEW_EXECUTED — CHANGES_REQUIRED`
+- 下一门：独立授权后的五组窄修复、复验与 G5 freeze decision
 
 ## G0–G2：主线基线与第一轮 UI 冻结
 
@@ -68,9 +69,16 @@ actual evidence：
 
 `G4 PLATFORM COMPLETE`。
 
-## G5：Final Code Review / Freeze — NEXT
+## G5：Final Code Review / Freeze — REVIEWED, CHANGES_REQUIRED
 
 G5 是跨模块最终审查，不是新功能 Sprint。
+
+[Issue #65](https://github.com/OasisSaber/Supersonic/issues/65) 已按七轴执行 review，针对
+基线 `main@7e1ea06e52964b09c8368943236847525a7deccc` 的 publication 由当前 review change
+承载。报告见 [G5 Findings Report](../../deliverables/g5-review/G5_FINDINGS_REPORT.md) 与
+[G5 Freeze Report](../../deliverables/g5-review/G5_FREEZE_REPORT.md)。当前统计为
+**0 Critical / 4 High / 5 Medium / 5 Low**，verdict 为 **`CHANGES_REQUIRED`**；G5 尚未
+完成，尚未 freeze。
 
 检查：
 
@@ -89,7 +97,24 @@ G5 是跨模块最终审查，不是新功能 Sprint。
 - dependency/license state；
 - visual evidence completeness。
 
-输出 freeze verdict；具体 finding 可形成后续窄修复。
+输出 review verdict；具体 finding 形成后续窄修复。恢复 acceptance template 中刻意保留的
+`pending` / `not_run` 示例已单独识别为模板状态，不作为 stale finding。
+
+### G5 后续五组修复门
+
+每组都必须独立授权，并建立独立 Fix Issue、change 和 PR；本 review change 仅发布报告，
+不实现或预先声称修复：
+
+| 修复组 | Findings | 必须复验的范围 | 状态 |
+| --- | --- | --- | --- |
+| Security Fix | G5-SEC-001/002/003 | established WS expiry/revoke-send、Origin gate | 未开始 |
+| Audit Fix | G5-AUD-001 | attempted pre-audit commit ordering/failure semantics | 未开始 |
+| Frontend Truth Fix | G5-FE-001/002/003 | credentials、null snapshot truth、invalid route boundary | 未开始 |
+| CI Fix | G5-CI-001 | recovery evidence contract in required validation/CI | 未开始 |
+| Docs Truth Fix | G5-DOC-001 | root README、`docs/architecture.md`、`docs/development.md` 的 current-state facts | 未开始 |
+
+G5-ARCH-001/002、G5-REC-001/002、G5-LIC-001 的 Low disposition 保持在 findings report
+中，尚未批准为 limitation 或修复承诺。
 
 ## G5 排除项
 

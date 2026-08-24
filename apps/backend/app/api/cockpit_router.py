@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
 from typing import Protocol
 
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
@@ -17,6 +18,7 @@ from ..contracts.v1 import (
 from ..platform.command_gateway import GatewayResult
 from ..platform.errors import AuthenticationRequired, RoleForbidden
 from ..platform.persistence import DatabaseUnavailable, MigrationRequired
+from ..platform.security import ExactOriginPolicy
 from ..platform.sessions import SessionIdentity
 from ..platform.websocket_registry import WebSocketSessionRegistry
 
@@ -47,6 +49,7 @@ def create_cockpit_router(
     if (platform is None) != (ws_registry is None):
         raise RuntimeError("platform wire and WebSocket registry must be configured together")
     router = APIRouter()
+    origin_policy = ExactOriginPolicy(settings.platform_ui_origin)
 
     @router.get("/api/v1/snapshot", response_model=CockpitSnapshotV1)
     async def cockpit_snapshot() -> CockpitSnapshotV1:
@@ -65,6 +68,12 @@ def create_cockpit_router(
         command: CommandEnvelopeV1,
         request: Request,
     ) -> SnapshotEnvelopeV1:
+        if platform is not None and not origin_policy.allows(request.headers.get("origin")):
+            raise CommandRejected(
+                "origin_forbidden",
+                "Request origin is not allowed.",
+                status_code=403,
+            )
         if endpoint is EndpointId.CONTROL and not settings.control_enabled:
             raise CommandRejected(
                 "control_disabled",
@@ -148,9 +157,7 @@ async def serve_cockpit_websocket(
                     break
             if send_task in done:
                 envelope = send_task.result()
-                await websocket.send_json(
-                    envelope.model_dump(mode="json", by_alias=True)
-                )
+                await websocket.send_json(envelope.model_dump(mode="json", by_alias=True))
     except (WebSocketDisconnect, asyncio.CancelledError):
         pass
     finally:
@@ -165,7 +172,7 @@ async def serve_platform_websocket(
     registry: WebSocketSessionRegistry,
     settings: RuntimeSettings,
 ) -> None:
-    if websocket.headers.get("origin") != settings.platform_ui_origin:
+    if not ExactOriginPolicy(settings.platform_ui_origin).allows(websocket.headers.get("origin")):
         await websocket.close(code=1008)
         return
     raw_secret = websocket.cookies.get(platform.cookie_name())
@@ -178,32 +185,62 @@ async def serve_platform_websocket(
         await websocket.close(code=1008)
         return
     session_id = identity.principal.session_id
-    await websocket.accept()
-    registry.register(session_id, websocket)
-    queue = await authority.connect_endpoint(endpoint)
+    remaining_seconds = max(
+        0.0,
+        (identity.expires_at.astimezone(UTC) - datetime.now(UTC)).total_seconds(),
+    )
+    expiry_deadline = asyncio.get_running_loop().time() + remaining_seconds
+    expiry_timeout = asyncio.timeout_at(expiry_deadline)
+    queue = None
+    registered = False
     try:
-        while True:
-            send_task = asyncio.create_task(queue.get())
-            receive_task = asyncio.create_task(websocket.receive())
-            done, pending = await asyncio.wait(
-                {send_task, receive_task},
-                return_when=asyncio.FIRST_COMPLETED,
-            )
-            for task in pending:
-                task.cancel()
-            await asyncio.gather(*pending, return_exceptions=True)
+        async with expiry_timeout:
+            await websocket.accept()
+            if not registry.register(session_id, websocket):
+                await websocket.close(code=1008)
+                return
+            registered = True
+            queue = await authority.connect_endpoint(endpoint)
+            while True:
+                snapshot_task = asyncio.create_task(queue.get())
+                receive_task = asyncio.create_task(websocket.receive())
+                try:
+                    done, _ = await asyncio.wait(
+                        {snapshot_task, receive_task},
+                        return_when=asyncio.FIRST_COMPLETED,
+                    )
+                finally:
+                    iteration_tasks = (snapshot_task, receive_task)
+                    for task in iteration_tasks:
+                        if not task.done():
+                            task.cancel()
+                    await asyncio.gather(*iteration_tasks, return_exceptions=True)
 
-            if receive_task in done:
-                message = receive_task.result()
-                if message["type"] == "websocket.disconnect":
-                    break
-            if send_task in done:
-                envelope = send_task.result()
-                await websocket.send_json(
-                    envelope.model_dump(mode="json", by_alias=True)
-                )
+                if receive_task in done:
+                    message = receive_task.result()
+                    if message["type"] == "websocket.disconnect":
+                        break
+                if snapshot_task in done:
+                    envelope = snapshot_task.result()
+                    payload = envelope.model_dump(mode="json", by_alias=True)
+                    await registry.send_if_allowed(
+                        session_id,
+                        websocket,
+                        lambda payload=payload: websocket.send_json(payload),
+                    )
+    except TimeoutError:
+        if not expiry_timeout.expired():
+            raise
+        try:
+            await websocket.close(code=1008)
+        except Exception:
+            pass
     except (WebSocketDisconnect, asyncio.CancelledError):
         pass
     finally:
-        await authority.disconnect_endpoint(endpoint, queue)
-        registry.disconnect(session_id, websocket)
+        try:
+            if queue is not None:
+                await authority.disconnect_endpoint(endpoint, queue)
+        finally:
+            if registered:
+                registry.disconnect(session_id, websocket)
