@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from app.platform.websocket_registry import WebSocketSessionRegistry
@@ -106,6 +108,117 @@ async def test_close_all_keeps_failed_and_unattempted_connections_for_retry() ->
     assert set(retry_attempts) == {first, failing, last} - successful_attempts
     assert registry.connection_count("session-a") == 0
     assert registry.active_sessions() == set()
+
+
+async def test_close_all_blocks_failed_and_unattempted_connections_before_close() -> None:
+    first = connection("first")
+    second = connection("second")
+    third = connection("third")
+
+    blocked_before_close: list[bool] = []
+
+    async def hook(candidate: object) -> None:
+        blocked_before_close.append(not registry.may_send("session-a", candidate))
+        raise RuntimeError("close failed")
+
+    registry = WebSocketSessionRegistry(close_connection=hook)
+    registry.register("session-a", first)
+    registry.register("session-a", second)
+    registry.register("session-a", third)
+    assert registry.may_send("session-a", first)
+    assert registry.may_send("session-a", second)
+    assert registry.may_send("session-a", third)
+
+    with pytest.raises(RuntimeError, match="close failed"):
+        await registry.close_all("session-a")
+
+    assert registry.connection_count("session-a") == 3
+    assert not registry.may_send("session-a", first)
+    assert not registry.may_send("session-a", second)
+    assert not registry.may_send("session-a", third)
+    assert all(blocked_before_close)
+
+
+async def test_disconnect_during_close_preserves_revoked_tombstone() -> None:
+    started = asyncio.Event()
+    release = asyncio.Event()
+    current = connection("current")
+
+    async def hook(_: object) -> None:
+        started.set()
+        await release.wait()
+
+    registry = WebSocketSessionRegistry(close_connection=hook)
+    registry.register("session-a", current)
+    close_task = asyncio.create_task(registry.close_all("session-a"))
+    await started.wait()
+
+    registry.disconnect("session-a", current)
+    assert not registry.may_send("session-a", current)
+    release.set()
+    await close_task
+
+    replacement = connection("replacement")
+    assert not registry.register("session-a", replacement)
+    assert not registry.may_send("session-a", replacement)
+
+
+async def test_close_all_without_connections_blocks_later_registration() -> None:
+    registry = WebSocketSessionRegistry()
+
+    await registry.close_all("session-a")
+
+    candidate = connection("candidate")
+    assert not registry.register("session-a", candidate)
+    assert registry.connection_count("session-a") == 0
+
+
+async def test_register_is_rejected_while_close_all_is_in_progress() -> None:
+    started = asyncio.Event()
+    release = asyncio.Event()
+    current = connection("current")
+    late = connection("late")
+
+    async def hook(_: object) -> None:
+        started.set()
+        await release.wait()
+
+    registry = WebSocketSessionRegistry(close_connection=hook)
+    assert registry.register("session-a", current)
+    close_task = asyncio.create_task(registry.close_all("session-a"))
+    await started.wait()
+
+    assert not registry.register("session-a", late)
+    assert not registry.may_send("session-a", late)
+
+    release.set()
+    await close_task
+    assert registry.connection_count("session-a") == 0
+
+
+async def test_concurrent_close_all_does_not_close_connection_twice() -> None:
+    started = asyncio.Event()
+    release = asyncio.Event()
+    calls: list[object] = []
+    current = connection("current")
+
+    async def hook(candidate: object) -> None:
+        calls.append(candidate)
+        started.set()
+        await release.wait()
+
+    registry = WebSocketSessionRegistry(close_connection=hook)
+    assert registry.register("session-a", current)
+    first = asyncio.create_task(registry.close_all("session-a"))
+    await started.wait()
+    second = asyncio.create_task(registry.close_all("session-a"))
+    await asyncio.sleep(0)
+
+    release.set()
+    await asyncio.gather(first, second)
+
+    assert calls == [current]
+    assert registry.connection_count("session-a") == 0
 
 
 def test_disconnect_removes_only_the_given_connection() -> None:
