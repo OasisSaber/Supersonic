@@ -73,7 +73,7 @@ async def test_user_list_all_returns_username_ordered_users_within_limit() -> No
     assert params["param_1"] == 10
 
 
-async def test_user_set_role_updates_only_role_and_timestamp() -> None:
+async def test_user_set_role_updates_only_when_role_changes() -> None:
     updated_at = datetime(2026, 8, 12, 6, tzinfo=UTC)
     session = _RecordingSession(_UpdateResult(rowcount=1))
     repository = SqlAlchemyUserRepository(session)  # type: ignore[arg-type]
@@ -82,17 +82,20 @@ async def test_user_set_role_updates_only_role_and_timestamp() -> None:
         "11111111-1111-4111-8111-111111111111",
         Role.VIEWER,
         updated_at,
+        expected_role=Role.OPERATOR,
     )
 
     sql, params = _compiled(session.statements[0])
     assert changed is True
     assert sql.startswith("UPDATE users SET role=")
-    assert set(params) == {"role", "updated_at", "id_1"}
+    assert "users.role = %(role_1)s" in sql
+    assert set(params) == {"role", "updated_at", "id_1", "role_1"}
     assert params["role"] == Role.VIEWER.value
+    assert params["role_1"] == Role.OPERATOR.value
     assert params["updated_at"] == updated_at
 
 
-async def test_user_set_disabled_updates_only_disabled_timestamp() -> None:
+async def test_user_set_disabled_updates_only_enabled_users() -> None:
     disabled_at = datetime(2026, 8, 12, 6, 15, tzinfo=UTC)
     updated_at = datetime(2026, 8, 12, 6, 16, tzinfo=UTC)
     session = _RecordingSession(_UpdateResult(rowcount=0))
@@ -107,8 +110,27 @@ async def test_user_set_disabled_updates_only_disabled_timestamp() -> None:
     sql, params = _compiled(session.statements[0])
     assert changed is False
     assert sql.startswith("UPDATE users SET disabled_at=")
+    assert "users.disabled_at IS NULL" in sql
     assert set(params) == {"disabled_at", "updated_at", "id_1"}
     assert params["disabled_at"] == disabled_at
+    assert params["updated_at"] == updated_at
+
+
+async def test_user_enable_updates_only_disabled_users() -> None:
+    updated_at = datetime(2026, 8, 12, 6, 16, tzinfo=UTC)
+    session = _RecordingSession(_UpdateResult(rowcount=1))
+    repository = SqlAlchemyUserRepository(session)  # type: ignore[arg-type]
+
+    changed = await repository.set_disabled(
+        "11111111-1111-4111-8111-111111111111",
+        None,
+        updated_at,
+    )
+
+    sql, params = _compiled(session.statements[0])
+    assert changed is True
+    assert "users.disabled_at IS NOT NULL" in sql
+    assert params["disabled_at"] is None
     assert params["updated_at"] == updated_at
 
 
@@ -143,9 +165,7 @@ async def test_platform_session_list_for_user_returns_newest_sessions_within_lim
     session = _RecordingSession(_RowsResult([row]))
     repository = SqlAlchemyPlatformSessionRepository(session)  # type: ignore[arg-type]
 
-    platform_sessions = await repository.list_for_user(
-        "11111111-1111-4111-8111-111111111111", 10
-    )
+    platform_sessions = await repository.list_for_user("11111111-1111-4111-8111-111111111111", 10)
 
     sql, params = _compiled(session.statements[0])
     assert tuple(item.id for item in platform_sessions) == (str(row.id),)

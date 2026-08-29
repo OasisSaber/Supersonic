@@ -38,7 +38,14 @@ class UserRepository(Protocol):
 
     async def list_all(self, limit: int) -> tuple[User, ...]: ...
 
-    async def set_role(self, user_id: str, role: Role, updated_at: datetime) -> bool: ...
+    async def set_role(
+        self,
+        user_id: str,
+        role: Role,
+        updated_at: datetime,
+        *,
+        expected_role: Role,
+    ) -> bool: ...
 
     async def set_disabled(
         self,

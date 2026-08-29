@@ -159,17 +159,24 @@ _AUDIT_ENDPOINTS = frozenset({"center", "cluster", "control", "hud", "overview",
 _AUDIT_TARGET_TYPES = frozenset({"climate_zone", "platform_session", "risk_event", "user"})
 _AUDIT_ERROR_CODES = frozenset(
     {
+        "admin_mutation_failed",
+        "audit_conflict",
+        "audit_unavailable",
         "command_forbidden",
         "command_not_implemented",
         "control_disabled",
+        "database_unavailable",
         "endpoint_mismatch",
         "internal_error",
         "invalid_parameters",
         "invalid_transition",
+        "last_admin_protected",
         "risk_not_found",
         "role_forbidden",
         "safety_suppressed",
+        "session_not_found",
         "source_mismatch",
+        "user_not_found",
     }
 )
 

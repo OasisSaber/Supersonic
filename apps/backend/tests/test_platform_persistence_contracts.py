@@ -860,6 +860,26 @@ def test_audit_adapter_keeps_typed_safe_metadata_before_row_construction() -> No
 
 
 @pytest.mark.parametrize(
+    "error_code",
+    [
+        "admin_mutation_failed",
+        "audit_conflict",
+        "audit_unavailable",
+        "database_unavailable",
+        "last_admin_protected",
+        "session_not_found",
+        "user_not_found",
+    ],
+)
+def test_audit_adapter_keeps_admin_outcome_error_codes(error_code: str) -> None:
+    event = replace(_adapter_audit_event(), error_code=error_code)
+
+    row = _audit_event_to_row(event)
+
+    assert row.error_code == error_code
+
+
+@pytest.mark.parametrize(
     ("action", "parameters"),
     [
         (

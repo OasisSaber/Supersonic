@@ -19,6 +19,7 @@ from ..platform.admin import (
     UserSummary,
 )
 from ..platform.audit_identity import AuditEventConflict
+from ..platform.errors import AuditUnavailable
 from ..platform.models import AuditCursor, AuditEvent, AuditPage, Principal, Role
 from ..platform.persistence import DatabaseUnavailable, MigrationRequired
 from ..platform.sessions import InvalidSession, SessionIdentity
@@ -273,6 +274,8 @@ def _admin_error(error: Exception) -> JSONResponse:
         return _error(503, "platform_unavailable", "Platform service is unavailable.")
     if isinstance(error, AuditEventConflict):
         return _error(503, "audit_conflict", "Audit integrity conflict was detected.")
+    if isinstance(error, AuditUnavailable):
+        return _error(503, "audit_unavailable", "The audit boundary is unavailable.")
     raise error
 
 
