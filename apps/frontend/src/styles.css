@@ -1338,7 +1338,8 @@ h3 {
 
 .sp-endpoint-status.is-fresh { color: var(--sp-success); }
 .sp-endpoint-status.is-stale { color: var(--sp-warning); }
-.sp-endpoint-status.is-offline { color: var(--sp-text-subtle); }
+.sp-endpoint-status.is-offline,
+.sp-endpoint-status.is-waiting { color: var(--sp-text-subtle); }
 
 @media (max-width: 1280px) {
   .sp-cluster-layout {
@@ -1614,4 +1615,44 @@ button {
   .sp-screen-header::before {
     display: none;
   }
+}
+
+/* Explicit boundary for invalid cockpit routes; no endpoint connection starts here. */
+.sp-route-error {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: var(--sp-space-6);
+  background: var(--sp-page);
+}
+
+.sp-route-error__panel {
+  width: min(100%, 680px);
+  padding: clamp(var(--sp-space-6), 6vw, var(--sp-space-8));
+  border: 1px solid var(--sp-border-strong);
+  border-radius: var(--sp-radius-panel);
+  background: var(--sp-surface-1);
+  box-shadow: var(--sp-shadow-2);
+}
+
+.sp-route-error__panel svg {
+  color: var(--sp-warning);
+}
+
+.sp-route-error__panel h1 {
+  margin: var(--sp-space-3) 0 var(--sp-space-2);
+}
+
+.sp-route-error__panel p:not(.sp-eyebrow) {
+  color: var(--sp-text-muted);
+}
+
+.sp-route-error__panel code {
+  display: block;
+  margin-top: var(--sp-space-5);
+  padding: var(--sp-space-3) var(--sp-space-4);
+  overflow-wrap: anywhere;
+  border-radius: var(--sp-radius-control);
+  color: var(--sp-text-strong);
+  background: var(--sp-surface-2);
 }

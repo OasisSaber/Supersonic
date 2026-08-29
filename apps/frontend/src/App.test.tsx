@@ -23,6 +23,7 @@ const themeSourceFiles = import.meta.glob(
 
 describe('authoritative cockpit theme', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     window.history.replaceState({}, '', '/cluster')
     useCockpitStore.setState({
       endpoint: 'overview',
@@ -58,6 +59,31 @@ describe('authoritative cockpit theme', () => {
 
     expect(useCockpitSnapshot).toHaveBeenCalledWith('cluster')
   })
+
+  it.each(['cluster', 'hud', 'center', 'passenger', 'overview', 'control'])(
+    'starts the matching snapshot authority for the declared /%s route',
+    (endpoint) => {
+      window.history.replaceState({}, '', `/${endpoint}`)
+
+      render(<App />)
+
+      expect(useCockpitSnapshot).toHaveBeenCalledTimes(1)
+      expect(useCockpitSnapshot).toHaveBeenCalledWith(endpoint)
+    },
+  )
+
+  it.each(['/not-a-cockpit-route', '/nested/cluster', '/platform-confusable'])(
+    'keeps unknown route %s explicit without starting snapshot authority',
+    (pathname) => {
+      window.history.replaceState({}, '', pathname)
+
+      render(<App />)
+
+      expect(screen.getByRole('heading', { name: '未找到座舱端点' })).toBeInTheDocument()
+      expect(screen.getByText(pathname)).toBeInTheDocument()
+      expect(useCockpitSnapshot).not.toHaveBeenCalled()
+    },
+  )
 
   it('loads the design tokens exactly once before the consuming stylesheet', () => {
     const tokenImport = "import './design/gp05-tokens.css'"
