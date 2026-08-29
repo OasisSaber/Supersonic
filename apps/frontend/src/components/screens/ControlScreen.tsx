@@ -157,7 +157,7 @@ export function ControlScreen({ snapshot }: ControlScreenProps) {
             <EndpointRow
               endpoint={endpoint}
               key={endpoint}
-              status={snapshot?.endpointConnectivity[endpoint]?.status ?? 'offline'}
+              status={snapshot?.endpointConnectivity[endpoint]?.status}
             />
           ))}
         </ul>
@@ -198,12 +198,14 @@ function EndpointRow({
   status,
 }: {
   endpoint: EndpointId
-  status: 'fresh' | 'stale' | 'offline'
+  status?: 'fresh' | 'stale' | 'offline'
 }) {
   return (
     <li>
       <span>{ENDPOINT_LABELS[endpoint]}</span>
-      <b className={`sp-endpoint-status is-${status}`}>{FRESHNESS_LABELS[status]}</b>
+      <b className={`sp-endpoint-status is-${status ?? 'waiting'}`}>
+        {status ? FRESHNESS_LABELS[status] : '等待状态'}
+      </b>
     </li>
   )
 }

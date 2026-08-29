@@ -21,6 +21,7 @@ interface CenterScreenProps {
 export function CenterScreen({ activeRisk, snapshot }: CenterScreenProps) {
   const { error, pendingCommand, send } = useCockpitCommand('center')
   const [destination, setDestination] = useState('城市艺术中心')
+  const hasSnapshot = snapshot !== null
   const routeReady = snapshot?.navigation.status === 'preview'
 
   return (
@@ -34,7 +35,7 @@ export function CenterScreen({ activeRisk, snapshot }: CenterScreenProps) {
 
         <div className="sp-map-panel__content">
           <p className="sp-eyebrow">Navigation handoff</p>
-          <h2>{snapshot?.navigation.destinationName ?? '规划下一段行程'}</h2>
+          <h2>{snapshot === null ? '路线状态暂不可用' : snapshot.navigation.destinationName ?? '规划下一段行程'}</h2>
           <p>{navigationSourceLabel(snapshot)}</p>
 
           {snapshot?.navigation.destinationName ? (
@@ -49,6 +50,7 @@ export function CenterScreen({ activeRisk, snapshot }: CenterScreenProps) {
             className="sp-command-form"
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
               event.preventDefault()
+              if (!hasSnapshot) return
               void send('select_destination', { destinationName: destination })
             }}
           >
@@ -57,12 +59,13 @@ export function CenterScreen({ activeRisk, snapshot }: CenterScreenProps) {
               <input
                 id="destination"
                 aria-describedby="destination-help"
+                disabled={!hasSnapshot}
                 maxLength={160}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => setDestination(event.target.value)}
                 value={destination}
               />
               <ActionButton
-                disabled={!destination.trim()}
+                disabled={!hasSnapshot || !destination.trim()}
                 icon={<Route size={18} strokeWidth={2} />}
                 pending={pendingCommand === 'select_destination'}
                 type="submit"
@@ -92,8 +95,16 @@ export function CenterScreen({ activeRisk, snapshot }: CenterScreenProps) {
         <MetricTile
           icon={<Eye size={22} strokeWidth={1.5} />}
           label="VehicleVision"
-          value={activeRisk ? riskSourceLabel(activeRisk.source) : '无活动风险'}
-          detail={activeRisk ? `${Math.round(activeRisk.confidence * 100)}% · ${activeRisk.lifecycle}` : '当前来源：离线'}
+          value={
+            !hasSnapshot
+              ? '风险状态暂不可用'
+              : activeRisk ? riskSourceLabel(activeRisk.source) : '无活动风险'
+          }
+          detail={
+            !hasSnapshot
+              ? '等待权威快照'
+              : activeRisk ? `${Math.round(activeRisk.confidence * 100)}% · ${activeRisk.lifecycle}` : '当前来源：离线'
+          }
         />
 
         {activeRisk ? (
@@ -106,6 +117,7 @@ export function CenterScreen({ activeRisk, snapshot }: CenterScreenProps) {
             </div>
             {activeRisk.lifecycle === 'active' ? (
               <ActionButton
+                disabled={!hasSnapshot}
                 icon={<ShieldAlert size={18} strokeWidth={2} />}
                 pending={pendingCommand === 'acknowledge_risk'}
                 onClick={() => void send('acknowledge_risk', { eventId: activeRisk.eventId })}
@@ -116,6 +128,7 @@ export function CenterScreen({ activeRisk, snapshot }: CenterScreenProps) {
             ) : null}
             {activeRisk.lifecycle === 'acknowledged' ? (
               <ActionButton
+                disabled={!hasSnapshot}
                 icon={<Check size={18} strokeWidth={2} />}
                 pending={pendingCommand === 'resolve_risk'}
                 onClick={() => void send('resolve_risk', { eventId: activeRisk.eventId })}

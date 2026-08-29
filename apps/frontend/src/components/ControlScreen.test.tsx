@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import snapshotFixture from '../../../../contracts/gp05/v1/example.snapshot.json'
 import type { CockpitSnapshotV1 } from '../contracts/gp05-v1'
@@ -41,6 +41,24 @@ describe('ControlScreen', () => {
     expect(screen.getByRole('button', { name: '重置权威会话' })).toBeDisabled()
     expect(screen.getByText(initialSnapshot.sessionId)).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '端点连接' })).toBeInTheDocument()
+  })
+
+  it('uses waiting endpoint states and disables commands before a snapshot', async () => {
+    useCockpitStore.setState({ snapshot: null })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ controlEnabled: true }),
+    }))
+
+    render(<Harness />)
+
+    expect(await screen.findByText('本地控制命令已启用')).toBeInTheDocument()
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).toBeDisabled()
+    }
+    const endpointPanel = screen.getByRole('region', { name: '端点连接状态' })
+    expect(within(endpointPanel).queryByText('离线')).not.toBeInTheDocument()
+    expect(within(endpointPanel).getAllByText('等待状态')).toHaveLength(6)
   })
 
   it('renders the dedicated Control endpoint instead of the Center fallback', async () => {
@@ -158,6 +176,11 @@ describe('ControlScreen', () => {
       { name: 'set_theme', endpoint: 'control', parameters: { theme: 'day' } },
       { name: 'set_system_mode', endpoint: 'control', parameters: { mode: 'normal' } },
       { name: 'reset_session', endpoint: 'control', parameters: {} },
+    ])
+    expect(commandCalls.map(([, init]) => init?.credentials)).toEqual([
+      'include',
+      'include',
+      'include',
     ])
   })
 })

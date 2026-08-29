@@ -14,6 +14,7 @@ interface PassengerScreenProps {
 export function PassengerScreen({ activeRisk, snapshot }: PassengerScreenProps) {
   const { error, pendingCommand, send } = useCockpitCommand('passenger')
   const [suggestion, setSuggestion] = useState('建议在城市艺术中心短暂停留')
+  const hasSnapshot = snapshot !== null
   const suppressed = isMediaSafetySuppressed(snapshot?.risks ?? [])
   const playing = snapshot?.passenger.mediaState === 'playing'
   const privacyEnabled = snapshot?.passenger.privacyEnabled ?? true
@@ -27,20 +28,26 @@ export function PassengerScreen({ activeRisk, snapshot }: PassengerScreenProps) 
         </div>
         <div className="sp-media-stage__copy">
           <p className="sp-eyebrow">Passenger media</p>
-          <h2>{suppressed ? '媒体已安全抑制' : playing ? '旅程媒体播放中' : '旅程媒体已暂停'}</h2>
+          <h2>{
+            !hasSnapshot
+              ? '媒体状态暂不可用'
+              : suppressed ? '媒体已安全抑制' : playing ? '旅程媒体播放中' : '旅程媒体已暂停'
+          }</h2>
           <p>
-            {suppressed
-              ? '驾驶风险处置期间，副驾娱乐控制暂时不可用。'
-              : '娱乐与旅程协作不影响驾驶关键状态。'}
+            {!hasSnapshot
+              ? '正在等待第一份权威快照，不显示推测的媒体状态。'
+              : suppressed
+                ? '驾驶风险处置期间，副驾娱乐控制暂时不可用。'
+                : '娱乐与旅程协作不影响驾驶关键状态。'}
           </p>
           <ActionButton
-            disabled={suppressed}
+            disabled={!hasSnapshot || suppressed}
             icon={playing ? <Pause size={18} strokeWidth={2} /> : <Play size={18} strokeWidth={2} />}
             pending={pendingCommand === 'set_media_state'}
             onClick={() => void send('set_media_state', { state: playing ? 'paused' : 'playing' })}
             variant="secondary"
           >
-            {playing ? '暂停媒体' : '播放媒体'}
+            {!hasSnapshot ? '媒体控制不可用' : playing ? '暂停媒体' : '播放媒体'}
           </ActionButton>
         </div>
       </section>
@@ -53,15 +60,20 @@ export function PassengerScreen({ activeRisk, snapshot }: PassengerScreenProps) 
             </div>
             <div>
               <span>隐私模式</span>
-              <strong>{privacyEnabled ? '副驾内容不投射至驾驶端' : '允许共享必要旅程内容'}</strong>
+              <strong>{
+                !hasSnapshot
+                  ? '隐私状态暂不可用'
+                  : privacyEnabled ? '副驾内容不投射至驾驶端' : '允许共享必要旅程内容'
+              }</strong>
             </div>
           </div>
           <ActionButton
+            disabled={!hasSnapshot}
             pending={pendingCommand === 'set_cabin_control'}
             onClick={() => void send('set_cabin_control', { privacyEnabled: !privacyEnabled })}
             variant="ghost"
           >
-            {privacyEnabled ? '关闭隐私' : '开启隐私'}
+            {!hasSnapshot ? '隐私控制不可用' : privacyEnabled ? '关闭隐私' : '开启隐私'}
           </ActionButton>
         </section>
 
@@ -69,12 +81,14 @@ export function PassengerScreen({ activeRisk, snapshot }: PassengerScreenProps) 
           className="sp-control-card sp-suggestion-form"
           onSubmit={(event: FormEvent<HTMLFormElement>) => {
             event.preventDefault()
+            if (!hasSnapshot) return
             void send('submit_trip_suggestion', { suggestion })
           }}
         >
           <label htmlFor="trip-suggestion">旅程建议</label>
           <textarea
             id="trip-suggestion"
+            disabled={!hasSnapshot}
             maxLength={200}
             onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setSuggestion(event.target.value)}
             rows={4}
@@ -83,7 +97,7 @@ export function PassengerScreen({ activeRisk, snapshot }: PassengerScreenProps) 
           <div className="sp-suggestion-form__footer">
             <small className="sp-tabular">{suggestion.length}/200</small>
             <ActionButton
-              disabled={!suggestion.trim()}
+              disabled={!hasSnapshot || !suggestion.trim()}
               icon={<Send size={17} strokeWidth={2} />}
               pending={pendingCommand === 'submit_trip_suggestion'}
               type="submit"

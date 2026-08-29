@@ -1,6 +1,7 @@
 import { Navigation2, ShieldCheck } from 'lucide-react'
 import type { CockpitSnapshotV1, RiskEventV1 } from '../../contracts/gp05-v1'
 import { formatDistance } from '../../lib/cockpitPresentation'
+import { EmptyState } from '../ui/EmptyState'
 import { RiskBanner } from '../ui/RiskBanner'
 
 interface HudScreenProps {
@@ -9,6 +10,18 @@ interface HudScreenProps {
 }
 
 export function HudScreen({ activeRisk, snapshot }: HudScreenProps) {
+  if (snapshot === null) {
+    return (
+      <div className="sp-hud-layout">
+        <EmptyState
+          icon={<ShieldCheck size={24} strokeWidth={1.5} />}
+          title="HUD 数据暂不可用"
+          description="正在等待第一份权威快照，不显示推测的车道、导航或风险状态。"
+        />
+      </div>
+    )
+  }
+
   if (activeRisk) {
     return (
       <div className="sp-hud-layout sp-hud-layout--risk">
@@ -18,7 +31,7 @@ export function HudScreen({ activeRisk, snapshot }: HudScreenProps) {
     )
   }
 
-  const step = snapshot?.navigation.currentStep
+  const step = snapshot.navigation.currentStep
   return (
     <div className="sp-hud-layout">
       <div className="sp-hud-direction" aria-hidden="true">

@@ -22,6 +22,7 @@ export function useCockpitCommand(endpoint: EndpointId) {
       const now = new Date().toISOString()
       const response = await fetch(`${apiBase}/api/v1/commands/${endpoint}`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           protocolVersion: CONTRACT_VERSION,

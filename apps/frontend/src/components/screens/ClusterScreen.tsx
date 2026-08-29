@@ -26,7 +26,11 @@ export function ClusterScreen({ activeRisk, snapshot }: ClusterScreenProps) {
           icon={<Gauge size={22} strokeWidth={1.5} />}
           label="驾驶模式"
           value={snapshot?.vehicle.driveMode ?? '—'}
-          detail={snapshot?.vehicle.seatbeltFastened ? '安全带已系' : '安全带未系'}
+          detail={
+            snapshot === null
+              ? '等待权威状态'
+              : snapshot.vehicle.seatbeltFastened ? '安全带已系' : '安全带未系'
+          }
         />
       </div>
 
@@ -38,7 +42,13 @@ export function ClusterScreen({ activeRisk, snapshot }: ClusterScreenProps) {
       </section>
 
       <div className="sp-cluster-layout__route">
-        {step ? (
+        {snapshot === null ? (
+          <EmptyState
+            icon={<Route size={24} strokeWidth={1.5} />}
+            title="路线数据暂不可用"
+            description="正在等待第一份权威快照，不显示推测的路线状态。"
+          />
+        ) : step ? (
           <article className="sp-route-card">
             <div className="sp-route-card__icon" aria-hidden="true">
               <Navigation2 size={28} strokeWidth={1.5} />
