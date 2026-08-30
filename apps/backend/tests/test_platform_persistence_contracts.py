@@ -1,5 +1,7 @@
 import ast
+import importlib
 import inspect
+import re
 from copy import deepcopy
 from dataclasses import FrozenInstanceError, fields, replace
 from datetime import UTC, datetime, timedelta, timezone
@@ -28,10 +30,8 @@ from app.adapters.postgres.repositories import (
 from app.platform.models import (
     AuditDelivery,
     AuditEvent,
-    AuditRecord,
     AuditResult,
     PlatformSession,
-    Principal,
     Role,
     User,
 )
@@ -1077,34 +1077,47 @@ def test_unit_of_work_exposes_repository_ports() -> None:
     }
 
 
-def test_existing_platform_records_and_public_exports_remain_available() -> None:
-    now = datetime(2026, 8, 9, 12, tzinfo=UTC)
-    principal = Principal("user-1", Role.OPERATOR, "session-1")
-    record = AuditRecord(
-        audit_id="audit-1",
-        occurred_at=now,
-        actor_user_id=principal.user_id,
-        actor_role=principal.role,
-        actor_session_id=principal.session_id,
-        endpoint="control",
-        command_name="set_theme",
-        correlation_id="correlation-1",
-        result=AuditResult.SUCCEEDED,
-    )
-
-    assert record.delivery is AuditDelivery.PRIMARY
+def test_platform_package_exports_the_composed_runtime_only() -> None:
     assert set(platform.__all__) == {
-        "AuditBuffer",
         "AuditDelivery",
-        "AuditFallback",
-        "AuditRecord",
+        "AuditEvent",
         "AuditResult",
-        "AuditSink",
-        "AuthorizedCockpitGateway",
         "GatewayResult",
-        "InMemoryAuditSink",
-        "JsonlAuditBuffer",
+        "PlatformCommandGateway",
         "Principal",
         "Role",
         "RoleCommandPolicy",
     }
+
+
+def test_legacy_gateway_and_audit_record_surface_is_removed() -> None:
+    for name in (
+        "AuditBuffer",
+        "AuditFallback",
+        "AuditRecord",
+        "AuditSink",
+        "AuthorizedCockpitGateway",
+        "InMemoryAuditSink",
+        "JsonlAuditBuffer",
+    ):
+        assert not hasattr(platform, name), name
+
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("app.platform.gateway")
+
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("app.platform.audit")
+
+
+def test_production_source_has_no_legacy_runtime_references() -> None:
+    pattern = re.compile(
+        r"(AuthorizedCockpitGateway|AuditRecord|InMemoryAuditSink"
+        r"|JsonlAuditBuffer|AuditBuffer|AuditSink)"
+    )
+    app_root = Path(__file__).resolve().parents[1] / "app"
+    offenders = [
+        str(path.relative_to(app_root))
+        for path in sorted(app_root.rglob("*.py"))
+        if pattern.search(path.read_text(encoding="utf-8"))
+    ]
+    assert offenders == []
