@@ -64,5 +64,45 @@ while IFS= read -r -d '' shell_file; do
 done < <(git ls-files -z -- '*.sh')
 echo 'All tracked Shell scripts have valid syntax and executable modes.'
 
+echo '--- CRLF line-ending guard (committed blobs) ---'
+"$python_bin" - "$check_rev" <<'PY'
+import subprocess, sys
+
+rev = sys.argv[1].encode()
+paths = [
+    p
+    for p in subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", "-z", rev.decode()],
+        capture_output=True,
+        check=True,
+    ).stdout.split(b"\0")
+    if p
+]
+proc = subprocess.Popen(["git", "cat-file", "--batch"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+bad = []
+for raw in paths:
+    proc.stdin.write(rev + b":" + raw + b"\n")
+    proc.stdin.flush()
+    header = proc.stdout.readline()
+    if header.endswith(b"missing\n"):
+        continue
+    size = int(header.rsplit(b" ", 1)[1])
+    data = proc.stdout.read(size)
+    proc.stdout.read(1)
+    if b"\x00" in data:
+        continue
+    if b"\r\n" in data:
+        bad.append(raw.decode("utf-8", "replace"))
+proc.stdin.close()
+proc.wait()
+if bad:
+    print("CRLF line endings found in committed text files:", file=sys.stderr)
+    for path in bad:
+        print(path, file=sys.stderr)
+    print("Repository line endings must be LF (see .gitattributes).", file=sys.stderr)
+    sys.exit(1)
+print(f"No CRLF line endings in committed text files ({len(paths)} files scanned).")
+PY
+
 echo '--- Project check ---'
 pnpm check
