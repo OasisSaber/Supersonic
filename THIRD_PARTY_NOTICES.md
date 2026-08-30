@@ -31,3 +31,56 @@ must be chosen and documented first: AGPL-3.0 with the corresponding whole-proje
 obligations, or an applicable Ultralytics Enterprise/R&D license. See the
 [Ultralytics licensing page](https://www.ultralytics.com/license). This repository's
 current no-license-grant statement does not resolve that future decision.
+
+## Python backend dependencies
+
+`apps/backend/pyproject.toml` declares the direct dependencies and `apps/backend/uv.lock`
+pins the resolved versions. Licenses below were read from the installed packages'
+`*.dist-info` metadata (`License` / `License-Expression` / classifiers) and the bundled
+`licenses/` texts; the full provenance table with per-package evidence lives in
+`docs/08-data-and-license-log.md`.
+
+Runtime dependencies are distributed as part of the local backend runtime:
+alembic 1.18.5 (MIT), fastapi 0.139.0 (MIT), pydantic 2.13.4 (MIT), psycopg[binary] 3.3.4
+(LGPL-3.0-only; used unmodified via the official wheel — review LGPL-3.0 obligations before
+any redistribution), python-dotenv 1.2.2 (BSD-3-Clause), SQLAlchemy 2.0.51 (MIT),
+uvicorn[standard] 0.51.0 (BSD-3-Clause), and pwdlib[argon2] 0.3.0 (MIT).
+
+Development dependencies (httpx, pytest, pytest-asyncio, ruff) are not distributed with any
+runtime or release artifact.
+
+The optional dependency groups `vision` (opencv-python, mediapipe) and `llm` (openai) are
+declared and locked but are NOT installed, NOT enabled, and NOT distributed by this
+repository. Before enabling or distributing any of them, verify the installed wheel's
+license evidence and update `docs/08-data-and-license-log.md` and this file.
+
+### pwdlib
+
+pwdlib 0.3.0 is MIT licensed. Its installed metadata declares the license only through
+`Classifier: License :: OSI Approved :: MIT License`; the `License` and
+`License-Expression` metadata fields are undeclared. The license text bundled as
+`pwdlib-0.3.0.dist-info/licenses/LICENSE` is reproduced below.
+
+```text
+MIT License
+
+Copyright (c) 2024, François Voron
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
