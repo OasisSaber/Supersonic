@@ -4,9 +4,9 @@
 - G4 平台合并基线：PR #62 / `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`
 - G5 review 基线：`main@7e1ea06e52964b09c8368943236847525a7deccc`
 - G5 remediation 合并基线：PR #78 / `ca58b7c15dcd9c8b508c90e26ab63eaaf7924d34`
-- 当前阶段：`G5_LOW_FINDINGS_DISPOSITION`
-- 当前 verdict：`CHANGES_REQUIRED`
-- 下一阶段：Low disposition 由人类合并后执行独立最终复审；G5 尚未完成、尚未 freeze
+- 当前阶段：`G5_FINAL_RE_REVIEW`
+- 当前 verdict：`FREEZE_READY`（由 [G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出；复审 publication 由当前 review change 承载，待人类合并；freeze 宣告是人类决定，本 change 不宣告 freeze）
+- 下一阶段：人类合并复审 publication 并作出 G5 freeze 决定；之后按最终验收路线分别立项真实地图、VehicleVision、AI 语音、多显示部署与 Web3D
 
 > 本文件使用稳定的阶段/PR 基线，不追逐包含本文件自身的最新 main commit SHA。
 
@@ -32,6 +32,7 @@
 | #74 | G5 Frontend Truth Fix（Issue #73） | 已合并 |
 | #76 | G5 CI Fix（Issue #75） | 已合并 |
 | #78 | G5 Docs Truth Fix（Issue #77） | 已合并 |
+| #83 | G5 Low Findings Disposition 记录（Issue #79） | 已合并 |
 
 PR #62 的 merge commit 为 `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`。
 
@@ -86,7 +87,7 @@ merge gate。Examples 仍保持 `pending` / `not_run`，只作为未来操作模
 | G3 Architecture | `APPROVED` | PR #48 |
 | G4 Platform | `COMPLETE` | PR #50/#52/#54/#56/#58/#62 |
 | Post-merge Recovery | `VERIFIED` | 公开 PR #62 merge baseline 上的恢复复验 |
-| G5 Final Review / Freeze | `REVIEWED — CHANGES_REQUIRED` | [Issue #65](https://github.com/OasisSaber/Supersonic/issues/65) 七轴 review 已执行；报告 publication 属于当前 review change；尚未完成、尚未 freeze |
+| G5 Final Review / Freeze | `REVIEWED — FREEZE_READY` | 七轴复审已在 `main@6cfbe9f8` 执行，[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出 `FREEZE_READY`；复审 publication 属于当前 review change，freeze 宣告待人类决定。原始报告（`CHANGES_REQUIRED`）保留历史原貌 |
 | 真实地图、Vision、语音、Web3D | `PLANNED` | 不属于 G4 |
 
 ## 5. G5 Review publication（Issue #65）
@@ -128,6 +129,24 @@ merge gate。Examples 仍保持 `pending` / `not_run`，只作为未来操作模
 | G5-LIC-001 | `BACKLOG` | [Issue #82](https://github.com/OasisSaber/Supersonic/issues/82) |
 
 五项均已选择允许的 disposition，没有未决定项。这只满足最终复审的 Low input gate，
-不代表 finding 已修复，也不产生 freeze decision。当前 verdict 仍为 `CHANGES_REQUIRED`。
+不代表 finding 已修复，也不产生 freeze decision。复审执行前 verdict 为
+`CHANGES_REQUIRED`；复审结果见第 8 节。
 
 G4 不再接受没有具体回归/审查 finding 的功能性追加。
+
+## 8. G5 Final Re-Review（Issue #84，当前 change）
+
+七轴复审已在 reviewed head `main@6cfbe9f8542721b32a54e14a15b183be29a55d97` 执行，复审
+delta 为原审查基线 `7e1ea06e` 之后的 8 个提交（五组 remediation、GP22 资产引入与两笔
+记录）。结果：
+
+- 4 High + 5 Medium 全部核验为 FIXED，每项都有对应代码与必需回归测试/记录证据；
+- 5 Low 的 disposition 与批准记录一致（2 项 ACCEPTED_LIMITATION、3 项 BACKLOG #80/#81/#82）；
+- 无新增 Critical/High/Medium/Low finding；
+- 本地 `bash scripts/validate.sh` PASS（后端 724 passed / 4 skipped，前端 85 passed，
+  构建通过）；精确头部 CI run `33299616699` PASS（Validate、PostgreSQL integration、
+  GP05 smoke）。
+
+权威结果见 [G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)，
+最终 verdict 为 **`FREEZE_READY`**。该 verdict 表示七轴审查门通过；G5 freeze 宣告与
+复审 publication 的合并均是人类决定，本文档随复审 change 同步，不宣告 freeze。
