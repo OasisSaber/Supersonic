@@ -23,6 +23,7 @@ JSON_EVIDENCE = {
     "backup-manifest.json",
     "restore-report.json",
     "acceptance.json",
+    "recheck-provenance.json",
 }
 JSON_FILES = JSON_EXAMPLES | JSON_EVIDENCE
 SANITIZED_SCREENSHOTS = {
@@ -34,6 +35,7 @@ SANITIZED_SCREENSHOTS = {
 EXPECTED_FILES = (
     JSON_FILES
     | {
+        "PROVENANCE_POLICY.md",
         "README.md",
         "RECOVERY_ACCEPTANCE_TEMPLATE.md",
         "screenshots/.gitkeep",
@@ -331,6 +333,28 @@ class RecoveryEvidenceTemplateTests(unittest.TestCase):
                     any(part in normalized_key for part in FORBIDDEN_JSON_KEY_PARTS),
                     f"sensitive key {key!r} in {name}",
                 )
+
+    def test_acceptance_claims_do_not_self_reference_the_claim_record(self):
+        acceptance = load_json("acceptance.json")
+        self_reference = "deliverables/platform-recovery/acceptance.json"
+        for section in (acceptance["persistence"], acceptance["applicationAcceptance"]):
+            for name, item in section.items():
+                reference = item["evidenceReference"]
+                self.assertNotEqual(
+                    self_reference,
+                    reference,
+                    f"acceptance claim {name} must not self-reference the record",
+                )
+                self.assertTrue(is_safe_repository_reference(reference), reference)
+
+        provenance = load_json("recheck-provenance.json")
+        self.assertEqual(
+            "deliverables/platform-recovery/PROVENANCE_POLICY.md",
+            provenance["policyReference"],
+        )
+        for key, value in iter_items(provenance):
+            if isinstance(value, str) and value.endswith("acceptance.json"):
+                self.fail(f"provenance must not cite the claim record: {key}")
 
     def test_task_11_does_not_commit_runtime_or_database_payloads(self):
         forbidden_suffixes = {".dump", ".sql", ".sqlite", ".db", ".bin"}

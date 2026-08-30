@@ -28,11 +28,11 @@
     },
     "webSocketRevoke": {
       "status": "passed",
-      "evidenceReference": "deliverables/platform-recovery/acceptance.json"
+      "evidenceReference": "deliverables/platform-recovery/recheck-provenance.json"
     },
     "gp05Smoke": {
       "status": "passed",
-      "evidenceReference": "deliverables/platform-recovery/acceptance.json"
+      "evidenceReference": "deliverables/platform-recovery/recheck-provenance.json"
     }
   },
   "observations": {

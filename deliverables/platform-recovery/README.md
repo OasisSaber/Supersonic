@@ -18,6 +18,9 @@ non-example JSON files record that checkpoint and the completed human merge gate
 - `backup-manifest.json`: exact sanitized aggregate manifest from the post-merge rehearsal.
 - `restore-report.json`: verified checksum/revision/count/invariant/restore results.
 - `acceptance.json`: verified restored-app identity/Audit/revoke/GP05 results.
+- `recheck-provenance.json`: bounded sanitized provenance summaries for the acceptance
+  checks that previously referenced the acceptance record only; see
+  [PROVENANCE_POLICY.md](PROVENANCE_POLICY.md).
 - `RECOVERY_ACCEPTANCE_TEMPLATE.md`: reusable operator checklist.
 - `screenshots/`: bounded synthetic browser evidence.
 
@@ -81,6 +84,17 @@ automatic retry timer, queue, worker or cross-process propagation.
 In this rehearsal an already-open target WebSocket received the registry's normal close (`1000`),
 while a later handshake using the old revoked identity was rejected with `1008`. These are distinct
 observations: the contract requires post-commit termination and rejection, not one shared close code.
+
+## Provenance policy (G5-REC-002)
+
+The `webSocketRevoke` and `gp05Smoke` acceptance items point to
+`recheck-provenance.json`, which summarizes each check with independently
+reviewable references: repository test paths enforced by the required CI
+`Validate` step, the required CI smoke step with its run identifier, and the
+public rehearsal pull request. The allowed reference kinds, the non-self rule,
+and the sanitization boundary are defined in
+[PROVENANCE_POLICY.md](PROVENANCE_POLICY.md) and enforced by
+`scripts/test_recovery_evidence_templates.py`.
 
 ## Safe rehearsal procedure
 
