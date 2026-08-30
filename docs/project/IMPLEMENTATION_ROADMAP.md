@@ -3,8 +3,9 @@
 - 状态：`CURRENT_EXECUTION_ROADMAP`
 - G4 平台合并基线：PR #62 / `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`
 - G4 状态：`COMPLETE`
-- 当前门：`G5_REVIEW_EXECUTED — CHANGES_REQUIRED`
-- 下一门：独立授权后的五组窄修复、复验与 G5 freeze decision
+- G5 remediation 合并基线：PR #78 / `ca58b7c15dcd9c8b508c90e26ab63eaaf7924d34`
+- 当前门：`G5_LOW_FINDINGS_DISPOSITION — CHANGES_REQUIRED`
+- 下一门：Low disposition 人类合并后的独立七轴复审与 G5 freeze decision
 
 ## G0–G2：主线基线与第一轮 UI 冻结
 
@@ -100,21 +101,34 @@ G5 是跨模块最终审查，不是新功能 Sprint。
 输出 review verdict；具体 finding 形成后续窄修复。恢复 acceptance template 中刻意保留的
 `pending` / `not_run` 示例已单独识别为模板状态，不作为 stale finding。
 
-### G5 后续五组修复门
+### G5 五组 remediation 合并状态
 
-每组都必须独立授权，并建立独立 Fix Issue、change 和 PR；本 review change 仅发布报告，
-不实现或预先声称修复：
+每组均已按独立授权建立 Fix Issue/change/PR，并由人类合并。原 review 报告保持历史原貌；
+这些 merge 事实不能替代最终七轴复审：
 
 | 修复组 | Findings | 必须复验的范围 | 状态 |
 | --- | --- | --- | --- |
-| Security Fix | G5-SEC-001/002/003 | established WS expiry/revoke-send、Origin gate | 未开始 |
-| Audit Fix | G5-AUD-001 | attempted pre-audit commit ordering/failure semantics | 未开始 |
-| Frontend Truth Fix | G5-FE-001/002/003 | credentials、null snapshot truth、invalid route boundary | 未开始 |
-| CI Fix | G5-CI-001 | recovery evidence contract in required validation/CI | 未开始 |
-| Docs Truth Fix | G5-DOC-001 | root README、`docs/architecture.md`、`docs/development.md` 的 current-state facts | 未开始 |
+| Security Fix | G5-SEC-001/002/003 | established WS expiry/revoke-send、Origin gate | 已合并：Issue #68 / PR #69 |
+| Audit Fix | G5-AUD-001 | attempted pre-audit commit ordering/failure semantics | 已合并：Issue #71 / PR #72 |
+| Frontend Truth Fix | G5-FE-001/002/003 | credentials、null snapshot truth、invalid route boundary | 已合并：Issue #73 / PR #74 |
+| CI Fix | G5-CI-001 | recovery evidence contract in required validation/CI | 已合并：Issue #75 / PR #76 |
+| Docs Truth Fix | G5-DOC-001 | root README、`docs/architecture.md`、`docs/development.md` 的 current-state facts | 已合并：Issue #77 / PR #78 |
 
-G5-ARCH-001/002、G5-REC-001/002、G5-LIC-001 的 Low disposition 保持在 findings report
-中，尚未批准为 limitation 或修复承诺。
+### G5 Low Findings Disposition
+
+[Issue #79](https://github.com/OasisSaber/Supersonic/issues/79) 记录五项批准决定，完整理由、
+风险与操作边界见
+[G5 Low Findings Disposition Record](../../deliverables/g5-review/G5_LOW_FINDINGS_DISPOSITION.md)：
+
+- `G5-ARCH-001 = BACKLOG` → [Issue #80](https://github.com/OasisSaber/Supersonic/issues/80)
+- `G5-ARCH-002 = ACCEPTED_LIMITATION`
+- `G5-REC-001 = ACCEPTED_LIMITATION`
+- `G5-REC-002 = BACKLOG` → [Issue #81](https://github.com/OasisSaber/Supersonic/issues/81)
+- `G5-LIC-001 = BACKLOG` → [Issue #82](https://github.com/OasisSaber/Supersonic/issues/82)
+
+全部五项均有允许的 disposition；没有 Low finding 被本记录声明为 `FIXED`。下一步只能是
+独立授权的 fresh seven-axis re-review。复审开始前，verdict 继续为 `CHANGES_REQUIRED`，
+不得宣告 freeze。
 
 ## G5 排除项
 
