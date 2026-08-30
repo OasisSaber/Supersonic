@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Bounded sanitized provenance summaries for the recovery acceptance checks that previously referenced the claim-bearing acceptance record only (G5-REC-002). Each check points to independently reviewable repository artifacts and required-CI evidence.",
+  "policyReference": "deliverables/platform-recovery/PROVENANCE_POLICY.md",
+  "recoveryCheckpointCommitSha": "cb6ab6645313716e9ed54c8ecb49c27b3d918f37",
+  "checks": {
+    "webSocketRevoke": {
+      "status": "passed",
+      "summary": "At the recovery checkpoint the durable platform-session revoke committed before close propagation; the revoked identity was rejected at handshake with close code 1008 and established connections were closed by the single-process registry. Required CI re-proves revoke-send blocking and expiry fail-closed behavior in the full backend suite on every push.",
+      "observedCloseCode": 1008,
+      "requiredCheckStepName": "Validate",
+      "requiredCheckRunId": "33299616699",
+      "publicRehearsalPullNumber": 64,
+      "testReferences": [
+        "apps/backend/tests/test_websocket_registry.py",
+        "apps/backend/tests/test_platform_router_wiring.py"
+      ],
+      "semanticsReference": "deliverables/platform-recovery/README.md"
+    },
+    "gp05Smoke": {
+      "status": "passed",
+      "summary": "The gp05.v1 four-client real-process smoke ran at the recovery checkpoint and is re-proved by the required CI smoke step on every push.",
+      "protocol": "gp05.v1",
+      "clientCount": 4,
+      "requiredCheckStepName": "Run GP05 runtime smoke",
+      "requiredCheckRunId": "33299616699",
+      "publicRehearsalPullNumber": 64,
+      "smokeScriptReference": "scripts/gp05_smoke_test.py"
+    }
+  }
+}
