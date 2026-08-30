@@ -24,9 +24,9 @@ Figma/Make 是冻结的视觉意图参考；运行时实现以 React + TypeScrip
 | --- | --- | --- |
 | 设计与合同 | GP22 获批准视觉参考、现有 GP21 Token 实现、端点、状态和消息合同 | `docs/design/`、`contracts/gp05/` |
 | 前端 | 四屏呈现、交互、只读 Overview、Control、降级和错误恢复 | `apps/frontend/` |
-| 后端 | 权威状态、命令处理、HTTP/WebSocket、确定性 Mock 场景 | `apps/backend/` |
+| 后端 | 座舱权威状态、命令处理、HTTP/WebSocket、确定性 Mock，以及可选 PostgreSQL Platform 身份与审计 | `apps/backend/` |
 | 项目治理 | 当前范围、进度、优先级、验证证据和开放 Issue | `docs/project/` |
-| 条件性适配器 | 真实地图、持久化、Vision、Web3D、AI | 仅在独立 Issue 触发后加入 |
+| 计划适配器 | 真实地图、Vision、Web3D、AI | 仅在独立 Issue 触发后加入 |
 
 ## 默认运行拓扑
 
@@ -34,7 +34,8 @@ Figma/Make 是冻结的视觉意图参考；运行时实现以 React + TypeScrip
 Control / Center / Passenger commands
                   │
                   ▼
-        FastAPI authoritative state
+      FastAPI + CockpitService
+      authoritative realtime cockpit state
           │        │        │
           │ HTTP   │ WS     │ deterministic Mock/events
           ▼        ▼        ▼
@@ -45,9 +46,17 @@ Control / Center / Passenger commands
     Cluster/HUD   Center     Passenger
         │
         └──────────────► Overview (read-only composition)
+
+When DATABASE_URL is configured:
+  /platform + server Principal/RBAC
+                  │
+                  ▼
+ PostgreSQL users / platform_sessions / audit_events
 ```
 
-所有产品业务状态都由 FastAPI 确认。前端不得通过本地猜测、乐观写入或独立计数器形成第二套业务真相。
+座舱车辆、导航、风险与乘客实时状态由 `CockpitService` 确认。PostgreSQL 只持久化
+Platform 用户、Session 和 Audit，不拥有 `gp05.v1` 实时座舱状态。前端不得通过本地
+猜测、乐观写入或独立计数器形成第二套座舱业务真相。
 
 ## 核心不变量
 
@@ -60,7 +69,7 @@ Control / Center / Passenger commands
 7. **来源明确**：`LIVE CAMERA`、`VIDEO INFERENCE`、`SIMULATED EVENT` 和本地路线降级不能混淆。
 8. **错误数据隔离**：非法 JSON、错误协议或不完整 snapshot 不能进入 Store。
 9. **降级不伪造**：stale/offline 显示最后权威值和明确提示，不生成看似实时的替代值。
-10. **增强不阻断核心**：地图、数据库、Vision、Web3D 或 AI 失败不能阻断 Cluster、HUD 和关键告警。
+10. **增强不改写核心**：地图、数据库、Vision、Web3D 或 AI 不能成为 `CockpitService` 的实时状态源；失败时必须明确降级，不得伪造座舱状态或关键告警。
 
 ## 当前端点
 
@@ -72,18 +81,30 @@ Control / Center / Passenger commands
 | `/passenger` | 媒体、隐私和旅程协作 | 已实现本地确定性演示流程 |
 | `/overview` | 四屏只读编排 | 已实现严格只读组合，不挂载命令控件 |
 | `/control` | 本地答辩控制 | 已实现独立端点；命令默认关闭并受服务端开关约束 |
+| `/platform` | 本地 Platform 登录与角色范围界面 | 配置 PostgreSQL 后可用；admin 可管理用户和 Session，admin/operator/viewer 均按服务端角色访问允许的 Audit 视图 |
 
 当前状态、未完成能力与后续队列见 [`project/PROJECT_PROGRESS.md`](project/PROJECT_PROGRESS.md)。
 
-## 条件性组件
+## Platform 持久化与恢复
+
+配置 `DATABASE_URL` 后，FastAPI composition 会接线 PostgreSQL-backed users、
+Platform Sessions、Audit repository、服务端 Principal/RBAC 和 Platform command gateway。
+角色变更、账户禁用/启用和显式 Session 撤销均由服务端管理接口执行；缺失数据库配置时，
+这些 Platform 服务不可用，但现有 Mock HMI 仍可无数据库运行。
+
+仓库已提供 `scripts/platform_backup.py`、`scripts/platform_restore.py` 和
+`deliverables/platform-recovery/` 中的脱敏验收证据。恢复目标必须是隔离的
+`*_restore_test` 数据库；这些工具和证据不代表公共生产部署或托管备份服务。
+
+`WebSocketSessionRegistry` 只记录当前 FastAPI 进程内的连接，没有持久状态，也不做
+跨进程分发。因此 Session 到期或撤销后的主动关闭只保证当前进程内的连接传播，不能
+表述为多实例 WebSocket 撤销能力。
+
+## 计划组件
 
 ### VehicleVision
 
 核心稳定后优先加入一个真实疲劳/分心场景。Vision Worker 只提交候选事件，不直接操作屏幕；风险策略和 FastAPI 决定最终状态。
-
-### 持久化
-
-只有历史查询、论文或指导教师明确要求时才加入。数据库不是实时状态源，失败时不能阻断四屏。
 
 ### 地图
 

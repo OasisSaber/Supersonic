@@ -2,12 +2,14 @@
 
 Supersonic 是面向毕业设计的本地多屏智能座舱 HMI。React + TypeScript
 负责 Cluster、HUD、Center、Passenger、Overview 和 Control 六个端点；FastAPI
-维护唯一权威业务状态，HTTP 承载命令，WebSocket 广播完整 `gp05.v1` 快照。
+中的 `CockpitService` 维护唯一权威座舱实时状态，HTTP 承载命令，WebSocket 广播
+完整 `gp05.v1` 快照。
 
 ## 项目定位
 
-当前运行形态是一台 Windows 主机上的**本地、单用户、可信环境 Mock 原型**。
-它不是公共互联网服务、量产车载系统或企业级多租户平台。
+当前运行形态是一台 Windows 主机上的**本地、可信环境 Mock 原型**。配置 PostgreSQL
+后，本地 Platform 界面支持 admin、operator 和 viewer 身份；这不等于公共互联网服务、
+量产车载系统或企业级多租户平台。
 
 当前实现包括：
 
@@ -17,15 +19,18 @@ Supersonic 是面向毕业设计的本地多屏智能座舱 HMI。React + TypeSc
 - 本地确定性路线、模拟风险生命周期和副驾协作；
 - session/revision、reset/reconnect、非法消息和端点权限验证；
 - 后端 Policy、State Factory、Transitions、Broker、Service、Router 分层；
+- 配置 PostgreSQL 后启用的用户、Platform Session、服务端 Principal/RBAC 与 Audit；
+- `/platform` 的登录、admin 管理界面，以及 operator/viewer 的角色范围界面；
+- `pg_dump` 备份、隔离 `*_restore_test` 恢复工具和脱敏恢复验收证据；
 - Ruff、pytest、ESLint、Vitest、TypeScript 构建、项目验证和真实进程 Smoke。
 
 Windows 视觉证据已经覆盖主要正常、导航、接管、确认、恢复、Day/Night、
 数据域离线、`systemMode=offline`、`systemMode=stale` 与实际后端/WebSocket
 连接中断。数据域离线、系统模式与传输状态分别记录，不能相互替代。
+Session 撤销后的 WebSocket 主动关闭由单进程 registry 传播，不是多实例撤销能力。
 
 ## 当前未实现
 
-- PostgreSQL 身份、会话、RBAC、审计和恢复；
 - 真实地图 Provider；
 - 真实 VehicleVision；
 - AI 语音；
@@ -46,7 +51,9 @@ pnpm dev
 运行时配置统一放在仓库根目录 `.env`。该文件已被 Git 忽略；不要提交密钥、模型
 路径或私人素材路径。当前后端只实现 `APP_MODE=mock`，其他值会明确拒绝启动。
 `VITE_API_URL` 控制前端访问 FastAPI 的 HTTP 与 WebSocket 基地址；`VITE_WS_URL`
-仅保留给旧 simulation Hook。完整配置合同见 `docs/development.md`。
+仅保留给旧 simulation Hook。设置 `DATABASE_URL` 后会接线 Platform 用户、Session、
+RBAC 与 Audit；缺失时现有 Mock HMI 仍可无数据库运行，但 `/platform` 不可用。
+完整配置合同见 `docs/development.md`。
 
 ## 验证
 
@@ -63,7 +70,16 @@ bash scripts/validate.sh
 
 GitHub Actions 必须独立通过。PR 描述中的本地验证记录不能替代 CI 结果。
 
-## 当前推进顺序
+## 当前推进状态
+
+G4 已完成 Platform 登录、Session、RBAC、Audit、管理操作与备份恢复纵向切片。
+G5 代码审查给出的结论仍是 `CHANGES_REQUIRED`，当前处于分组修复和复审阶段；
+最终复审通过前不得把项目表述为 frozen。真实地图、VehicleVision、AI 语音、
+多显示部署和 Web3D 仍是后续需要独立立项的计划能力。
+
+### 历史推进记录（保留，不代表当前阶段）
+
+以下是 G3/G4 开始前采用的路线记录，仅用于追溯：
 
 1. PR #45 已由人类 Squash Merge 到 `main`，GP22 第一轮 UI、Review 修复与视觉证据已进入主线；
 2. 创建独立 G3 Issue，只评审 PostgreSQL / server session / RBAC / Audit 最小纵向切片；
