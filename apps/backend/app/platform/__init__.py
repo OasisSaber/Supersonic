@@ -1,25 +1,20 @@
-"""Platform identity, authorization, and audit ports.
+"""Platform identity, authorization, and audit runtime surface.
 
-These modules are intentionally not wired into the gp05.v1 router. PostgreSQL and
-server-session adapters require the G3 architecture approval gate.
+The composed `PlatformCommandGateway` / `AuditEvent` runtime is the only canonical
+command gateway and durable audit model. PostgreSQL and server-session adapters are
+wired in the composition root (`app.main`).
 """
 
-from .audit import AuditBuffer, AuditFallback, AuditSink, InMemoryAuditSink, JsonlAuditBuffer
 from .authorization import RoleCommandPolicy
-from .gateway import AuthorizedCockpitGateway, GatewayResult
-from .models import AuditDelivery, AuditRecord, AuditResult, Principal, Role
+from .command_gateway import GatewayResult, PlatformCommandGateway
+from .models import AuditDelivery, AuditEvent, AuditResult, Principal, Role
 
 __all__ = [
-    "AuditBuffer",
     "AuditDelivery",
-    "AuditFallback",
-    "AuditRecord",
+    "AuditEvent",
     "AuditResult",
-    "AuditSink",
-    "AuthorizedCockpitGateway",
     "GatewayResult",
-    "InMemoryAuditSink",
-    "JsonlAuditBuffer",
+    "PlatformCommandGateway",
     "Principal",
     "Role",
     "RoleCommandPolicy",
