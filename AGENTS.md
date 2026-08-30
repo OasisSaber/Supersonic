@@ -61,6 +61,12 @@ GitHub Issue → 一个 jj change → 实现与验证 → Agent 自审 → Pull 
 
 仅适用于目标清晰、范围小、易回滚，且不涉及架构、公共接口、持久化数据、部署、发布、远端数据或破坏性操作的工作。没有 Issue 时不得伪造编号；需要扩大范围时必须停止并转为 Issue 路径。
 
+### 微小修复快速通道
+
+不创建 Pull Request：当前会话明确人类授权（必须列明目标与允许文件范围）→ 一个 jj change → 实现与验证 → Agent 自审与完整 diff 审阅 → 直接快进合并到 `main` 并 push → 一次性汇报改动内容、验证结果、授权来源与范围。
+
+仅适用于目标清晰、范围小、易回滚，且不涉及架构、公共接口、持久化数据、迁移、部署、发布、远端数据或破坏性操作的改动。复杂任务、Issue 任务、范围扩大、授权要素不全、权威验证未通过或对适用性有疑虑时，一律回落 Pull Request 路径。本通道不改变人类最终决定权，也不改变 `core/policy.md` 的外部写、发布与破坏性操作限制。
+
 ## jj change 与工作区
 
 任务 change 卫生与完整 diff 审阅要求见 [core/workflow.md](core/workflow.md) §3 与 §5，jj 命令生命周期见 `.reasonix/skills/themasterplan/references/jj-lifecycle.md`：
@@ -94,5 +100,5 @@ GitHub Issue → 一个 jj change → 实现与验证 → Agent 自审 → Pull 
 - 未取得上述任务级远端授权时，Agent 可完成本地实现与验证，但在首次产生远端影响前必须请求一次明确授权，并列明远端、可见性、Issue、bookmark、base、文件范围、敏感信息检查和验证结果。
 - 每次 push 前仍必须阅读完整 diff，检查范围、误删、临时文件、生成物与敏感信息，并运行当前任务要求的验证；验证失败不得 push。
 - 更换远端、可见性、Issue、任务目标、bookmark、base 或目标 PR，扩大范围/敏感数据，验证失败仍拟 push，或涉及 force push、已发布历史重写、远端删除、仓库设置、分支保护或破坏性操作时，必须重新取得明确授权。
-- Agent 不得自行 merge、release、删除远端数据、执行破坏性操作或扩大范围。`main` 只接受人类决定的 Squash Merge。
+- 除微小修复快速通道外，Agent 不得自行 merge、release、删除远端数据、执行破坏性操作或扩大范围。`main` 只接受人类决定的 Squash Merge，或满足上文「微小修复快速通道」全部条件的直接合并。
 - 允许 push 或创建 PR 不代表允许 merge 或 release。
