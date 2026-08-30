@@ -16,10 +16,19 @@ Copy-Item .env.example .env
 | `VITE_API_URL` | `gp05.v1` HTTP 命令、snapshot 与 `/ws/v1/cockpit` 的 FastAPI 基地址 | `http://127.0.0.1:8000` |
 | `VITE_WS_URL` | 仅供旧 `/ws/simulation` Hook 使用，不控制 `gp05.v1` 主链路 | `ws://127.0.0.1:8000/ws/simulation` |
 | `CONTROL_ENABLED` | 本地 Control 端点命令开关；默认关闭，显式 `true` 才启用 | `false` |
+| `DATABASE_URL` | 启用 PostgreSQL-backed users、Platform Sessions、Audit 与相关服务端接线 | 未设置；Mock HMI 继续运行，`/platform` 不可用 |
+| `PLATFORM_UI_ORIGIN` | Platform cookie mutation 与 cockpit WebSocket 允许的精确前端 Origin | `http://127.0.0.1:5173` |
+| `PLATFORM_SESSION_TTL_SECONDS` | Platform Session 有效期（秒） | `28800` |
+| `PLATFORM_ACCESS_PROFILE` | `loopback` 使用本地 HTTP cookie；`https` 要求 HTTPS Origin 和 Secure cookie | `loopback` |
 
 `local`、`api` 是保留的 `APP_MODE` 名称，当前没有真实运行路径，因此会与其他非法值一样明确拒绝启动。`LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`、`YOLO_MODEL_PATH`、`DEMO_VIDEO_PATH` 也仅为后续能力保留，当前运行时不读取。后端健康接口只返回经过验证的模式，不返回 `.env` 内容或秘密。
 
-HTTP 命令路由 `/api/v1/commands/{endpoint}` 由服务端从路径解析端点上下文；请求体中的 `endpoint`/`source` 仅作为一致性声明，不一致返回 403 `endpoint_mismatch`。这能避免仅修改请求体就切换权限，但不是身份认证：可信本地客户端仍可选择其他端点路径。当前单用户演示环境不引入账户、令牌或多租户隔离；Control 命令默认禁用，只有显式设置 `CONTROL_ENABLED=true` 才开放。
+HTTP 命令路由 `/api/v1/commands/{endpoint}` 由服务端从路径解析端点上下文；请求体中的
+`endpoint`/`source` 仅作为一致性声明，不一致返回 403 `endpoint_mismatch`。配置
+`DATABASE_URL` 后，服务端还会从 Platform Session 解析 Principal，以 RBAC 校验命令和
+Platform 路由；浏览器会话由 HttpOnly cookie 承载，相关 mutation 只接受精确
+`PLATFORM_UI_ORIGIN`。这仍是本地原型的身份边界，不代表多租户或公共生产认证。
+Control 命令默认禁用，只有显式设置 `CONTROL_ENABLED=true` 才开放。
 
 ```powershell
 .\scripts\setup.ps1
@@ -39,14 +48,17 @@ pnpm smoke
 | 后端 lint / 测试 | `pnpm lint:backend`；`pnpm test:backend` | Ruff 与 pytest |
 | PostgreSQL 集成测试 | `pnpm test:backend:integration` | 需要显式提供安全的 `TEST_DATABASE_URL`，验证 migration、约束与仓储实现 |
 | 全量检查 | `pnpm check` | Lint、单元测试与前端构建 |
-| 仓库验证 | `bash scripts/validate.sh` | Markdown、YAML、Shell/mode 与 `pnpm check` |
+| 仓库验证 | `bash scripts/validate.sh` | Markdown、YAML、Shell/mode、恢复证据合同与 `pnpm check` |
 | GP05 运行态冒烟 | `pnpm smoke` 或 `pnpm smoke:gp05` | 启动真实 FastAPI 进程并验证四客户端、命令收敛、reset 与 reconnect |
 | 旧 Mock 冒烟 | `pnpm smoke:legacy` | 要求端口 8000 已有服务，仅覆盖旧 Mock HTTP 和 `/ws/simulation` |
 
 ### PostgreSQL 集成测试边界
 
-`DATABASE_URL` 是供未来 composition 使用的可选运行配置；本 Slice 不把 PostgreSQL
-adapter 接入 Router，缺失该变量时现有 Mock HMI 继续无数据库运行。
+`DATABASE_URL` 是可选运行配置。设置后，FastAPI composition 会创建 PostgreSQL
+engine/UoW，并接线用户、Platform Session、Audit、Principal/RBAC、管理 API 与
+Platform command gateway；缺失时现有 Mock HMI 继续无数据库运行，Platform API 和
+`/platform` 界面会明确显示服务不可用。PostgreSQL 不保存 `gp05.v1` 实时座舱状态，
+该权威状态仍由进程内 `CockpitService` 维护。
 
 `TEST_DATABASE_URL` 只供显式 PostgreSQL 集成测试使用。目标数据库名必须以 `_test`
 结尾，且不能与进程级 `DATABASE_URL` 相同；测试会重建该数据库的 `public` schema，
@@ -63,8 +75,10 @@ pnpm test:backend:integration
 才需要数据库。CI 使用临时 PostgreSQL 18.4，并在仓库验证后强制运行集成测试，随后
 才运行 GP05 smoke。
 
-Migration 与 CI 通过只证明当前持久化基础的相应自动化检查通过，不代表登录、RBAC、
-审计运行时、UI、LAN HTTPS、备份恢复或部署已经完成。
+仓库已包含登录、RBAC、Audit、`/platform` UI、备份和隔离恢复实现，以及不含凭据、
+真实 dump 或原始敏感日志的恢复验收证据。Migration、CI 和这些脱敏证据只证明记录范围
+内的本地实现与演练，不代表公共生产部署、LAN HTTPS 运维或多实例 Session/WebSocket
+撤销。进程内 `WebSocketSessionRegistry` 也不提供跨进程传播。
 
 ### GP05 Smoke 的边界
 
@@ -81,7 +95,9 @@ Migration 与 CI 通过只证明当前持久化基础的相应自动化检查通
 
 ## 项目工程标准
 
-当前仓库是本地、单用户、可信环境的毕业设计原型。代码应达到可重复开发、可测试和可答辩标准，但不要求提前建设公共云或企业多租户基础设施。
+当前仓库是本地、可信环境的毕业设计原型；代码已实现 admin、operator、viewer 三种
+Platform 角色，并在配置 `DATABASE_URL` 后启用。代码应达到可重复开发、可测试和可答辩
+标准，但这些本地角色不等于公共云或企业多租户基础设施。
 
 默认核心关注：
 
@@ -94,7 +110,7 @@ Migration 与 CI 通过只证明当前持久化基础的相应自动化检查通
 
 只有在独立 Issue 明确触发时，才加入：
 
-- MySQL 或其他持久化；
+- MySQL、其他数据库或新的业务持久化；
 - 高德真实地图；
 - Vision 模型和视频输入；
 - Web3D；
