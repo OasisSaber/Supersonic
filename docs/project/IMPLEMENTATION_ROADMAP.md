@@ -4,8 +4,8 @@
 - G4 平台合并基线：PR #62 / `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`
 - G4 状态：`COMPLETE`
 - G5 remediation 合并基线：PR #78 / `ca58b7c15dcd9c8b508c90e26ab63eaaf7924d34`
-- 当前门：`G5_LOW_FINDINGS_DISPOSITION — CHANGES_REQUIRED`
-- 下一门：Low disposition 人类合并后的独立七轴复审与 G5 freeze decision
+- 当前门：`G5_FINAL_RE_REVIEW — FREEZE_READY`（复审 publication 由当前 change 承载，待人类合并）
+- 下一门：人类 G5 freeze 决定；freeze 后按 2027 年 4 月最终验收路线分别立项 real map、VehicleVision、AI 语音、多显示部署与 Web3D
 
 ## G0–G2：主线基线与第一轮 UI 冻结
 
@@ -126,9 +126,24 @@ G5 是跨模块最终审查，不是新功能 Sprint。
 - `G5-REC-002 = BACKLOG` → [Issue #81](https://github.com/OasisSaber/Supersonic/issues/81)
 - `G5-LIC-001 = BACKLOG` → [Issue #82](https://github.com/OasisSaber/Supersonic/issues/82)
 
-全部五项均有允许的 disposition；没有 Low finding 被本记录声明为 `FIXED`。下一步只能是
-独立授权的 fresh seven-axis re-review。复审开始前，verdict 继续为 `CHANGES_REQUIRED`，
-不得宣告 freeze。
+全部五项均有允许的 disposition；没有 Low finding 被本记录声明为 `FIXED`。复审开始前，
+verdict 继续为 `CHANGES_REQUIRED`，不得宣告 freeze。
+
+### G5 Final Re-Review — FREEZE_READY
+
+独立授权的七轴复审已在 reviewed head `main@6cfbe9f8542721b32a54e14a15b183be29a55d97`
+执行（复审 delta 为 `7e1ea06e..6cfbe9f8` 的 8 个提交）。结果见
+[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)：
+
+- 4 High + 5 Medium 全部核验为 FIXED，均有代码与必需回归证据；
+- 5 Low disposition 与批准记录一致（2 项 ACCEPTED_LIMITATION、3 项 BACKLOG）；
+- 无新增 finding；七轴均为 PASS（Dependency/License 为 PASS WITH LOW，BACKLOG 已记录）；
+- 本地 `bash scripts/validate.sh` PASS；精确头部 CI run `33299616699` PASS
+  （Validate、PostgreSQL integration、GP05 smoke）。
+
+最终 verdict 为 **`FREEZE_READY`**。复审 publication 由当前 change 承载；G5 freeze
+宣告是人类决定，本 change 不宣告 freeze。#80/#81/#82 仍是单独授权的 backlog，不阻塞
+该 verdict。
 
 ## G5 排除项
 
