@@ -23,6 +23,7 @@ fi
 echo '--- Validator tests ---'
 "$python_bin" scripts/test_validate_pr_body.py
 "$python_bin" scripts/test_validate_markdown_links.py
+"$python_bin" scripts/test_recovery_evidence_templates.py
 
 echo '--- Markdown local links ---'
 "$python_bin" scripts/validate_markdown_links.py
