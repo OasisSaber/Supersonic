@@ -1,0 +1,7 @@
+# Canonical repository line endings: LF in every committed blob and on checkout.
+# `eol=lf` intentionally overrides core.autocrlf=true on Windows so a Git
+# checkout can never re-introduce CRLF into the Jujutsu working-copy snapshot.
+* text=auto eol=lf
+
+# Explicit binary markers (auto-detection is a fallback, not the authority).
+*.png binary
