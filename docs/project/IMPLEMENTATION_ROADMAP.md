@@ -4,7 +4,7 @@
 - G4 平台合并基线：PR #62 / `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`
 - G4 状态：`COMPLETE`
 - G5 remediation 合并基线：PR #78 / `ca58b7c15dcd9c8b508c90e26ab63eaaf7924d34`
-- 当前门：`G5_FINAL_RE_REVIEW — FREEZE_READY`（复审 publication 由当前 change 承载，待人类合并）
+- 当前门：`G5_FINAL_RE_REVIEW — FREEZE_READY`（复审 publication 已由 PR #85 合并、Issue #84 已关闭；#80/#81/#82 的 follow-up 已由 PR #87/#88/#89 完成）
 - 下一门：人类 G5 freeze 决定；freeze 后按 2027 年 4 月最终验收路线分别立项 real map、VehicleVision、AI 语音、多显示部署与 Web3D
 
 ## G0–G2：主线基线与第一轮 UI 冻结
@@ -75,11 +75,11 @@ actual evidence：
 G5 是跨模块最终审查，不是新功能 Sprint。
 
 [Issue #65](https://github.com/OasisSaber/Supersonic/issues/65) 已按七轴执行 review，针对
-基线 `main@7e1ea06e52964b09c8368943236847525a7deccc` 的 publication 由当前 review change
-承载。报告见 [G5 Findings Report](../../deliverables/g5-review/G5_FINDINGS_REPORT.md) 与
-[G5 Freeze Report](../../deliverables/g5-review/G5_FREEZE_REPORT.md)。当前统计为
-**0 Critical / 4 High / 5 Medium / 5 Low**，verdict 为 **`CHANGES_REQUIRED`**；G5 尚未
-完成，尚未 freeze。
+基线 `main@7e1ea06e52964b09c8368943236847525a7deccc` 的 publication 已由 PR #66 合并。
+报告见 [G5 Findings Report](../../deliverables/g5-review/G5_FINDINGS_REPORT.md) 与
+[G5 Freeze Report](../../deliverables/g5-review/G5_FREEZE_REPORT.md)。该轮统计为
+**0 Critical / 4 High / 5 Medium / 5 Low**，verdict 为 **`CHANGES_REQUIRED`**；该轮
+publication 后 G5 尚未完成，尚未 freeze。最终结论见「G5 Final Re-Review」小节。
 
 检查：
 
@@ -141,9 +141,9 @@ verdict 继续为 `CHANGES_REQUIRED`，不得宣告 freeze。
 - 本地 `bash scripts/validate.sh` PASS；精确头部 CI run `33299616699` PASS
   （Validate、PostgreSQL integration、GP05 smoke）。
 
-最终 verdict 为 **`FREEZE_READY`**。复审 publication 由当前 change 承载；G5 freeze
-宣告是人类决定，本 change 不宣告 freeze。#80/#81/#82 仍是单独授权的 backlog，不阻塞
-该 verdict。
+最终 verdict 为 **`FREEZE_READY`**。复审 publication 已由 PR #85 合并、Issue #84 已关闭；
+G5 freeze 宣告是人类决定，本文档不宣告 freeze。#80/#81/#82 的 follow-up 已由 PR #87/#88/#89
+完成并关闭，不阻塞该 verdict。
 
 ## G5 排除项
 
