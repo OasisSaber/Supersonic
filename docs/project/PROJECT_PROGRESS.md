@@ -6,9 +6,9 @@
 - G5 remediation 合并基线：PR #78 / `ca58b7c15dcd9c8b508c90e26ab63eaaf7924d34`
 - G5 复审 publication 基线：PR #85 / Issue #84
 - 最新合并基线：PR #89 / Issue #82
-- 当前阶段：`G5_FINAL_RE_REVIEW`
-- 当前 verdict：`FREEZE_READY`（由 [G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出；复审 publication 已由 PR #85 合并、Issue #84 已关闭；G5 freeze 宣告是人类决定，本文档不宣告 freeze）
-- 下一阶段：人类作出 G5 freeze 决定；之后按最终验收路线分别立项真实地图、VehicleVision、AI 语音、多显示部署与 Web3D
+- 当前阶段：`G5_FROZEN`
+- 当前 verdict：`FREEZE_READY`（由 [G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出；复审 publication 已由 PR #85 合并、Issue #84 已关闭）；G5 冻结已于 2026-08-31 由 Oasis 宣告（见 §10）
+- 下一阶段：按最终验收路线分别立项真实地图、VehicleVision、AI 语音、多显示部署与 Web3D
 
 > 本文件使用稳定的阶段/PR 基线，不追逐包含本文件自身的最新 main commit SHA。
 
@@ -41,6 +41,8 @@
 | #88 | G5 恢复 Backlog：替换自引用恢复证据（Issue #81） | 已合并 |
 | #89 | G5 许可 Backlog：补全依赖来源记录（Issue #82） | 已合并 |
 | #90 | 工作流修订：采纳「微小修复快速通道」 | 已合并 |
+| #92 | G5 合并后进度文档同步 | 已合并 |
+| #93 | 修正 G5 复审 reviewed head SHA | 已合并 |
 
 PR #62 的 merge commit 为 `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`。
 
@@ -95,7 +97,7 @@ merge gate。Examples 仍保持 `pending` / `not_run`，只作为未来操作模
 | G3 Architecture | `APPROVED` | PR #48 |
 | G4 Platform | `COMPLETE` | PR #50/#52/#54/#56/#58/#62 |
 | Post-merge Recovery | `VERIFIED` | 公开 PR #62 merge baseline 上的恢复复验 |
-| G5 Final Review / Freeze | `REVIEWED — FREEZE_READY` | 七轴复审已在 `main@6cfbe9f8` 执行，[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出 `FREEZE_READY`；复审 publication 已由 PR #85 合并、Issue #84 已关闭；G5 freeze 宣告仍待人类决定。原始报告（`CHANGES_REQUIRED`）保留历史原貌 |
+| G5 Final Review / Freeze | `FROZEN` | 七轴复审已在 `main@6cfbe9f8` 执行，[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出 `FREEZE_READY`；复审 publication 已由 PR #85 合并、Issue #84 已关闭；G5 冻结已于 2026-08-31 由 Oasis 宣告（见 §10）。原始报告（`CHANGES_REQUIRED`）保留历史原貌 |
 | 真实地图、Vision、语音、Web3D | `PLANNED` | 不属于 G4 |
 
 ## 5. G5 Review publication（Issue #65）
@@ -161,8 +163,8 @@ delta 为原审查基线 `7e1ea06e` 之后的 8 个提交（五组 remediation�
 
 权威结果见 [G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)，
 最终 verdict 为 **`FREEZE_READY`**。该 verdict 表示七轴审查门通过。复审 publication 已由
-PR #85 合并、Issue #84 已关闭，因此本文档不再表述为「待人类合并」；G5 freeze 宣告仍是人类
-决定，本文档不宣告 freeze。
+PR #85 合并、Issue #84 已关闭，因此本文档不再表述为「待人类合并」；G5 冻结已于 2026-08-31
+由 Oasis 宣告（见 §10）。
 
 ## 9. G5 复审后的收口（PR #86–#90）
 
@@ -177,5 +179,13 @@ PR #85 之后，以下五个 change 继续经 PR 与人类 merge 门合入 `main
 | #90 | 工作流修订：采纳「微小修复快速通道」 | 规则修订，无 Issue |
 
 至此 #80/#81/#82 三项 BACKLOG follow-up 的编码与记录工作已完成、Issue 已关闭；#90 的
-「微小修复快速通道」已写入根部 `AGENTS.md`。G5 七轴复审的 verdict 仍为 `FREEZE_READY`，
-G5 freeze 宣告仍是人类决定。
+「微小修复快速通道」已写入根部 `AGENTS.md`。G5 七轴复审的 verdict 为 `FREEZE_READY`，
+G5 冻结已于 2026-08-31 由 Oasis 宣告（见 §10）。
+
+## 10. G5 冻结宣告（2026-08-31）
+
+- 宣告人：Oasis；宣告日期：2026-08-31。
+- 冻结 head：`main@d0b2bafdeea9af69210b0640e5945abe34ffd630`。
+- 依据：G5 七轴复审 verdict `FREEZE_READY`（[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)）与冻结前双轴 code review PASS（Standards + Spec）。
+- 冻结范围：G5 七轴复审/缺陷整改范围——4 High + 5 Medium 已修复、5 Low 已 disposition、docs-truth 已对齐；对该范围的后续改动需新的独立授权。
+- 不冻结：项目本身仍按 [`DECISION_BASELINE`](./DECISION_BASELINE.md) §0.1 持续演进至 2027-04（GP22 迁移、平台能力、真实地图、VehicleVision、AI 语音、多显示部署与 Web3D 等）。

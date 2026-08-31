@@ -4,8 +4,8 @@
 - G4 平台合并基线：PR #62 / `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`
 - G4 状态：`COMPLETE`
 - G5 remediation 合并基线：PR #78 / `ca58b7c15dcd9c8b508c90e26ab63eaaf7924d34`
-- 当前门：`G5_FINAL_RE_REVIEW — FREEZE_READY`（复审 publication 已由 PR #85 合并、Issue #84 已关闭；#80/#81/#82 的 follow-up 已由 PR #87/#88/#89 完成）
-- 下一门：人类 G5 freeze 决定；freeze 后按 2027 年 4 月最终验收路线分别立项 real map、VehicleVision、AI 语音、多显示部署与 Web3D
+- 当前门：`G5_FROZEN`（复审 publication 已由 PR #85 合并、Issue #84 已关闭；#80/#81/#82 的 follow-up 已由 PR #87/#88/#89 完成；G5 冻结已于 2026-08-31 由 Oasis 宣告）
+- 下一门：按 2027 年 4 月最终验收路线分别立项 real map、VehicleVision、AI 语音、多显示部署与 Web3D
 
 ## G0–G2：主线基线与第一轮 UI 冻结
 
@@ -142,8 +142,16 @@ verdict 继续为 `CHANGES_REQUIRED`，不得宣告 freeze。
   （Validate、PostgreSQL integration、GP05 smoke）。
 
 最终 verdict 为 **`FREEZE_READY`**。复审 publication 已由 PR #85 合并、Issue #84 已关闭；
-G5 freeze 宣告是人类决定，本文档不宣告 freeze。#80/#81/#82 的 follow-up 已由 PR #87/#88/#89
-完成并关闭，不阻塞该 verdict。
+G5 冻结已于 2026-08-31 由 Oasis 宣告（冻结 head `main@d0b2baf`）。#80/#81/#82 的 follow-up
+已由 PR #87/#88/#89 完成并关闭，不阻塞该 verdict。
+
+### G5 冻结宣告（2026-08-31）
+
+- 宣告人：Oasis；宣告日期：2026-08-31。
+- 冻结 head：`main@d0b2bafdeea9af69210b0640e5945abe34ffd630`。
+- 依据：G5 七轴复审 verdict `FREEZE_READY` 与冻结前双轴 code review PASS（Standards + Spec）。
+- 冻结范围：G5 七轴复审/缺陷整改范围——4 High + 5 Medium 已修复、5 Low 已 disposition、docs-truth 已对齐；对该范围的后续改动需新的独立授权。
+- 不冻结：项目本身仍按 [`DECISION_BASELINE`](./DECISION_BASELINE.md) §0.1 持续演进至 2027-04（GP22 迁移、平台能力、真实地图、VehicleVision、AI 语音、多显示部署与 Web3D 等）。
 
 ## G5 排除项
 

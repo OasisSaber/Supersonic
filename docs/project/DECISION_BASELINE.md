@@ -1,7 +1,7 @@
 # Supersonic / GP22 实施决策基线
 
 - 状态：`GP22-DESIGN-APPROVED`
-- 最后更新：2026-08-09
+- 最后更新：2026-08-31
 - 项目标题：**《Supersonic：智能座舱多屏协同 HMI 设计与交互原型》**
 - 当前形态：本地/内网、可审计、多用户的毕业设计平台型原型，仍处于积极迭代期
 - 当前设计主版本：`GP22-DESIGN-APPROVED`（2026-08-01 由 Oasis 批准；GP21 保留为历史设计参考）
@@ -24,6 +24,14 @@
 - `app.platform` 采用深模块边界，FastAPI 与 PostgreSQL 作为 Adapter；`CockpitService` 继续是实时状态唯一权威。
 - 变更请求使用严格数据库 Session 并 fail-closed；管理命令要求 durable `attempted` 审计后才允许 mutation；现有 WebSocket 使用单进程连接注册表主动撤销。
 - **G3 架构批准不表示 PostgreSQL、登录、RBAC、审计、Router 接线或管理界面已经实现。** G4 必须按独立 Slice、Issue/授权、jj change、验证和 PR 推进。
+
+## 0.3 2026-08-31 G5 冻结宣告
+
+- 宣告人：Oasis；宣告日期：2026-08-31。
+- 冻结 head：`main@d0b2bafdeea9af69210b0640e5945abe34ffd630`。
+- 依据：G5 七轴复审 verdict `FREEZE_READY`（[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)）与冻结前双轴 code review PASS（Standards + Spec）。
+- 冻结范围：G5 七轴复审/缺陷整改范围——4 High + 5 Medium 已修复、5 Low 已 disposition、docs-truth 已对齐；对该范围的后续改动需新的独立授权。
+- 不冻结：项目本身仍按本文 §0.1 持续演进至 2027-04（GP22 迁移、平台能力、真实地图、VehicleVision、AI 语音、多显示部署与 Web3D 等）。
 
 ## 0. 设计版本记录
 
