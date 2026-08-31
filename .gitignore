@@ -56,6 +56,9 @@ backups/
 # Project-local developer tools
 .tools/
 
+# WorkBuddy agent runtime state (memory, local skills cache — never commit)
+.workbuddy/
+
 # Editors and OS
 .vscode/settings.local.json
 .DS_Store
