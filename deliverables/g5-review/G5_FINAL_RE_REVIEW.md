@@ -8,7 +8,7 @@ and required by the Low disposition record
 
 - Review change: publication-only; no runtime, frontend, migration, recovery tooling, or finding fix is included.
 - Baseline: `main@7e1ea06e52964b09c8368943236847525a7deccc` (original review baseline)
-- Reviewed head: `main@6cfbe9f8542721b32a54e14a15b183be29a55d97`
+- Reviewed head: `main@6cfbe9f83f9d82bc2ff0afb523fbf1277817e993`
 - Delta under re-review: `7e1ea06e..6cfbe9f8` — 8 commits, exactly the five approved
   remediation groups, the GP22 asset intake, and two records:
   - `21f1579` docs: publish G5 final review findings (#66)

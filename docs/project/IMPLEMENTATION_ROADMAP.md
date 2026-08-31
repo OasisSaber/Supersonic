@@ -131,7 +131,7 @@ verdict 继续为 `CHANGES_REQUIRED`，不得宣告 freeze。
 
 ### G5 Final Re-Review — FREEZE_READY
 
-独立授权的七轴复审已在 reviewed head `main@6cfbe9f8542721b32a54e14a15b183be29a55d97`
+独立授权的七轴复审已在 reviewed head `main@6cfbe9f83f9d82bc2ff0afb523fbf1277817e993`
 执行（复审 delta 为 `7e1ea06e..6cfbe9f8` 的 8 个提交）。结果见
 [G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)：
 

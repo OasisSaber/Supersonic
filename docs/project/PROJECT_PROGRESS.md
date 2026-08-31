@@ -148,7 +148,7 @@ G4 不再接受没有具体回归/审查 finding 的功能性追加。
 
 ## 8. G5 Final Re-Review（Issue #84 / PR #85，已合并）
 
-七轴复审已在 reviewed head `main@6cfbe9f8542721b32a54e14a15b183be29a55d97` 执行，复审
+七轴复审已在 reviewed head `main@6cfbe9f83f9d82bc2ff0afb523fbf1277817e993` 执行，复审
 delta 为原审查基线 `7e1ea06e` 之后的 8 个提交（五组 remediation、GP22 资产引入与两笔
 记录）。结果：
 
