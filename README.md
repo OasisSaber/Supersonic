@@ -1,5 +1,10 @@
 # Supersonic：智能座舱多屏协同 HMI
 
+> **Status: `FROZEN / MAINTENANCE_ONLY`**
+> **G5 quality baseline frozen**: 2026-08-31 (decision head `d0b2bafdeea9af69210b0640e5945abe34ffd630`, PR #94)
+> **Active graduation-design development moved to OasisSaber/Pioneer**: 2026-09-04
+> See [PROJECT_CLOSURE.md](docs/project/PROJECT_CLOSURE.md) and [PROJECT_LESSONS_LEARNED.md](docs/project/PROJECT_LESSONS_LEARNED.md).
+
 Supersonic 是面向毕业设计的本地多屏智能座舱 HMI。React + TypeScript
 负责 Cluster、HUD、Center、Passenger、Overview 和 Control 六个端点；FastAPI
 中的 `CockpitService` 维护唯一权威座舱实时状态，HTTP 承载命令，WebSocket 广播
@@ -29,7 +34,9 @@ Windows 视觉证据已经覆盖主要正常、导航、接管、确认、恢复
 连接中断。数据域离线、系统模式与传输状态分别记录，不能相互替代。
 Session 撤销后的 WebSocket 主动关闭由单进程 registry 传播，不是多实例撤销能力。
 
-## 当前未实现
+## 未实现规划能力（收口前未实现 / 已不再作为活跃路线）
+
+以下规划能力在 2026-09-04 项目收口前**未完成实现**，且随着项目进入维护状态，已不再属于 Supersonic 的活跃路线：
 
 - 真实地图 Provider；
 - 真实 VehicleVision；
@@ -70,22 +77,22 @@ bash scripts/validate.sh
 
 GitHub Actions 必须独立通过。PR 描述中的本地验证记录不能替代 CI 结果。
 
-## 当前推进状态
+## 当前推进状态：已收口维护（FROZEN / MAINTENANCE_ONLY）
 
-G4 已完成 Platform 登录、Session、RBAC、Audit、管理操作与备份恢复纵向切片。
-G5 代码审查给出的结论仍是 `CHANGES_REQUIRED`，当前处于分组修复和复审阶段；
-最终复审通过前不得把项目表述为 frozen。真实地图、VehicleVision、AI 语音、
-多显示部署和 Web3D 仍是后续需要独立立项的计划能力。
+- **G4 平台纵向切片**：已完成 Platform 登录、Session、RBAC、Audit、管理操作与备份恢复（PR #62 / PR #64）。
+- **G5 质量复审与冻结**：G5 七轴复审结论为 `FREEZE_READY`（[G5 Final Re-Review](deliverables/g5-review/G5_FINAL_RE_REVIEW.md)），人类已于 2026-08-31 正式宣告 G5 冻结（PR #94，冻结基线 `d0b2bafdeea9af69210b0640e5945abe34ffd630`）。
+- **项目正式收口（2026-09-04）**：因毕业设计主线调整至 Pioneer，Supersonic 活跃产品研发正式结束，仓库进入 `FROZEN / MAINTENANCE_ONLY` 维护状态。真实地图、VehicleVision、AI 语音、多显示部署和 Web3D 保持为历史规划证据，不再作为 Supersonic 实施路线。
+- 完整收口决策见 [PROJECT_CLOSURE.md](docs/project/PROJECT_CLOSURE.md)，工程与协作经验总结见 [PROJECT_LESSONS_LEARNED.md](docs/project/PROJECT_LESSONS_LEARNED.md)。
 
-### 历史推进记录（保留，不代表当前阶段）
+### 历史推进记录（保留，用于追溯）
 
-以下是 G3/G4 开始前采用的路线记录，仅用于追溯：
+以下是历史各阶段演进记录，仅用于追溯：
 
 1. PR #45 已由人类 Squash Merge 到 `main`，GP22 第一轮 UI、Review 修复与视觉证据已进入主线；
 2. 创建独立 G3 Issue，只评审 PostgreSQL / server session / RBAC / Audit 最小纵向切片；
 3. 人类批准 G3 决策并指定首个 Slice 后，才进入 G4 实现；
 4. G4 小步实施登录、会话、审计、撤销和备份恢复，每个 Slice 独立验证与评审；
-5. 再分别立项真实地图、VehicleVision、AI 语音、多显示部署和 Web3D。
+5. 原计划的真实地图、VehicleVision、AI 语音、多显示部署和 Web3D 在项目收口前未实现，已转为历史规划记录。
 
 ## 项目入口
 
@@ -94,6 +101,8 @@ G5 代码审查给出的结论仍是 `CHANGES_REQUIRED`，当前处于分组修�
 | 当前范围与非目标 | `docs/project/DECISION_BASELINE.md` |
 | 当前进度和验证 | `docs/project/PROJECT_PROGRESS.md` |
 | 执行门与路线 | `docs/project/IMPLEMENTATION_ROADMAP.md` |
+| 项目收口决策 | `docs/project/PROJECT_CLOSURE.md` |
+| 工程与协作经验总结 | `docs/project/PROJECT_LESSONS_LEARNED.md` |
 | 系统边界 | `docs/architecture.md` |
 | 开发与配置 | `docs/development.md` |
 | Windows 视觉证据 | `docs/VISUAL_ACCEPTANCE_MATRIX.md` |

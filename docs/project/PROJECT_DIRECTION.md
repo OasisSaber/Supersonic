@@ -1,11 +1,16 @@
-# 项目方向与质询共识
+# 项目方向与质询共识（历史记录）
 
-- 最后更新：2026-08-02
-- 状态：`SHARED_UNDERSTANDING_CONFIRMED`
-- 记录来源：2026-08-01 至 2026-08-02 的项目状态、长期目标和短期目标质询
-- 最终交付目标：2027 年 4 月
+> **状态：`HISTORICAL / SUPERSEDED_BY_PROJECT_CLOSURE`**
+> **生效与废止说明**：本文记录 2026-08-01 至 2026-08-02 期间由 Oasis 确认的历史项目方向。因作者毕业设计主线研发已于 2026-09-04 转移至全新项目 [`OasisSaber/Pioneer`](https://github.com/OasisSaber/Pioneer)，Supersonic 已于同日正式收口（见 [`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md)），生命周期转为 `FROZEN / MAINTENANCE_ONLY`。
+> 本文中所述“2027 年 4 月长期目标”及真实地图、VehicleVision、受限 AI 语音、多显示部署编排、Web3D 等后续阶段里程碑**已全部废止（superseded），保留仅作为历史规划证据**，不再代表 Supersonic 的活跃路线或执行指令。
 
-本文记录已由 Oasis 确认的项目开发方向。它与 [`DECISION_BASELINE.md`](./DECISION_BASELINE.md)、[`IMPLEMENTATION_ROADMAP.md`](./IMPLEMENTATION_ROADMAP.md) 和 [`PROJECT_PROGRESS.md`](./PROJECT_PROGRESS.md) 共同构成当前项目管理口径；若实现细节与本文冲突，以安全、隐私、平台权限和更具体的已批准任务约束为准。
+- 历史记录时间：2026-08-02
+- 废止与收口时间：2026-09-04
+- 原状态：`SHARED_UNDERSTANDING_CONFIRMED`（历史）
+- 当前状态：`HISTORICAL / SUPERSEDED_BY_PROJECT_CLOSURE`
+- 权威生命周期与收口基线：[`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md) 与 [`DECISION_BASELINE.md`](./DECISION_BASELINE.md)
+
+本文记录已由 Oasis 确认的历史项目开发方向。它与 [`DECISION_BASELINE.md`](./DECISION_BASELINE.md)、[`IMPLEMENTATION_ROADMAP.md`](./IMPLEMENTATION_ROADMAP.md) 和 [`PROJECT_PROGRESS.md`](./PROJECT_PROGRESS.md) 共同构成历史项目管理口径追溯依据。
 
 ## 1. 当前开发状态
 

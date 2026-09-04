@@ -1,11 +1,13 @@
-# 实施路线与验收门
+# 实施路线与验收门（已冻结历史路线）
 
-- 状态：`CURRENT_EXECUTION_ROADMAP`
-- G4 平台合并基线：PR #62 / `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`
-- G4 状态：`COMPLETE`
-- G5 remediation 合并基线：PR #78 / `ca58b7c15dcd9c8b508c90e26ab63eaaf7924d34`
-- 当前门：`G5_FROZEN`（复审 publication 已由 PR #85 合并、Issue #84 已关闭；#80/#81/#82 的 follow-up 已由 PR #87/#88/#89 完成；G5 冻结已于 2026-08-31 由 Oasis 宣告）
-- 下一门：按 2027 年 4 月最终验收路线分别立项 real map、VehicleVision、AI 语音、多显示部署与 Web3D
+- 状态：`FROZEN_HISTORICAL_ROADMAP`
+- 仓库生命周期：`FROZEN / MAINTENANCE_ONLY`
+- G4 状态：`COMPLETE`（PR #62 / PR #64）
+- G5 状态：`G5_FROZEN`（2026-08-31 冻结宣告，PR #94，冻结基线 `d0b2bafdeea9af69210b0640e5945abe34ffd630`）
+- 项目正式收口：2026-09-04（Issue #95，详见 [`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md)）
+- 下一门：无活跃实施门禁；Supersonic 活跃研发结束，新毕业设计工作转入 [`OasisSaber/Pioneer`](https://github.com/OasisSaber/Pioneer)
+
+> **历史路线说明（SUPERSEDED AS OF 2026-09-04）**：本文记录 G0 至 G5 阶段的历史验收门已按计划全部通过并完成冻结。原计划中在 G5 之后展开的“2027 年 4 月最终验收路线（真实地图、VehicleVision、AI 语音、多显示与 Web3D）”因项目正式收口已**废止（superseded）**，不再代表当前或后续执行指令，保留仅供历史工程记录。
 
 ## G0–G2：主线基线与第一轮 UI 冻结
 
@@ -151,11 +153,11 @@ G5 冻结已于 2026-08-31 由 Oasis 宣告（冻结 head `main@d0b2baf`）。#8
 - 冻结 head：`main@d0b2bafdeea9af69210b0640e5945abe34ffd630`。
 - 依据：G5 七轴复审 verdict `FREEZE_READY` 与冻结前双轴 code review PASS（Standards + Spec）。
 - 冻结范围：G5 七轴复审/缺陷整改范围——4 High + 5 Medium 已修复、5 Low 已 disposition、docs-truth 已对齐；对该范围的后续改动需新的独立授权。
-- 不冻结：项目本身仍按 [`DECISION_BASELINE`](./DECISION_BASELINE.md) §0.1 持续演进至 2027-04（GP22 迁移、平台能力、真实地图、VehicleVision、AI 语音、多显示部署与 Web3D 等）。
+- 历史演进废止：当时记录之“按 DECISION_BASELINE §0.1 持续演进至 2027-04”已于 2026-09-04 被项目正式收口决策 supersede（见 [`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md)）。
 
-## G5 排除项
+## G5 排除项（收口前未实现规划能力）
 
-除非直接修复 G5 Critical/High finding，否则不加入：
+以下能力在 Supersonic 活跃研发期内未纳入实现，且随着 2026-09-04 项目正式收口，已不再作为后续路线：
 
 - real map
 - VehicleVision

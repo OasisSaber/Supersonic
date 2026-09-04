@@ -1,14 +1,14 @@
 # 项目进度
 
-- 最后更新：2026-08-31
+- 最后更新：2026-09-04
+- 仓库生命周期：`FROZEN / MAINTENANCE_ONLY`
+- G5 质量阶段：`G5_FROZEN`
+- G5 冻结基线：`d0b2bafdeea9af69210b0640e5945abe34ffd630`（2026-08-31 宣告，PR #94）
 - G4 平台合并基线：PR #62 / `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`
-- G5 review 基线：`main@7e1ea06e52964b09c8368943236847525a7deccc`
-- G5 remediation 合并基线：PR #78 / `ca58b7c15dcd9c8b508c90e26ab63eaaf7924d34`
-- G5 复审 publication 基线：PR #85 / Issue #84
-- 最新合并基线：PR #89 / Issue #82
-- 当前阶段：`G5_FROZEN`
-- 当前 verdict：`FREEZE_READY`（由 [G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出；复审 publication 已由 PR #85 合并、Issue #84 已关闭）；G5 冻结已于 2026-08-31 由 Oasis 宣告（见 §10）
-- 下一阶段：按最终验收路线分别立项真实地图、VehicleVision、AI 语音、多显示部署与 Web3D
+- G5 复审结论：`FREEZE_READY`（[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)）
+- 活跃毕业设计转移：已于 2026-09-04 转移至 [`OasisSaber/Pioneer`](https://github.com/OasisSaber/Pioneer)
+- 项目收口决策：[`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md)
+- 下一阶段：无活跃功能演进阶段；仅限事实、链接、安全披露与证据维护（见 §11 及 [`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md)）
 
 > 本文件使用稳定的阶段/PR 基线，不追逐包含本文件自身的最新 main commit SHA。
 
@@ -43,6 +43,8 @@
 | #90 | 工作流修订：采纳「微小修复快速通道」 | 已合并 |
 | #92 | G5 合并后进度文档同步 | 已合并 |
 | #93 | 修正 G5 复审 reviewed head SHA | 已合并 |
+| #94 | G5 冻结宣告（2026-08-31 正式宣告冻结） | 已合并 |
+| PR #96 / Issue #95 (当前) | 项目正式收口（Closure）与经验总结沉淀 | 待合并 |
 
 PR #62 的 merge commit 为 `cb6ab6645313716e9ed54c8ecb49c27b3d918f37`。
 
@@ -97,8 +99,8 @@ merge gate。Examples 仍保持 `pending` / `not_run`，只作为未来操作模
 | G3 Architecture | `APPROVED` | PR #48 |
 | G4 Platform | `COMPLETE` | PR #50/#52/#54/#56/#58/#62 |
 | Post-merge Recovery | `VERIFIED` | 公开 PR #62 merge baseline 上的恢复复验 |
-| G5 Final Review / Freeze | `FROZEN` | 七轴复审已在 `main@6cfbe9f8` 执行，[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出 `FREEZE_READY`；复审 publication 已由 PR #85 合并、Issue #84 已关闭；G5 冻结已于 2026-08-31 由 Oasis 宣告（见 §10）。原始报告（`CHANGES_REQUIRED`）保留历史原貌 |
-| 真实地图、Vision、语音、Web3D | `PLANNED` | 不属于 G4 |
+| G5 Final Review / Freeze | `FROZEN` | 七轴复审已在 `main@6cfbe9f8` 执行，[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md) 给出 `FREEZE_READY`；复审 publication 已由 PR #85 合并、Issue #84 已关闭；G5 冻结已于 2026-08-31 由 Oasis 宣告（PR #94，见 §10）。原始报告（`CHANGES_REQUIRED`）保留历史原貌 |
+| 真实地图、Vision、语音、Web3D | `SUPERSEDED_UNIMPLEMENTED` | 原规划能力；收口前未实现，不再作为 Supersonic 活跃路线 |
 
 ## 5. G5 Review publication（Issue #65）
 
@@ -188,4 +190,14 @@ G5 冻结已于 2026-08-31 由 Oasis 宣告（见 §10）。
 - 冻结 head：`main@d0b2bafdeea9af69210b0640e5945abe34ffd630`。
 - 依据：G5 七轴复审 verdict `FREEZE_READY`（[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)）与冻结前双轴 code review PASS（Standards + Spec）。
 - 冻结范围：G5 七轴复审/缺陷整改范围——4 High + 5 Medium 已修复、5 Low 已 disposition、docs-truth 已对齐；对该范围的后续改动需新的独立授权。
-- 不冻结：项目本身仍按 [`DECISION_BASELINE`](./DECISION_BASELINE.md) §0.1 持续演进至 2027-04（GP22 迁移、平台能力、真实地图、VehicleVision、AI 语音、多显示部署与 Web3D 等）。
+- 历史演进废止：当时记录之“按 DECISION_BASELINE §0.1 持续演进至 2027-04”已于 2026-09-04 被项目正式收口决策 supersede（见 §11）。
+
+## 11. 项目正式收口（2026-09-04，Issue #95）
+
+- **决策时间**：2026-09-04。
+- **生命周期状态**：`FROZEN / MAINTENANCE_ONLY`。
+- **质量基线**：保持 `G5_FROZEN`（`d0b2bafdeea9af69210b0640e5945abe34ffd630`）。
+- **活跃毕业设计转移**：作者毕业设计主线研发转移至全新独立项目 [`OasisSaber/Pioneer`](https://github.com/OasisSaber/Pioneer)（桌面任务型 Agent 交互系统）。Pioneer 是独立产品方向与仓库，并非 Supersonic 代码分叉。
+- **未实现规划范围**：原路线中的真实地图、VehicleVision、受限 AI 语音、多显示部署和 Web3D 在收口前**未完成实现**，已随项目收口正式废止，不再属于 Supersonic 活跃路线。
+- **后续维护**：无活跃功能演进；仅限事实、链接、安全披露与证据维护。
+- 详见 [`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md) 与 [`PROJECT_LESSONS_LEARNED.md`](./PROJECT_LESSONS_LEARNED.md)。

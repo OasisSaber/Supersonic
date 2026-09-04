@@ -1,16 +1,22 @@
 # Supersonic / GP22 实施决策基线
 
-- 状态：`GP22-DESIGN-APPROVED`
-- 最后更新：2026-08-31
+- 状态：`G5_FROZEN / MAINTENANCE_ONLY`
+- 最后更新：2026-09-04
 - 项目标题：**《Supersonic：智能座舱多屏协同 HMI 设计与交互原型》**
-- 当前形态：本地/内网、可审计、多用户的毕业设计平台型原型，仍处于积极迭代期
+- 当前形态：本地/内网、可审计、多用户的毕业设计历史工程原型，处于冻结维护状态（`FROZEN / MAINTENANCE_ONLY`）
 - 当前设计主版本：`GP22-DESIGN-APPROVED`（2026-08-01 由 Oasis 批准；GP21 保留为历史设计参考）
 - 运行时协议名：`gp05.v1`，保留用于合同和历史实施追溯
+- G5 质量冻结基线：`d0b2bafdeea9af69210b0640e5945abe34ffd630`（2026-08-31 宣告）
+- 活跃毕业设计转移：[`OasisSaber/Pioneer`](https://github.com/OasisSaber/Pioneer)（2026-09-04）
+- 项目收口决策：[`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md)
+- 经验总结文档：[`PROJECT_LESSONS_LEARNED.md`](./PROJECT_LESSONS_LEARNED.md)
 - 设计来源清单：[`../design/GP22_SOURCE_MANIFEST.md`](../design/GP22_SOURCE_MANIFEST.md)
 
 本文定义当前项目范围、工程标准、核心验收和非目标。已确认的开发方向与质询成果见 [`PROJECT_DIRECTION.md`](./PROJECT_DIRECTION.md)；当前进度与开放缺陷见 [`PROJECT_PROGRESS.md`](./PROJECT_PROGRESS.md)，可执行顺序见 [`IMPLEMENTATION_ROADMAP.md`](./IMPLEMENTATION_ROADMAP.md)。历史 GP04/GP05/GP21 设计过程、旧实施计划和更宽的能力设想继续保留在 Git 历史、设计资料和归档文档中，但不得覆盖本文的当前范围。
 
-## 0.1 2026-08-02 方向更新
+## 0.1 2026-08-02 方向更新（历史记录，已被 2026-09-04 收口废止）
+
+> **历史记录说明（SUPERSEDED AS OF 2026-09-04）**：本小节记录 2026-08-02 形成的历史方向，已于 2026-09-04 被项目正式收口决策（§0.4）supersede，保留仅作为历史演进过程与决策证据。
 
 - 项目不在核心基线建立后冻结，目标是在 2027 年 4 月前持续演进为完整的平台型系统。
 - GP22 资产引入和持续接收经验证的 Figma 产出是最高优先级；未来 4–6 周先完成 GP22 四屏迁移闭环，同时并行建设 PostgreSQL、RBAC 和审计基础。
@@ -31,7 +37,17 @@
 - 冻结 head：`main@d0b2bafdeea9af69210b0640e5945abe34ffd630`。
 - 依据：G5 七轴复审 verdict `FREEZE_READY`（[G5 Final Re-Review](../../deliverables/g5-review/G5_FINAL_RE_REVIEW.md)）与冻结前双轴 code review PASS（Standards + Spec）。
 - 冻结范围：G5 七轴复审/缺陷整改范围——4 High + 5 Medium 已修复、5 Low 已 disposition、docs-truth 已对齐；对该范围的后续改动需新的独立授权。
-- 不冻结：项目本身仍按本文 §0.1 持续演进至 2027-04（GP22 迁移、平台能力、真实地图、VehicleVision、AI 语音、多显示部署与 Web3D 等）。
+- 历史说明：当时记录之“按本文 §0.1 持续演进至 2027-04”已被 2026-09-04 收口决策正式废止（见下文 §0.4）。
+
+## 0.4 2026-09-04 项目正式收口决策（Closure Decision，SUPERSEDES ACTIVE ROADMAP）
+
+- **决策时间**：2026-09-04。
+- **生命周期状态**：`FROZEN / MAINTENANCE_ONLY`；角色定位于历史工程项目与作品集参考（`HISTORICAL_ENGINEERING_PROJECT / PORTFOLIO_REFERENCE`）。
+- **活跃毕业设计转移**：作者毕业设计主线研发于 2026-09-04 转移至全新独立项目 [`OasisSaber/Pioneer`](https://github.com/OasisSaber/Pioneer)（桌面任务型 Agent 交互系统）。Pioneer 是独立产品方向与独立仓库，并非 Supersonic 的代码 fork。
+- **早期活跃演进方向被废止（Superseded）**：本文 §0.1（2026-08-02 方向更新）及 §0.3 中关于“项目本身不冻结、持续演进至 2027 年 4 月、最终验收纳入真实地图/VehicleVision/AI 语音/多显示/Web3D”的表述，**自 2026-09-04 起正式被本收口决策 supersede**。旧计划内容保留仅作为历史决策与规划证据，不再作为 Supersonic 的当前或后续开发路线。
+- **G5 质量冻结效力保留**：§0.3 的 G5 质量冻结基线（`d0b2bafdeea9af69210b0640e5945abe34ffd630`）与 `G5_FROZEN` 状态完全有效；收口不推翻、不重写历史审查与冻结事实。
+- **维护政策**：后续仅限事实性文档/链接修正、安全/隐私披露、许可修复与严重证据复现性修复；任何新功能开发均需显式重新激活项目。
+- 详见 [`PROJECT_CLOSURE.md`](./PROJECT_CLOSURE.md)。
 
 ## 0. 设计版本记录
 
@@ -158,9 +174,11 @@ Profile、主题同步、连接恢复和 Control 操作是系统流程，不替�
 
 第二、第三个 Vision 场景是推荐增强，不是首个真实场景的前置条件。
 
-## 7. 最终平台能力
+## 7. 最终平台能力（历史规划，已被 2026-09-04 收口废止）
 
-以下能力已经纳入 2027 年 4 月最终验收，实施顺序可以分阶段，但不得在最终验收时豁免：
+> **历史规划说明（SUPERSEDED AS OF 2026-09-04）**：以下平台能力规划已随项目正式收口废止（见 §0.4），保留仅作为历史工程基线参考，不再代表 Supersonic 当前或后续验收门槛。
+
+以下能力曾纳入原定 2027 年 4 月最终验收，实施顺序可以分阶段：
 
 ### 真实地图
 
@@ -265,7 +283,9 @@ AI 语音只复用白名单 command，必须有明确确认、失败反馈，不
 
 这些条件是核心 HMI 进入答辩冻结的门槛，不等于 2027 年 4 月最终平台验收已经完成。
 
-## 10.1 2027 年 4 月最终验收
+## 10.1 2027 年 4 月最终验收（历史规划，已被 2026-09-04 收口废止）
+
+> **历史规划说明（SUPERSEDED AS OF 2026-09-04）**：原定 2027 年 4 月针对真实地图、VehicleVision、受限 AI 语音、多显示部署和 Web3D 的平台级最终验收门槛，已随着 2026-09-04 毕业设计主线调整至 Pioneer 及 Supersonic 正式收口而**废止（superseded）**。本小节保留仅作为历史规划证据。
 
 最终验收采用门槛式清单，必须同时证明：
 
@@ -278,7 +298,9 @@ AI 语音只复用白名单 command，必须有明确确认、失败反馈，不
 - Web3D 懒加载、绑定至少一类权威状态并支持静态 fallback；
 - 运行质量、安全隐私、CI、测试、文档和旗舰演示证据完整。
 
-## 11. 仍待外部确认
+## 11. 仍待外部确认（历史记录，已被 2026-09-04 收口废止）
+
+> **历史记录说明（SUPERSEDED AS OF 2026-09-04）**：以下待确认事项已随项目正式收口不再适用，保留仅作为历史规划记录。
 
 - 最终答辩设备数量和物理安装方式；
 - 学校对 AIGC 声明、材料许可和提交格式的正式要求；
@@ -286,4 +308,4 @@ AI 语音只复用白名单 command，必须有明确确认、失败反馈，不
 - 是否存在正式安装包或外部分发要求；
 - 是否在首个真实 VehicleVision 场景之外增加第二个场景。
 
-这些事项只影响实现方案和增强范围，不改变已确认的最终验收门槛，也不阻塞当前 GP22 P0 与平台 P1 工作。
+这些事项曾只影响实现方案和增强范围；随着项目收口，不再具有当前执行意义。
