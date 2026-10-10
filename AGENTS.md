@@ -102,3 +102,17 @@ GitHub Issue → 一个 jj change → 实现与验证 → Agent 自审 → Pull 
 - 更换远端、可见性、Issue、任务目标、bookmark、base 或目标 PR，扩大范围/敏感数据，验证失败仍拟 push，或涉及 force push、已发布历史重写、远端删除、仓库设置、分支保护或破坏性操作时，必须重新取得明确授权。
 - 除微小修复快速通道外，Agent 不得自行 merge、release、删除远端数据、执行破坏性操作或扩大范围。`main` 只接受人类决定的 Squash Merge，或满足上文「微小修复快速通道」全部条件的直接合并。
 - 允许 push 或创建 PR 不代表允许 merge 或 release。
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in GitHub issues via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout with root `GLOSSARY.md` and `docs/adr/`. See `docs/agents/domain.md`.
